@@ -1,94 +1,9 @@
 import { spawn, ChildProcess } from "child_process"
-import { existsSync, appendFileSync } from "fs"
 import { EventEmitter } from "events"
-
-const MACOS_SCLANG_PATH =
-  "/Applications/SuperCollider.app/Contents/MacOS/sclang"
-
-const LOG_FILE = "/tmp/claude-collider.log"
-
-function debug(message: string): void {
-  const line = `[${new Date().toISOString()}] ${message}\n`
-  appendFileSync(LOG_FILE, line)
-}
-
-enum ServerState {
-  Stopped = "stopped",
-  Booting = "booting",
-  Running = "running",
-}
-
-class SclangConfig {
-  readonly path: string
-  readonly bootTimeout: number
-  readonly execTimeout: number
-
-  constructor() {
-    this.path = this.findSclangPath()
-    this.bootTimeout = parseInt(process.env.SC_BOOT_TIMEOUT || "10000", 10)
-    this.execTimeout = parseInt(process.env.SC_EXEC_TIMEOUT || "2000", 10)
-  }
-
-  private findSclangPath(): string {
-    if (process.env.SCLANG_PATH) {
-      return process.env.SCLANG_PATH
-    }
-    if (process.platform === "darwin" && existsSync(MACOS_SCLANG_PATH)) {
-      return MACOS_SCLANG_PATH
-    }
-    return "sclang"
-  }
-}
-
-class OutputParser {
-  private static readonly BEGIN_MARKER = ">>>BEGIN>>>"
-  private static readonly END_MARKER = "<<<END<<<"
-  private static readonly SERVER_READY = "SERVER_READY"
-  private static readonly SCLANG_READY = "Welcome to SuperCollider"
-
-  private buffer = ""
-
-  append(data: string): void {
-    this.buffer += data
-  }
-
-  clear(): void {
-    this.buffer = ""
-  }
-
-  hasSclangReady(): boolean {
-    return this.buffer.includes(OutputParser.SCLANG_READY)
-  }
-
-  hasServerReady(): boolean {
-    return this.buffer.includes(OutputParser.SERVER_READY)
-  }
-
-  extractResult(): string | null {
-    const beginIndex = this.buffer.indexOf(OutputParser.BEGIN_MARKER)
-    const endIndex = this.buffer.indexOf(OutputParser.END_MARKER)
-
-    if (beginIndex !== -1 && endIndex !== -1 && endIndex > beginIndex) {
-      const startPos = beginIndex + OutputParser.BEGIN_MARKER.length
-      return this.buffer.slice(startPos, endIndex).trim() || "OK"
-    }
-    return null
-  }
-
-  static wrapCode(code: string): string {
-    return `"${OutputParser.BEGIN_MARKER}".postln; (\n${code}\n).value; "${OutputParser.END_MARKER}".postln;`
-  }
-
-  static bootCommand(): string {
-    return `s.waitForBoot { "${OutputParser.SERVER_READY}".postln };`
-  }
-}
-
-interface PendingOperation {
-  resolve: (value: string) => void
-  reject: (error: Error) => void
-  timeout: ReturnType<typeof setTimeout>
-}
+import { debug } from "./debug.js"
+import { SclangConfig } from "./config.js"
+import { OutputParser } from "./parser.js"
+import { ServerState, PendingOperation } from "./types.js"
 
 export class SuperCollider extends EventEmitter {
   private readonly config: SclangConfig
@@ -194,7 +109,6 @@ export class SuperCollider extends EventEmitter {
     this.parser.clear()
     this.bootCommandSent = false
     this.setupProcessHandlers()
-    // Boot command will be sent when sclang is ready (see checkForSclangReady)
   }
 
   private setupProcessHandlers(): void {
