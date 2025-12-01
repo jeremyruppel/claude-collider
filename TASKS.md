@@ -194,6 +194,31 @@
 
 ---
 
+## Phase 5: MIDI Support ✅
+**Goal**: Enable MIDI input/output for real-time control and external gear integration.
+
+### 5.1 MIDI Module ✅
+- [x] Create `src/midi.ts` with MIDIManager class
+- [x] Implement device listing and parsing
+- [x] Implement input/output connection handling
+- [x] Track state: initialized, connected devices, mappings
+
+### 5.2 MIDI Tools ✅
+- [x] `midi_list_devices` - List available MIDI devices
+- [x] `midi_connect` - Connect to input/output by name or index
+- [x] `midi_map_notes` - Map notes to synth (polyphonic/monophonic)
+- [x] `midi_map_cc` - Map CC to control bus with range/curve
+- [x] `midi_learn` - Detect which CC is being moved
+- [x] `midi_send` - Send note/cc/program to output
+- [x] `midi_get_recent` - Get recent MIDI events for transcription
+- [x] `midi_clear_mappings` - Remove all mappings
+
+### 5.3 Documentation ✅
+- [x] Update README with MIDI tools table
+- [x] Add MIDI example prompts
+
+---
+
 ## Completion Checklist
 
 ### Phase 1 Complete ✅
@@ -219,3 +244,13 @@
 - [x] Debug mode works
 - [x] README is complete
 - [x] Ready for others to use
+
+### Phase 5 Complete ✅
+- [x] Can list MIDI devices
+- [x] Can connect to MIDI input/output
+- [x] Can map notes to synths (poly and mono)
+- [x] Can map CCs to control buses
+- [x] Can learn unknown CC numbers
+- [x] Can send MIDI to external gear
+- [x] Can retrieve recent MIDI events
+- [x] Can clear all mappings

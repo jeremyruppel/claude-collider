@@ -10,8 +10,10 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { SuperCollider } from "./supercollider.js";
 import { getSynthDef, getSynthDefNames, synthdefs } from "./synthdefs.js";
+import { MIDIManager } from "./midi.js";
 
 const sc = new SuperCollider();
+const midi = new MIDIManager(sc);
 
 const server = new Server(
   {
@@ -109,6 +111,178 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: [],
         },
       },
+      {
+        name: "midi_list_devices",
+        description: "List available MIDI input and output devices.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
+      {
+        name: "midi_connect",
+        description: "Connect to a MIDI device by name or index.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            device: {
+              type: "string",
+              description: "Device name or index number",
+            },
+            direction: {
+              type: "string",
+              enum: ["in", "out"],
+              description: "Input or output",
+            },
+          },
+          required: ["device", "direction"],
+        },
+      },
+      {
+        name: "midi_map_notes",
+        description:
+          "Map MIDI note input to trigger a synth. The synth should accept 'freq', 'amp', and 'gate' arguments for proper note-on/note-off handling.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            synthName: {
+              type: "string",
+              description: "Name of the SynthDef to trigger",
+            },
+            channel: {
+              type: "number",
+              description: "MIDI channel 0-15. Omit to respond to all channels.",
+            },
+            velocityToAmp: {
+              type: "boolean",
+              description: "Map note velocity to amplitude (default: true)",
+            },
+            mono: {
+              type: "boolean",
+              description: "Monophonic mode - only one note at a time (default: false)",
+            },
+          },
+          required: ["synthName"],
+        },
+      },
+      {
+        name: "midi_map_cc",
+        description:
+          "Map a MIDI CC to a control bus that can modulate synth parameters.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            cc: {
+              type: "number",
+              description: "CC number 0-127",
+            },
+            busName: {
+              type: "string",
+              description:
+                "Name for the control bus (e.g. 'cutoff', 'resonance'). Will be stored as ~busName.",
+            },
+            range: {
+              type: "array",
+              items: { type: "number" },
+              description: "Output range [min, max] (default: [0, 1])",
+            },
+            curve: {
+              type: "string",
+              enum: ["linear", "exponential"],
+              description: "Mapping curve (default: linear)",
+            },
+            channel: {
+              type: "number",
+              description: "MIDI channel 0-15. Omit for all channels.",
+            },
+          },
+          required: ["cc", "busName"],
+        },
+      },
+      {
+        name: "midi_learn",
+        description:
+          "Wait for a MIDI CC message and return which CC number was received. Useful for mapping unknown knobs/faders.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            timeout: {
+              type: "number",
+              description: "Seconds to wait before giving up (default: 10)",
+            },
+          },
+          required: [],
+        },
+      },
+      {
+        name: "midi_send",
+        description: "Send a MIDI message to connected output device.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            type: {
+              type: "string",
+              enum: ["note_on", "note_off", "cc", "program"],
+              description: "Message type",
+            },
+            channel: {
+              type: "number",
+              description: "MIDI channel 0-15 (default: 0)",
+            },
+            note: {
+              type: "number",
+              description: "Note number 0-127 (for note_on/note_off)",
+            },
+            velocity: {
+              type: "number",
+              description: "Velocity 0-127 (for note_on/note_off, default: 64)",
+            },
+            cc: {
+              type: "number",
+              description: "CC number 0-127 (for cc type)",
+            },
+            value: {
+              type: "number",
+              description: "Value 0-127 (for cc/program type)",
+            },
+          },
+          required: ["type"],
+        },
+      },
+      {
+        name: "midi_get_recent",
+        description:
+          "Get recent MIDI input events. Useful for 'what did I just play?' or building patterns from played notes.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            count: {
+              type: "number",
+              description: "Maximum number of events to return (default: 20)",
+            },
+            type: {
+              type: "string",
+              enum: ["notes", "cc", "all"],
+              description: "Filter by event type (default: all)",
+            },
+            since: {
+              type: "number",
+              description: "Only return events from the last N seconds",
+            },
+          },
+          required: [],
+        },
+      },
+      {
+        name: "midi_clear_mappings",
+        description: "Clear all MIDI note and CC mappings.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
     ],
   };
 });
@@ -190,6 +364,148 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await sc.execute(
           `"Synths: " ++ s.numSynths ++ ", Avg CPU: " ++ s.avgCPU.round(0.1) ++ "%, Peak CPU: " ++ s.peakCPU.round(0.1) ++ "%"`
         );
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "midi_list_devices": {
+        const devices = await midi.listDevices();
+        let text = "MIDI Devices:\n\nInputs:\n";
+        if (devices.inputs.length === 0) {
+          text += "  (none)\n";
+        } else {
+          for (const d of devices.inputs) {
+            text += `  ${d.index}: ${d.device} - ${d.name}\n`;
+          }
+        }
+        text += "\nOutputs:\n";
+        if (devices.outputs.length === 0) {
+          text += "  (none)\n";
+        } else {
+          for (const d of devices.outputs) {
+            text += `  ${d.index}: ${d.device} - ${d.name}\n`;
+          }
+        }
+        return {
+          content: [{ type: "text", text }],
+        };
+      }
+
+      case "midi_connect": {
+        const { device, direction } = args as {
+          device: string;
+          direction: "in" | "out";
+        };
+        const result = await midi.connect(device, direction);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "midi_map_notes": {
+        const { synthName, channel, velocityToAmp, mono } = args as {
+          synthName: string;
+          channel?: number;
+          velocityToAmp?: boolean;
+          mono?: boolean;
+        };
+        const result = await midi.mapNotes(synthName, {
+          channel,
+          velocityToAmp,
+          mono,
+        });
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "midi_map_cc": {
+        const { cc, busName, range, curve, channel } = args as {
+          cc: number;
+          busName: string;
+          range?: [number, number];
+          curve?: "linear" | "exponential";
+          channel?: number;
+        };
+        const result = await midi.mapCC(cc, busName, { range, curve, channel });
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "midi_learn": {
+        const { timeout } = args as { timeout?: number };
+        const result = await midi.learn(timeout);
+        if (result === null) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "MIDI learn timed out. No CC was detected.",
+              },
+            ],
+            isError: true,
+          };
+        }
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Detected CC ${result.cc} on channel ${result.channel} (value: ${result.value})`,
+            },
+          ],
+        };
+      }
+
+      case "midi_send": {
+        const { type: msgType, channel, note, velocity, cc, value } = args as {
+          type: "note_on" | "note_off" | "cc" | "program";
+          channel?: number;
+          note?: number;
+          velocity?: number;
+          cc?: number;
+          value?: number;
+        };
+        const result = await midi.send(msgType, {
+          channel,
+          note,
+          velocity,
+          cc,
+          value,
+        });
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "midi_get_recent": {
+        const { count, type: eventType, since } = args as {
+          count?: number;
+          type?: "notes" | "cc" | "all";
+          since?: number;
+        };
+        const result = await midi.getRecent({ count, type: eventType, since });
+        if (result.events.length === 0) {
+          return {
+            content: [{ type: "text", text: "No recent MIDI events." }],
+          };
+        }
+        let text = `Recent MIDI events (${result.events.length}):\n`;
+        for (const e of result.events) {
+          if (e.type === "noteOn" || e.type === "noteOff") {
+            text += `  ${e.type}: note ${e.note}, vel ${e.velocity}, ch ${e.channel}\n`;
+          } else if (e.type === "cc") {
+            text += `  cc: ${e.cc} = ${e.value}, ch ${e.channel}\n`;
+          }
+        }
+        return {
+          content: [{ type: "text", text }],
+        };
+      }
+
+      case "midi_clear_mappings": {
+        const result = await midi.clearMappings();
         return {
           content: [{ type: "text", text: result }],
         };

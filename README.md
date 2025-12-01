@@ -36,6 +36,8 @@ Restart Claude Desktop after updating the config.
 
 ## Available Tools
 
+### SuperCollider Tools
+
 | Tool | Description |
 |------|-------------|
 | `sc_boot` | Start SuperCollider and boot the audio server |
@@ -45,6 +47,19 @@ Restart Claude Desktop after updating the config.
 | `sc_restart` | Restart SuperCollider from scratch |
 | `sc_load_synthdef` | Load a pre-built synth (kick, snare, hihat, clap, bass, acid, pad) |
 | `sc_status` | Show synth count and CPU usage |
+
+### MIDI Tools
+
+| Tool | Description |
+|------|-------------|
+| `midi_list_devices` | List available MIDI input and output devices |
+| `midi_connect` | Connect to a MIDI device by name or index |
+| `midi_map_notes` | Map MIDI notes to trigger a synth (polyphonic or mono) |
+| `midi_map_cc` | Map a MIDI CC to a control bus for parameter modulation |
+| `midi_learn` | Wait for a CC message to detect which knob/fader to map |
+| `midi_send` | Send MIDI messages to external gear |
+| `midi_get_recent` | Get recent MIDI events (for "what did I just play?") |
+| `midi_clear_mappings` | Remove all MIDI mappings |
 
 ## Available Resources
 
@@ -70,6 +85,10 @@ After booting, load synths with `sc_load_synthdef`:
 - "Create an ambient pad that slowly evolves"
 - "Make a 303-style acid bassline"
 - "Show me the server status"
+- "Connect my MIDI keyboard and let me play the pad synth"
+- "Map my filter knob to control the cutoff frequency"
+- "What did I just play on the keyboard?"
+- "Turn those notes into a loop"
 
 ## Debug Mode
 
