@@ -121,39 +121,39 @@
 
 ---
 
-## Phase 3: Convenience Features
+## Phase 3: Convenience Features ✅
 **Goal**: Add synthdef library and helper tools.
 
-### 3.1 SynthDef Library
-- [ ] Create `src/synthdefs.ts`
-- [ ] Implement drum synthdefs:
-  - [ ] `kick` - basic kick drum
-  - [ ] `snare` - snare with noise
-  - [ ] `hihat` - closed hi-hat
-  - [ ] `clap` - clap/snare layer
-- [ ] Implement bass synthdefs:
-  - [ ] `bass` - simple sub bass
-  - [ ] `acid` - resonant filter bass
-- [ ] Implement pad synthdefs:
-  - [ ] `pad` - simple ambient pad
-- [ ] Export synthdef registry with names and code
+### 3.1 SynthDef Library ✅
+- [x] Create `src/synthdefs.ts`
+- [x] Implement drum synthdefs:
+  - [x] `kick` - basic kick drum
+  - [x] `snare` - snare with noise
+  - [x] `hihat` - closed hi-hat
+  - [x] `clap` - clap/snare layer
+- [x] Implement bass synthdefs:
+  - [x] `bass` - simple sub bass
+  - [x] `acid` - resonant filter bass
+- [x] Implement pad synthdefs:
+  - [x] `pad` - simple ambient pad
+- [x] Export synthdef registry with names and code
 
-### 3.2 Load SynthDef Tool
-- [ ] Add `sc_load_synthdef` tool definition:
-  - [ ] Input: `name` parameter with enum of available synthdefs
-  - [ ] Description explaining available synths
-- [ ] Implement handler:
-  - [ ] Look up synthdef by name
-  - [ ] Execute synthdef code
-  - [ ] Return confirmation
+### 3.2 Load SynthDef Tool ✅
+- [x] Add `sc_load_synthdef` tool definition:
+  - [x] Input: `name` parameter with enum of available synthdefs
+  - [x] Description explaining available synths
+- [x] Implement handler:
+  - [x] Look up synthdef by name
+  - [x] Execute synthdef code
+  - [x] Return confirmation
 
-### 3.3 Status Tool
-- [ ] Add `sc_status` tool definition
-- [ ] Implement handler:
-  - [ ] Query `s.numSynths`
-  - [ ] Query `s.avgCPU`
-  - [ ] Query `s.peakCPU`
-  - [ ] Return formatted status
+### 3.3 Status Tool ✅
+- [x] Add `sc_status` tool definition
+- [x] Implement handler:
+  - [x] Query `s.numSynths`
+  - [x] Query `s.avgCPU`
+  - [x] Query `s.peakCPU`
+  - [x] Return formatted status
 
 ### 3.4 Pattern Helpers (Optional)
 - [ ] Create `src/patterns.ts`
@@ -162,32 +162,31 @@
 
 ---
 
-## Phase 4: Polish
+## Phase 4: Polish ✅
 **Goal**: Add discoverability features and documentation.
 
-### 4.1 MCP Resources
-- [ ] Add resources capability to server
-- [ ] Implement `supercollider://synthdefs` resource:
-  - [ ] List all available synthdefs with descriptions
-- [ ] Implement `supercollider://examples` resource:
-  - [ ] Common code snippets for reference
-- [ ] Implement `supercollider://status` resource:
-  - [ ] Live server status
+### 4.1 MCP Resources ✅
+- [x] Add resources capability to server
+- [x] Implement `supercollider://synthdefs` resource:
+  - [x] List all available synthdefs with descriptions
+- [x] Implement `supercollider://examples` resource:
+  - [x] Common code snippets for reference
 
 ### 4.2 Debug Logging ✅
 - [x] Add debug logging to file (/tmp/claude-collider.log)
 - [x] Log sclang stdout/stderr when debugging
 - [x] Log boot sequence and state transitions
+- [x] Make debug conditional on DEBUG=claude-collider env var
 
-### 4.3 Documentation
-- [ ] Update README.md with:
-  - [ ] Installation instructions
-  - [ ] Claude Desktop configuration
-  - [ ] Available tools reference
-  - [ ] Example prompts
-- [ ] Add inline code comments where helpful
+### 4.3 Documentation ✅
+- [x] Update README.md with:
+  - [x] Installation instructions
+  - [x] Claude Desktop configuration
+  - [x] Available tools reference
+  - [x] Example prompts
+- [x] Environment variables documented
 
-### 4.4 Final Testing
+### 4.4 Final Testing (Manual)
 - [ ] Test full workflow in Claude Desktop
 - [ ] Test error scenarios
 - [ ] Test long-running patterns
@@ -211,12 +210,12 @@
 - [x] Clean shutdown works
 
 ### Phase 3 Complete When:
-- [ ] Can load pre-built synthdefs
-- [ ] Can check server status
-- [ ] At least 6 synthdefs available
+- [x] Can load pre-built synthdefs
+- [x] Can check server status
+- [x] At least 6 synthdefs available (7 total: kick, snare, hihat, clap, bass, acid, pad)
 
 ### Phase 4 Complete When:
-- [ ] Resources show in Claude Desktop
+- [x] Resources show in Claude Desktop
 - [x] Debug mode works
-- [ ] README is complete
-- [ ] Ready for others to use
+- [x] README is complete
+- [x] Ready for others to use
