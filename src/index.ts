@@ -61,6 +61,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: [],
         },
       },
+      {
+        name: "sc_free_all",
+        description:
+          "Free all synth nodes on the server. Nuclear option for stuck sounds that sc_stop doesn't fix.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
+      {
+        name: "sc_restart",
+        description:
+          "Restart SuperCollider. Quits the current session and boots fresh. Use for recovery after crashes.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
     ],
   };
 });
@@ -96,6 +116,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await sc.stop();
         return {
           content: [{ type: "text", text: "Stopped all sounds" }],
+        };
+      }
+
+      case "sc_free_all": {
+        await sc.freeAll();
+        return {
+          content: [{ type: "text", text: "Freed all synth nodes" }],
+        };
+      }
+
+      case "sc_restart": {
+        const result = await sc.restart();
+        return {
+          content: [{ type: "text", text: result }],
         };
       }
 

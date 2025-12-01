@@ -79,7 +79,7 @@
 
 ---
 
-## Phase 2: Robustness (Partially Complete)
+## Phase 2: Robustness ✅
 **Goal**: Handle errors gracefully, add timeouts, improve reliability.
 
 ### 2.1 Timeout Handling ✅
@@ -90,13 +90,13 @@
 - [x] Implement execution timeout in `execute()` method:
   - [x] Reject promise if <<<END<<< not received within timeout
 
-### 2.2 Error Parsing
+### 2.2 Error Parsing ✅
 - [x] Capture stderr from sclang process
 - [x] Detect ERROR patterns in output
-- [ ] Parse SuperCollider error messages:
-  - [ ] Extract line numbers
-  - [ ] Extract error type
-- [ ] Return user-friendly error messages
+- [x] Parse SuperCollider error messages:
+  - [x] Extract line numbers
+  - [x] Extract error type
+- [x] Return user-friendly error messages
 
 ### 2.3 Process Recovery ✅
 - [x] Handle sclang 'exit' event:
@@ -104,17 +104,20 @@
   - [x] Log crash information
 - [x] Handle sclang 'error' event
 - [ ] Implement auto-restart option (optional)
-- [ ] Add `restart()` method for manual recovery
+- [x] Add `restart()` method for manual recovery
 
 ### 2.4 Graceful Shutdown ✅
 - [x] Handle SIGINT/SIGTERM in MCP server
 - [x] Call `supercollider.quit()` on shutdown
 - [x] Ensure sclang process is terminated
 
-### 2.5 Additional Tools
-- [ ] Add `sc_free_all` tool:
-  - [ ] Execute `s.freeAll`
-  - [ ] Nuclear option for stuck synths
+### 2.5 Additional Tools ✅
+- [x] Add `sc_free_all` tool:
+  - [x] Execute `s.freeAll`
+  - [x] Nuclear option for stuck synths
+- [x] Add `sc_restart` tool:
+  - [x] Quit and reboot SuperCollider
+  - [x] Recovery from crashes
 
 ---
 
@@ -203,7 +206,7 @@
 
 ### Phase 2 Complete When:
 - [x] Timeouts prevent hangs
-- [ ] Errors are parsed and readable
+- [x] Errors are parsed and readable
 - [x] Server survives sclang crashes
 - [x] Clean shutdown works
 

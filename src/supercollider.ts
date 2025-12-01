@@ -77,6 +77,12 @@ export class SuperCollider extends EventEmitter {
     }
   }
 
+  async freeAll(): Promise<void> {
+    if (this.process) {
+      this.sendCode("s.freeAll;")
+    }
+  }
+
   async quit(): Promise<void> {
     if (this.process) {
       this.sendCode("0.exit;")
@@ -86,6 +92,12 @@ export class SuperCollider extends EventEmitter {
     this.state = ServerState.Stopped
     this.bootCommandSent = false
     this.clearPending()
+  }
+
+  async restart(): Promise<string> {
+    debug("restart() called")
+    await this.quit()
+    return this.boot()
   }
 
   isRunning(): boolean {
@@ -184,9 +196,17 @@ export class SuperCollider extends EventEmitter {
       if (result !== null) {
         debug(`Execution result: ${result}`)
         clearTimeout(this.pendingExec.timeout)
-        const { resolve } = this.pendingExec
+        const { resolve, reject } = this.pendingExec
         this.pendingExec = null
-        resolve(result)
+
+        // Check if there was an error in the output
+        const formattedError = this.parser.formatError()
+        if (formattedError) {
+          debug(`Detected error: ${formattedError}`)
+          reject(new Error(formattedError))
+        } else {
+          resolve(result)
+        }
       }
     }
   }
