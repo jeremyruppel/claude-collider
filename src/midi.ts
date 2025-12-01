@@ -485,4 +485,29 @@ MIDIdef.freeAll;
   getCCMappings(): MIDICCMapping[] {
     return [...this.ccMappings]
   }
+
+  async playPattern(
+    name: string,
+    notes: number[],
+    durations: number[],
+    velocities: number[],
+    channel: number = 0
+  ): Promise<string> {
+    const notesStr = notes.join(", ")
+    const dursStr = durations.join(", ")
+    const velsStr = velocities.join(", ")
+
+    await this.sc.execute(`
+Pdef(\\${name}, Pbind(
+  \\type, \\midi,
+  \\midiout, ~midiOut,
+  \\chan, ${channel},
+  \\midinote, Pseq([${notesStr}], inf),
+  \\dur, Pseq([${dursStr}], inf),
+  \\amp, Pseq([${velsStr}], inf) / 127
+)).play;
+`)
+
+    return `Playing pattern \\${name} on MIDI channel ${channel}. Stop with: Pdef(\\${name}).stop;`
+  }
 }

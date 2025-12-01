@@ -283,6 +283,40 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: [],
         },
       },
+      {
+        name: "midi_play_pattern",
+        description:
+          "Play a pattern on connected MIDI output device. Loops infinitely until stopped.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Pdef name for this pattern (used to stop it later)",
+            },
+            notes: {
+              type: "array",
+              items: { type: "number" },
+              description: "MIDI note numbers (0-127)",
+            },
+            durations: {
+              type: "array",
+              items: { type: "number" },
+              description: "Note durations in beats",
+            },
+            velocities: {
+              type: "array",
+              items: { type: "number" },
+              description: "Note velocities (0-127)",
+            },
+            channel: {
+              type: "number",
+              description: "MIDI channel 0-15 (default: 0)",
+            },
+          },
+          required: ["name", "notes", "durations", "velocities"],
+        },
+      },
     ],
   };
 });
@@ -506,6 +540,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "midi_clear_mappings": {
         const result = await midi.clearMappings();
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "midi_play_pattern": {
+        const { name, notes, durations, velocities, channel } = args as {
+          name: string;
+          notes: number[];
+          durations: number[];
+          velocities: number[];
+          channel?: number;
+        };
+        const result = await midi.playPattern(
+          name,
+          notes,
+          durations,
+          velocities,
+          channel ?? 0
+        );
         return {
           content: [{ type: "text", text: result }],
         };
