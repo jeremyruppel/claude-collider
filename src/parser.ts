@@ -42,7 +42,9 @@ export class OutputParser {
   }
 
   static wrapCode(code: string): string {
-    return `"${OutputParser.BEGIN_MARKER}".postln; (${code}).value; "${OutputParser.END_MARKER}".postln;`
+    // Remove newlines - sclang interprets each line independently via stdin
+    const singleLine = code.replace(/\n/g, " ").replace(/\s+/g, " ").trim()
+    return `"${OutputParser.BEGIN_MARKER}".postln; (${singleLine}).value; "${OutputParser.END_MARKER}".postln;`
   }
 
   static bootCommand(): string {
