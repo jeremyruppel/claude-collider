@@ -88,6 +88,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "sc_quit",
+        description:
+          "Quit SuperCollider completely. Kills sclang and scsynth processes.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
+      {
         name: "sc_load_synthdef",
         description: `Load a pre-built SynthDef. Available: ${getSynthDefNames().join(", ")}. After loading, play with Synth(\\name, [args]).`,
         inputSchema: {
@@ -112,6 +122,51 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "sc_audio_devices",
+        description: "List available audio input and output devices.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
+      {
+        name: "sc_audio_config",
+        description:
+          "Get or set audio device configuration. Changes require a server reboot to take effect.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            outputDevice: {
+              type: "string",
+              description: "Set output device by name",
+            },
+            inputDevice: {
+              type: "string",
+              description: "Set input device by name",
+            },
+            sampleRate: {
+              type: "number",
+              description: "Set sample rate (e.g. 44100, 48000, 96000)",
+            },
+            blockSize: {
+              type: "number",
+              description:
+                "Set hardware buffer size (e.g. 64, 128, 256, 512, 1024). Lower = less latency but more CPU",
+            },
+            numOutputs: {
+              type: "number",
+              description: "Number of output channels",
+            },
+            numInputs: {
+              type: "number",
+              description: "Number of input channels",
+            },
+          },
+          required: [],
+        },
+      },
+      {
         name: "midi_list_devices",
         description: "List available MIDI input and output devices.",
         inputSchema: {
@@ -122,7 +177,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "midi_connect",
-        description: "Connect to a MIDI device by name or index.",
+        description:
+          "Connect to a MIDI device by name or index. Multiple inputs can be connected simultaneously. Connecting to a new output replaces the previous output connection.",
         inputSchema: {
           type: "object",
           properties: {
@@ -137,6 +193,37 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: ["device", "direction"],
+        },
+      },
+      {
+        name: "midi_disconnect",
+        description:
+          "Disconnect from MIDI devices. Can disconnect specific devices or all at once.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            direction: {
+              type: "string",
+              enum: ["in", "out", "all"],
+              description: "Disconnect inputs, output, or all",
+            },
+            device: {
+              type: "string",
+              description:
+                "Device name or index to disconnect (optional - omit to disconnect all in that direction)",
+            },
+          },
+          required: ["direction"],
+        },
+      },
+      {
+        name: "midi_get_connections",
+        description:
+          "Get currently connected MIDI devices. Shows which inputs and output are active.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
         },
       },
       {
@@ -369,6 +456,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "sc_quit": {
+        await sc.quit();
+        return {
+          content: [{ type: "text", text: "SuperCollider quit" }],
+        };
+      }
+
       case "sc_load_synthdef": {
         const synthName = (args as { name: string }).name;
         const synthdef = getSynthDef(synthName);
@@ -403,6 +497,113 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "sc_audio_devices": {
+        const result = await sc.execute(
+          `ServerOptions.devices.collect { |dev, i| "DEV:" ++ i ++ ":" ++ dev }.join("\\n")`
+        );
+        const lines = result.split("\n");
+        const devices: string[] = [];
+        for (const line of lines) {
+          if (line.startsWith("DEV:")) {
+            const parts = line.split(":");
+            if (parts.length >= 3) {
+              devices.push(parts.slice(2).join(":"));
+            }
+          }
+        }
+        let text = "Audio Devices:\n";
+        if (devices.length === 0) {
+          text += "  (none found)\n";
+        } else {
+          for (const dev of devices) {
+            text += `  - ${dev}\n`;
+          }
+        }
+        return {
+          content: [{ type: "text", text }],
+        };
+      }
+
+      case "sc_audio_config": {
+        const {
+          outputDevice,
+          inputDevice,
+          sampleRate,
+          blockSize,
+          numOutputs,
+          numInputs,
+        } = args as {
+          outputDevice?: string;
+          inputDevice?: string;
+          sampleRate?: number;
+          blockSize?: number;
+          numOutputs?: number;
+          numInputs?: number;
+        };
+
+        const changes: string[] = [];
+
+        // Apply settings if provided
+        if (outputDevice !== undefined) {
+          await sc.execute(`s.options.outDevice = "${outputDevice}";`);
+          changes.push(`Output device: ${outputDevice}`);
+        }
+        if (inputDevice !== undefined) {
+          await sc.execute(`s.options.inDevice = "${inputDevice}";`);
+          changes.push(`Input device: ${inputDevice}`);
+        }
+        if (sampleRate !== undefined) {
+          await sc.execute(`s.options.sampleRate = ${sampleRate};`);
+          changes.push(`Sample rate: ${sampleRate}`);
+        }
+        if (blockSize !== undefined) {
+          await sc.execute(`s.options.hardwareBufferSize = ${blockSize};`);
+          changes.push(`Block size: ${blockSize}`);
+        }
+        if (numOutputs !== undefined) {
+          await sc.execute(`s.options.numOutputBusChannels = ${numOutputs};`);
+          changes.push(`Output channels: ${numOutputs}`);
+        }
+        if (numInputs !== undefined) {
+          await sc.execute(`s.options.numInputBusChannels = ${numInputs};`);
+          changes.push(`Input channels: ${numInputs}`);
+        }
+
+        // Get current config
+        const config = await sc.execute(
+          `"outDevice:" ++ (s.options.outDevice ? "default") ++ "|inDevice:" ++ (s.options.inDevice ? "default") ++ "|sampleRate:" ++ s.options.sampleRate ++ "|blockSize:" ++ s.options.hardwareBufferSize ++ "|numOutputs:" ++ s.options.numOutputBusChannels ++ "|numInputs:" ++ s.options.numInputBusChannels`
+        );
+
+        const settings: Record<string, string> = {};
+        for (const part of config.split("|")) {
+          const [key, ...rest] = part.split(":");
+          if (key) {
+            settings[key.trim()] = rest.join(":").trim();
+          }
+        }
+
+        let text = "";
+        if (changes.length > 0) {
+          text += "Changed:\n";
+          for (const change of changes) {
+            text += `  ✓ ${change}\n`;
+          }
+          text += "\nNote: Restart server (sc_restart) for changes to take effect.\n\n";
+        }
+
+        text += "Current Audio Config:\n";
+        text += `  Output device: ${settings["outDevice"] || "default"}\n`;
+        text += `  Input device: ${settings["inDevice"] || "default"}\n`;
+        text += `  Sample rate: ${settings["sampleRate"] || "?"}\n`;
+        text += `  Block size: ${settings["blockSize"] || "?"}\n`;
+        text += `  Output channels: ${settings["numOutputs"] || "?"}\n`;
+        text += `  Input channels: ${settings["numInputs"] || "?"}\n`;
+
+        return {
+          content: [{ type: "text", text }],
+        };
+      }
+
       case "midi_list_devices": {
         const devices = await midi.listDevices();
         let text = "MIDI Devices:\n\nInputs:\n";
@@ -434,6 +635,38 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await midi.connect(device, direction);
         return {
           content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "midi_disconnect": {
+        const { direction, device } = args as {
+          direction: "in" | "out" | "all";
+          device?: string;
+        };
+        const result = await midi.disconnect(direction, device);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "midi_get_connections": {
+        const connections = midi.getConnections();
+        let text = "MIDI Connections:\n\nInputs:\n";
+        if (connections.inputs.length === 0) {
+          text += "  (none connected)\n";
+        } else {
+          for (const d of connections.inputs) {
+            text += `  ${d.index}: ${d.device} - ${d.name}\n`;
+          }
+        }
+        text += "\nOutput:\n";
+        if (connections.output === null) {
+          text += "  (none connected)\n";
+        } else {
+          text += `  ${connections.output.index}: ${connections.output.device} - ${connections.output.name}\n`;
+        }
+        return {
+          content: [{ type: "text", text }],
         };
       }
 

@@ -85,19 +85,31 @@ export class SuperCollider extends EventEmitter {
 
   async quit(): Promise<void> {
     if (this.process) {
-      this.sendCode("0.exit;")
-      this.process.kill()
-      this.process = null
+      const proc = this.process
+      this.process = null // Clear before kill to prevent handleExit from rejecting new pendingBoot
+      this.state = ServerState.Stopped
+      this.bootCommandSent = false
+      this.clearPending()
+
+      // Wait for process to actually exit
+      await new Promise<void>((resolve) => {
+        proc.once("exit", () => resolve())
+        proc.kill()
+      })
+    } else {
+      this.state = ServerState.Stopped
+      this.bootCommandSent = false
+      this.clearPending()
     }
-    this.state = ServerState.Stopped
-    this.bootCommandSent = false
-    this.clearPending()
   }
 
   async restart(): Promise<string> {
     debug("restart() called")
-    await this.quit()
-    return this.boot()
+    if (this.state !== ServerState.Running) {
+      return this.boot()
+    }
+    await this.execute("s.reboot;")
+    return "Server rebooted"
   }
 
   isRunning(): boolean {

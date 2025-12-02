@@ -48,6 +48,11 @@ export interface MIDIRecentEvents {
   events: MIDIEvent[]
 }
 
+export interface MIDIConnections {
+  inputs: MIDIDevice[]
+  output: MIDIDevice | null
+}
+
 export class MIDIManager {
   private sc: SuperCollider
   private initialized = false
@@ -55,6 +60,8 @@ export class MIDIManager {
   private midiDefCounter = 0
   private noteMappings: MIDINoteMapping[] = []
   private ccMappings: MIDICCMapping[] = []
+  private connectedInputs: MIDIDevice[] = []
+  private connectedOutput: MIDIDevice | null = null
 
   constructor(supercollider: SuperCollider) {
     this.sc = supercollider
@@ -70,19 +77,7 @@ export class MIDIManager {
   async listDevices(): Promise<MIDIDeviceList> {
     await this.init()
 
-    const code = `
-(
-var result = "MIDI_DEVICES_START\\n";
-MIDIClient.sources.do { |src, i|
-  result = result ++ "IN:" ++ i ++ ":" ++ src.device ++ ":" ++ src.name ++ "\\n";
-};
-MIDIClient.destinations.do { |dst, i|
-  result = result ++ "OUT:" ++ i ++ ":" ++ dst.device ++ ":" ++ dst.name ++ "\\n";
-};
-result = result ++ "MIDI_DEVICES_END";
-result;
-)
-`
+    const code = `MIDIClient.sources.collect { |src, i| "IN:" ++ i ++ ":" ++ src.device ++ ":" ++ src.name }.join("\\n") ++ "|" ++ MIDIClient.destinations.collect { |dst, i| "OUT:" ++ i ++ ":" ++ dst.device ++ ":" ++ dst.name }.join("\\n")`
     const output = await this.sc.execute(code)
     return this.parseDeviceList(output)
   }
@@ -91,8 +86,9 @@ result;
     const inputs: MIDIDevice[] = []
     const outputs: MIDIDevice[] = []
 
-    const lines = output.split("\n")
-    for (const line of lines) {
+    // Split by | to separate inputs from outputs, then by newline for each device
+    const allLines = output.split(/[|\n]/)
+    for (const line of allLines) {
       if (line.startsWith("IN:")) {
         const parts = line.split(":")
         if (parts.length >= 4) {
@@ -121,30 +117,126 @@ result;
     await this.init()
 
     const isIndex = /^\d+$/.test(device)
+    const devices = await this.listDevices()
 
     if (direction === "in") {
+      // Find the device info
+      let deviceInfo: MIDIDevice | undefined
       if (isIndex) {
+        const idx = parseInt(device, 10)
+        deviceInfo = devices.inputs.find((d) => d.index === idx)
         await this.sc.execute(
           `MIDIIn.connect(0, MIDIClient.sources[${device}]);`
         )
       } else {
+        deviceInfo = devices.inputs.find(
+          (d) =>
+            d.device.toLowerCase().includes(device.toLowerCase()) ||
+            d.name.toLowerCase().includes(device.toLowerCase())
+        )
         await this.sc.execute(
           `MIDIIn.connect(0, MIDIClient.sources.detect { |x| x.device.containsi("${device}") or: { x.name.containsi("${device}") } });`
         )
       }
-      return `Connected to MIDI input: ${device}`
-    } else {
-      if (isIndex) {
-        await this.sc.execute(`
-~midiOut = MIDIOut(${device});
-~midiOut.connect(MIDIClient.destinations[${device}].uid);
-`)
-      } else {
-        await this.sc.execute(`
-~midiOut = MIDIOut.newByName("${device}", "${device}");
-`)
+
+      // Track connection
+      if (
+        deviceInfo &&
+        !this.connectedInputs.find((d) => d.index === deviceInfo!.index)
+      ) {
+        this.connectedInputs.push(deviceInfo)
       }
-      return `Connected to MIDI output: ${device}`
+
+      return `Connected to MIDI input: ${deviceInfo?.name ?? device}`
+    } else {
+      // Find the device info
+      let deviceInfo: MIDIDevice | undefined
+      if (isIndex) {
+        const idx = parseInt(device, 10)
+        deviceInfo = devices.outputs.find((d) => d.index === idx)
+        await this.sc.execute(
+          `~midiOut = MIDIOut(${device}); ~midiOut.connect(MIDIClient.destinations[${device}].uid);`
+        )
+      } else {
+        deviceInfo = devices.outputs.find(
+          (d) =>
+            d.device.toLowerCase().includes(device.toLowerCase()) ||
+            d.name.toLowerCase().includes(device.toLowerCase())
+        )
+        await this.sc.execute(
+          `~midiOut = MIDIOut.newByName("${device}", "${device}");`
+        )
+      }
+
+      // Track connection (output is single - switches if already connected)
+      this.connectedOutput = deviceInfo ?? {
+        index: -1,
+        device: device,
+        name: device,
+      }
+
+      return `Connected to MIDI output: ${this.connectedOutput.name}`
+    }
+  }
+
+  async disconnect(
+    direction: "in" | "out" | "all",
+    device?: string
+  ): Promise<string> {
+    await this.init()
+
+    if (direction === "in" || direction === "all") {
+      if (device) {
+        // Disconnect specific input
+        const isIndex = /^\d+$/.test(device)
+        if (isIndex) {
+          await this.sc.execute(`MIDIIn.disconnect(0, ${device});`)
+          this.connectedInputs = this.connectedInputs.filter(
+            (d) => d.index !== parseInt(device, 10)
+          )
+        } else {
+          // Find and disconnect by name
+          const found = this.connectedInputs.find(
+            (d) =>
+              d.device.toLowerCase().includes(device.toLowerCase()) ||
+              d.name.toLowerCase().includes(device.toLowerCase())
+          )
+          if (found) {
+            await this.sc.execute(`MIDIIn.disconnect(0, ${found.index});`)
+            this.connectedInputs = this.connectedInputs.filter(
+              (d) => d.index !== found.index
+            )
+          }
+        }
+      } else {
+        // Disconnect all inputs
+        await this.sc.execute(`MIDIIn.disconnectAll;`)
+        this.connectedInputs = []
+      }
+    }
+
+    if (direction === "out" || direction === "all") {
+      if (this.connectedOutput) {
+        await this.sc.execute(`~midiOut = nil;`)
+        this.connectedOutput = null
+      }
+    }
+
+    if (direction === "all") {
+      return "Disconnected all MIDI devices"
+    } else if (direction === "in") {
+      return device
+        ? `Disconnected MIDI input: ${device}`
+        : "Disconnected all MIDI inputs"
+    } else {
+      return "Disconnected MIDI output"
+    }
+  }
+
+  getConnections(): MIDIConnections {
+    return {
+      inputs: [...this.connectedInputs],
+      output: this.connectedOutput,
     }
   }
 
@@ -169,44 +261,13 @@ result;
       : "0.5"
 
     if (mono) {
-      await this.sc.execute(`
-~monoSynth_${id} = nil;
-~monoNote_${id} = nil;
-
-MIDIdef.noteOn(\\noteOn_${id}, { |vel, note, chan|
-  if(~monoSynth_${id}.notNil) { ~monoSynth_${id}.set(\\gate, 0) };
-  ~monoSynth_${id} = Synth(\\${synthName}, [
-    \\freq, note.midicps,
-    \\amp, ${ampExpr},
-    \\gate, 1
-  ]);
-  ~monoNote_${id} = note;
-}, chan: ${chanArg});
-
-MIDIdef.noteOff(\\noteOff_${id}, { |vel, note, chan|
-  if(note == ~monoNote_${id}) {
-    ~monoSynth_${id}.!?(_.set(\\gate, 0));
-    ~monoSynth_${id} = nil;
-  };
-}, chan: ${chanArg});
-`)
+      await this.sc.execute(
+        `~monoSynth_${id} = nil; ~monoNote_${id} = nil; MIDIdef.noteOn(\\noteOn_${id}, { |vel, note, chan| if(~monoSynth_${id}.notNil) { ~monoSynth_${id}.set(\\gate, 0) }; ~monoSynth_${id} = Synth(\\${synthName}, [\\freq, note.midicps, \\amp, ${ampExpr}, \\gate, 1]); ~monoNote_${id} = note; }, chan: ${chanArg}); MIDIdef.noteOff(\\noteOff_${id}, { |vel, note, chan| if(note == ~monoNote_${id}) { ~monoSynth_${id}.!?(_.set(\\gate, 0)); ~monoSynth_${id} = nil; }; }, chan: ${chanArg});`
+      )
     } else {
-      await this.sc.execute(`
-~midiNotes_${id} = Array.fill(128, { nil });
-
-MIDIdef.noteOn(\\noteOn_${id}, { |vel, note, chan|
-  ~midiNotes_${id}[note] = Synth(\\${synthName}, [
-    \\freq, note.midicps,
-    \\amp, ${ampExpr},
-    \\gate, 1
-  ]);
-}, chan: ${chanArg});
-
-MIDIdef.noteOff(\\noteOff_${id}, { |vel, note, chan|
-  ~midiNotes_${id}[note].!?(_.set(\\gate, 0));
-  ~midiNotes_${id}[note] = nil;
-}, chan: ${chanArg});
-`)
+      await this.sc.execute(
+        `~midiNotes_${id} = Array.fill(128, { nil }); MIDIdef.noteOn(\\noteOn_${id}, { |vel, note, chan| ~midiNotes_${id}[note] = Synth(\\${synthName}, [\\freq, note.midicps, \\amp, ${ampExpr}, \\gate, 1]); }, chan: ${chanArg}); MIDIdef.noteOff(\\noteOff_${id}, { |vel, note, chan| ~midiNotes_${id}[note].!?(_.set(\\gate, 0)); ~midiNotes_${id}[note] = nil; }, chan: ${chanArg});`
+      )
     }
 
     this.noteMappings.push({ id, synthName, channel, mono })
@@ -236,14 +297,9 @@ MIDIdef.noteOff(\\noteOff_${id}, { |vel, note, chan|
     const mapFunc = curve === "exponential" ? "linexp" : "linlin"
     const initialValue = (range[0] + range[1]) / 2
 
-    await this.sc.execute(`
-~${busName} = ~${busName} ?? { Bus.control(s, 1) };
-~${busName}.set(${initialValue});
-
-MIDIdef.cc(\\${id}, { |val|
-  ~${busName}.set(val.${mapFunc}(0, 127, ${range[0]}, ${range[1]}));
-}, ccNum: ${cc}, chan: ${chanArg});
-`)
+    await this.sc.execute(
+      `~${busName} = ~${busName} ?? { Bus.control(s, 1) }; ~${busName}.set(${initialValue}); MIDIdef.cc(\\${id}, { |val| ~${busName}.set(val.${mapFunc}(0, 127, ${range[0]}, ${range[1]})); }, ccNum: ${cc}, chan: ${chanArg});`
+    )
 
     this.ccMappings.push({ id, cc, busName, range, curve, channel })
 
@@ -254,13 +310,9 @@ MIDIdef.cc(\\${id}, { |val|
     await this.init()
 
     // Set up the learn listener
-    await this.sc.execute(`
-~learnResult = nil;
-MIDIdef.cc(\\learn, { |val, cc, chan|
-  ~learnResult = [cc, chan, val];
-  MIDIdef(\\learn).free;
-});
-`)
+    await this.sc.execute(
+      `~learnResult = nil; MIDIdef.cc(\\learn, { |val, cc, chan| ~learnResult = [cc, chan, val]; MIDIdef(\\learn).free; });`
+    )
 
     // Poll for result
     const startTime = Date.now()
@@ -269,13 +321,9 @@ MIDIdef.cc(\\learn, { |val, cc, chan|
     while (Date.now() - startTime < timeout * 1000) {
       await new Promise((resolve) => setTimeout(resolve, pollInterval))
 
-      const result = await this.sc.execute(`
-if(~learnResult.notNil) {
-  "LEARN:" ++ ~learnResult[0] ++ ":" ++ ~learnResult[1] ++ ":" ++ ~learnResult[2];
-} {
-  "LEARN:WAITING";
-};
-`)
+      const result = await this.sc.execute(
+        `if(~learnResult.notNil) { "LEARN:" ++ ~learnResult[0] ++ ":" ++ ~learnResult[1] ++ ":" ++ ~learnResult[2]; } { "LEARN:WAITING"; };`
+      )
 
       if (result.startsWith("LEARN:") && !result.includes("WAITING")) {
         const parts = result.replace("LEARN:", "").split(":")
@@ -338,43 +386,9 @@ if(~learnResult.notNil) {
     if (this.loggingEnabled) return
     await this.init()
 
-    await this.sc.execute(`
-~midiLog = List[];
-~midiLogMax = 200;
-
-MIDIdef.noteOn(\\logNoteOn, { |vel, note, chan|
-  ~midiLog.add((
-    type: \\noteOn,
-    note: note,
-    vel: vel,
-    chan: chan,
-    time: Main.elapsedTime
-  ));
-  if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) };
-});
-
-MIDIdef.noteOff(\\logNoteOff, { |vel, note, chan|
-  ~midiLog.add((
-    type: \\noteOff,
-    note: note,
-    vel: vel,
-    chan: chan,
-    time: Main.elapsedTime
-  ));
-  if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) };
-});
-
-MIDIdef.cc(\\logCC, { |val, cc, chan|
-  ~midiLog.add((
-    type: \\cc,
-    cc: cc,
-    value: val,
-    chan: chan,
-    time: Main.elapsedTime
-  ));
-  if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) };
-});
-`)
+    await this.sc.execute(
+      `~midiLog = List[]; ~midiLogMax = 200; MIDIdef.noteOn(\\logNoteOn, { |vel, note, chan| ~midiLog.add((type: \\noteOn, note: note, vel: vel, chan: chan, time: Main.elapsedTime)); if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) }; }); MIDIdef.noteOff(\\logNoteOff, { |vel, note, chan| ~midiLog.add((type: \\noteOff, note: note, vel: vel, chan: chan, time: Main.elapsedTime)); if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) }; }); MIDIdef.cc(\\logCC, { |val, cc, chan| ~midiLog.add((type: \\cc, cc: cc, value: val, chan: chan, time: Main.elapsedTime)); if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) }; });`
+    )
 
     this.loggingEnabled = true
   }
@@ -403,17 +417,7 @@ MIDIdef.cc(\\logCC, { |val, cc, chan|
       filterCode += `.select { |e| (Main.elapsedTime - e.time) < ${since} }`
     }
 
-    const code = `
-(
-var events = ~midiLog${filterCode}.keep(-${count});
-var result = "EVENTS_START\\n";
-events.do { |e|
-  result = result ++ e.type ++ ":" ++ (e.note ? e.cc ? 0) ++ ":" ++ (e.vel ? e.value ? 0) ++ ":" ++ e.chan ++ ":" ++ e.time.round(0.001) ++ "\\n";
-};
-result = result ++ "EVENTS_END";
-result;
-)
-`
+    const code = `~midiLog${filterCode}.keep(-${count}).collect { |e| e.type ++ ":" ++ (e.note ? e.cc ? 0) ++ ":" ++ (e.vel ? e.value ? 0) ++ ":" ++ e.chan ++ ":" ++ e.time.round(0.001) }.join("\\n")`
 
     const output = await this.sc.execute(code)
     return this.parseEvents(output)
@@ -424,11 +428,7 @@ result;
     const lines = output.split("\n")
 
     for (const line of lines) {
-      if (
-        line.startsWith("EVENTS_") ||
-        line.trim() === "" ||
-        !line.includes(":")
-      ) {
+      if (line.trim() === "" || !line.includes(":")) {
         continue
       }
 
@@ -457,9 +457,7 @@ result;
   }
 
   async clearMappings(): Promise<string> {
-    await this.sc.execute(`
-MIDIdef.freeAll;
-`)
+    await this.sc.execute(`MIDIdef.freeAll;`)
 
     // Re-enable logging if it was on
     if (this.loggingEnabled) {
@@ -497,16 +495,9 @@ MIDIdef.freeAll;
     const dursStr = durations.join(", ")
     const velsStr = velocities.join(", ")
 
-    await this.sc.execute(`
-Pdef(\\${name}, Pbind(
-  \\type, \\midi,
-  \\midiout, ~midiOut,
-  \\chan, ${channel},
-  \\midinote, Pseq([${notesStr}], inf),
-  \\dur, Pseq([${dursStr}], inf),
-  \\amp, Pseq([${velsStr}], inf) / 127
-)).play;
-`)
+    await this.sc.execute(
+      `Pdef(\\${name}, Pbind(\\type, \\midi, \\midiout, ~midiOut, \\chan, ${channel}, \\midinote, Pseq([${notesStr}], inf), \\dur, Pseq([${dursStr}], inf), \\amp, Pseq([${velsStr}], inf) / 127)).play;`
+    )
 
     return `Playing pattern \\${name} on MIDI channel ${channel}. Stop with: Pdef(\\${name}).stop;`
   }
