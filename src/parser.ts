@@ -42,11 +42,17 @@ export class OutputParser {
   }
 
   static wrapCode(code: string): string {
-    return `"${OutputParser.BEGIN_MARKER}".postln; (${code.trim()}).value; "${OutputParser.END_MARKER}".postln;`
+    return `
+      "${OutputParser.BEGIN_MARKER}".postln;
+      (${code.trim()}).value;
+      "${OutputParser.END_MARKER}".postln;
+    `
   }
 
   static bootCommand(): string {
-    return `s.waitForBoot { "${OutputParser.SERVER_READY}".postln };`
+    return `
+      s.waitForBoot { "${OutputParser.SERVER_READY}".postln };
+    `
   }
 
   hasError(): boolean {

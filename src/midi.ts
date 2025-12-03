@@ -77,7 +77,14 @@ export class MIDIManager {
   async listDevices(): Promise<MIDIDeviceList> {
     await this.init()
 
-    const code = `MIDIClient.sources.collect { |src, i| "IN:" ++ i ++ ":" ++ src.device ++ ":" ++ src.name }.join("\\n") ++ "|" ++ MIDIClient.destinations.collect { |dst, i| "OUT:" ++ i ++ ":" ++ dst.device ++ ":" ++ dst.name }.join("\\n")`
+    const code = `
+      MIDIClient.sources.collect { |src, i|
+        "IN:" ++ i ++ ":" ++ src.device ++ ":" ++ src.name
+      }.join("\\n") ++ "|" ++
+      MIDIClient.destinations.collect { |dst, i|
+        "OUT:" ++ i ++ ":" ++ dst.device ++ ":" ++ dst.name
+      }.join("\\n")
+    `
     const output = await this.sc.execute(code)
     return this.parseDeviceList(output)
   }
@@ -125,18 +132,20 @@ export class MIDIManager {
       if (isIndex) {
         const idx = parseInt(device, 10)
         deviceInfo = devices.inputs.find((d) => d.index === idx)
-        await this.sc.execute(
-          `MIDIIn.connect(0, MIDIClient.sources[${device}]);`
-        )
+        await this.sc.execute(`
+          MIDIIn.connect(0, MIDIClient.sources[${device}]);
+        `)
       } else {
         deviceInfo = devices.inputs.find(
           (d) =>
             d.device.toLowerCase().includes(device.toLowerCase()) ||
             d.name.toLowerCase().includes(device.toLowerCase())
         )
-        await this.sc.execute(
-          `MIDIIn.connect(0, MIDIClient.sources.detect { |x| x.device.containsi("${device}") or: { x.name.containsi("${device}") } });`
-        )
+        await this.sc.execute(`
+          MIDIIn.connect(0, MIDIClient.sources.detect { |x|
+            x.device.containsi("${device}") or: { x.name.containsi("${device}") }
+          });
+        `)
       }
 
       // Track connection
@@ -154,18 +163,19 @@ export class MIDIManager {
       if (isIndex) {
         const idx = parseInt(device, 10)
         deviceInfo = devices.outputs.find((d) => d.index === idx)
-        await this.sc.execute(
-          `~midiOut = MIDIOut(${device}); ~midiOut.connect(MIDIClient.destinations[${device}].uid);`
-        )
+        await this.sc.execute(`
+          ~midiOut = MIDIOut(${device});
+          ~midiOut.connect(MIDIClient.destinations[${device}].uid);
+        `)
       } else {
         deviceInfo = devices.outputs.find(
           (d) =>
             d.device.toLowerCase().includes(device.toLowerCase()) ||
             d.name.toLowerCase().includes(device.toLowerCase())
         )
-        await this.sc.execute(
-          `~midiOut = MIDIOut.newByName("${device}", "${device}");`
-        )
+        await this.sc.execute(`
+          ~midiOut = MIDIOut.newByName("${device}", "${device}");
+        `)
       }
 
       // Track connection (output is single - switches if already connected)
@@ -261,13 +271,40 @@ export class MIDIManager {
       : "0.5"
 
     if (mono) {
-      await this.sc.execute(
-        `~monoSynth_${id} = nil; ~monoNote_${id} = nil; MIDIdef.noteOn(\\noteOn_${id}, { |vel, note, chan| if(~monoSynth_${id}.notNil) { ~monoSynth_${id}.set(\\gate, 0) }; ~monoSynth_${id} = Synth(\\${synthName}, [\\freq, note.midicps, \\amp, ${ampExpr}, \\gate, 1]); ~monoNote_${id} = note; }, chan: ${chanArg}); MIDIdef.noteOff(\\noteOff_${id}, { |vel, note, chan| if(note == ~monoNote_${id}) { ~monoSynth_${id}.!?(_.set(\\gate, 0)); ~monoSynth_${id} = nil; }; }, chan: ${chanArg});`
-      )
+      await this.sc.execute(`
+        ~monoSynth_${id} = nil;
+        ~monoNote_${id} = nil;
+        MIDIdef.noteOn(\\noteOn_${id}, { |vel, note, chan|
+          if(~monoSynth_${id}.notNil) { ~monoSynth_${id}.set(\\gate, 0) };
+          ~monoSynth_${id} = Synth(\\${synthName}, [
+            \\freq, note.midicps,
+            \\amp, ${ampExpr},
+            \\gate, 1
+          ]);
+          ~monoNote_${id} = note;
+        }, chan: ${chanArg});
+        MIDIdef.noteOff(\\noteOff_${id}, { |vel, note, chan|
+          if(note == ~monoNote_${id}) {
+            ~monoSynth_${id}.!?(_.set(\\gate, 0));
+            ~monoSynth_${id} = nil;
+          };
+        }, chan: ${chanArg});
+      `)
     } else {
-      await this.sc.execute(
-        `~midiNotes_${id} = Array.fill(128, { nil }); MIDIdef.noteOn(\\noteOn_${id}, { |vel, note, chan| ~midiNotes_${id}[note] = Synth(\\${synthName}, [\\freq, note.midicps, \\amp, ${ampExpr}, \\gate, 1]); }, chan: ${chanArg}); MIDIdef.noteOff(\\noteOff_${id}, { |vel, note, chan| ~midiNotes_${id}[note].!?(_.set(\\gate, 0)); ~midiNotes_${id}[note] = nil; }, chan: ${chanArg});`
-      )
+      await this.sc.execute(`
+        ~midiNotes_${id} = Array.fill(128, { nil });
+        MIDIdef.noteOn(\\noteOn_${id}, { |vel, note, chan|
+          ~midiNotes_${id}[note] = Synth(\\${synthName}, [
+            \\freq, note.midicps,
+            \\amp, ${ampExpr},
+            \\gate, 1
+          ]);
+        }, chan: ${chanArg});
+        MIDIdef.noteOff(\\noteOff_${id}, { |vel, note, chan|
+          ~midiNotes_${id}[note].!?(_.set(\\gate, 0));
+          ~midiNotes_${id}[note] = nil;
+        }, chan: ${chanArg});
+      `)
     }
 
     this.noteMappings.push({ id, synthName, channel, mono })
@@ -297,9 +334,13 @@ export class MIDIManager {
     const mapFunc = curve === "exponential" ? "linexp" : "linlin"
     const initialValue = (range[0] + range[1]) / 2
 
-    await this.sc.execute(
-      `~${busName} = ~${busName} ?? { Bus.control(s, 1) }; ~${busName}.set(${initialValue}); MIDIdef.cc(\\${id}, { |val| ~${busName}.set(val.${mapFunc}(0, 127, ${range[0]}, ${range[1]})); }, ccNum: ${cc}, chan: ${chanArg});`
-    )
+    await this.sc.execute(`
+      ~${busName} = ~${busName} ?? { Bus.control(s, 1) };
+      ~${busName}.set(${initialValue});
+      MIDIdef.cc(\\${id}, { |val|
+        ~${busName}.set(val.${mapFunc}(0, 127, ${range[0]}, ${range[1]}));
+      }, ccNum: ${cc}, chan: ${chanArg});
+    `)
 
     this.ccMappings.push({ id, cc, busName, range, curve, channel })
 
@@ -310,9 +351,13 @@ export class MIDIManager {
     await this.init()
 
     // Set up the learn listener
-    await this.sc.execute(
-      `~learnResult = nil; MIDIdef.cc(\\learn, { |val, cc, chan| ~learnResult = [cc, chan, val]; MIDIdef(\\learn).free; });`
-    )
+    await this.sc.execute(`
+      ~learnResult = nil;
+      MIDIdef.cc(\\learn, { |val, cc, chan|
+        ~learnResult = [cc, chan, val];
+        MIDIdef(\\learn).free;
+      });
+    `)
 
     // Poll for result
     const startTime = Date.now()
@@ -321,9 +366,13 @@ export class MIDIManager {
     while (Date.now() - startTime < timeout * 1000) {
       await new Promise((resolve) => setTimeout(resolve, pollInterval))
 
-      const result = await this.sc.execute(
-        `if(~learnResult.notNil) { "LEARN:" ++ ~learnResult[0] ++ ":" ++ ~learnResult[1] ++ ":" ++ ~learnResult[2]; } { "LEARN:WAITING"; };`
-      )
+      const result = await this.sc.execute(`
+        if(~learnResult.notNil) {
+          "LEARN:" ++ ~learnResult[0] ++ ":" ++ ~learnResult[1] ++ ":" ++ ~learnResult[2];
+        } {
+          "LEARN:WAITING";
+        };
+      `)
 
       if (result.startsWith("LEARN:") && !result.includes("WAITING")) {
         const parts = result.replace("LEARN:", "").split(":")
@@ -386,9 +435,22 @@ export class MIDIManager {
     if (this.loggingEnabled) return
     await this.init()
 
-    await this.sc.execute(
-      `~midiLog = List[]; ~midiLogMax = 200; MIDIdef.noteOn(\\logNoteOn, { |vel, note, chan| ~midiLog.add((type: \\noteOn, note: note, vel: vel, chan: chan, time: Main.elapsedTime)); if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) }; }); MIDIdef.noteOff(\\logNoteOff, { |vel, note, chan| ~midiLog.add((type: \\noteOff, note: note, vel: vel, chan: chan, time: Main.elapsedTime)); if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) }; }); MIDIdef.cc(\\logCC, { |val, cc, chan| ~midiLog.add((type: \\cc, cc: cc, value: val, chan: chan, time: Main.elapsedTime)); if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) }; });`
-    )
+    await this.sc.execute(`
+      ~midiLog = List[];
+      ~midiLogMax = 200;
+      MIDIdef.noteOn(\\logNoteOn, { |vel, note, chan|
+        ~midiLog.add((type: \\noteOn, note: note, vel: vel, chan: chan, time: Main.elapsedTime));
+        if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) };
+      });
+      MIDIdef.noteOff(\\logNoteOff, { |vel, note, chan|
+        ~midiLog.add((type: \\noteOff, note: note, vel: vel, chan: chan, time: Main.elapsedTime));
+        if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) };
+      });
+      MIDIdef.cc(\\logCC, { |val, cc, chan|
+        ~midiLog.add((type: \\cc, cc: cc, value: val, chan: chan, time: Main.elapsedTime));
+        if(~midiLog.size > ~midiLogMax) { ~midiLog.removeAt(0) };
+      });
+    `)
 
     this.loggingEnabled = true
   }
@@ -417,7 +479,15 @@ export class MIDIManager {
       filterCode += `.select { |e| (Main.elapsedTime - e.time) < ${since} }`
     }
 
-    const code = `~midiLog${filterCode}.keep(-${count}).collect { |e| e.type ++ ":" ++ (e.note ? e.cc ? 0) ++ ":" ++ (e.vel ? e.value ? 0) ++ ":" ++ e.chan ++ ":" ++ e.time.round(0.001) }.join("\\n")`
+    const code = `
+      ~midiLog${filterCode}.keep(-${count}).collect { |e|
+        e.type ++ ":" ++
+        (e.note ? e.cc ? 0) ++ ":" ++
+        (e.vel ? e.value ? 0) ++ ":" ++
+        e.chan ++ ":" ++
+        e.time.round(0.001)
+      }.join("\\n")
+    `
 
     const output = await this.sc.execute(code)
     return this.parseEvents(output)
@@ -495,9 +565,16 @@ export class MIDIManager {
     const dursStr = durations.join(", ")
     const velsStr = velocities.join(", ")
 
-    await this.sc.execute(
-      `Pdef(\\${name}, Pbind(\\type, \\midi, \\midiout, ~midiOut, \\chan, ${channel}, \\midinote, Pseq([${notesStr}], inf), \\dur, Pseq([${dursStr}], inf), \\amp, Pseq([${velsStr}], inf) / 127)).play;`
-    )
+    await this.sc.execute(`
+      Pdef(\\${name}, Pbind(
+        \\type, \\midi,
+        \\midiout, ~midiOut,
+        \\chan, ${channel},
+        \\midinote, Pseq([${notesStr}], inf),
+        \\dur, Pseq([${dursStr}], inf),
+        \\amp, Pseq([${velsStr}], inf) / 127
+      )).play;
+    `)
 
     return `Playing pattern \\${name} on MIDI channel ${channel}. Stop with: Pdef(\\${name}).stop;`
   }

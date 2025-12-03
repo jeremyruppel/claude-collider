@@ -489,18 +489,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "sc_status": {
-        const result = await sc.execute(
-          `"Synths: " ++ s.numSynths ++ ", Avg CPU: " ++ s.avgCPU.round(0.1) ++ "%, Peak CPU: " ++ s.peakCPU.round(0.1) ++ "%"`
-        );
+        const result = await sc.execute(`
+          "Synths: " ++ s.numSynths ++
+          ", Avg CPU: " ++ s.avgCPU.round(0.1) ++ "%" ++
+          ", Peak CPU: " ++ s.peakCPU.round(0.1) ++ "%"
+        `);
         return {
           content: [{ type: "text", text: result }],
         };
       }
 
       case "sc_audio_devices": {
-        const result = await sc.execute(
-          `ServerOptions.devices.collect { |dev, i| "DEV:" ++ i ++ ":" ++ dev }.join("\\n")`
-        );
+        const result = await sc.execute(`
+          ServerOptions.devices.collect { |dev, i|
+            "DEV:" ++ i ++ ":" ++ dev
+          }.join("\\n")
+        `);
         const lines = result.split("\n");
         const devices: string[] = [];
         for (const line of lines) {
@@ -570,9 +574,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         // Get current config
-        const config = await sc.execute(
-          `"outDevice:" ++ (s.options.outDevice ? "default") ++ "|inDevice:" ++ (s.options.inDevice ? "default") ++ "|sampleRate:" ++ s.options.sampleRate ++ "|blockSize:" ++ s.options.hardwareBufferSize ++ "|numOutputs:" ++ s.options.numOutputBusChannels ++ "|numInputs:" ++ s.options.numInputBusChannels`
-        );
+        const config = await sc.execute(`
+          "outDevice:" ++ (s.options.outDevice ? "default") ++
+          "|inDevice:" ++ (s.options.inDevice ? "default") ++
+          "|sampleRate:" ++ s.options.sampleRate ++
+          "|blockSize:" ++ s.options.hardwareBufferSize ++
+          "|numOutputs:" ++ s.options.numOutputBusChannels ++
+          "|numInputs:" ++ s.options.numInputBusChannels
+        `);
 
         const settings: Record<string, string> = {};
         for (const part of config.split("|")) {

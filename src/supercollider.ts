@@ -4,6 +4,7 @@ import { debug } from "./debug.js"
 import { SclangConfig } from "./config.js"
 import { OutputParser } from "./parser.js"
 import { ServerState, PendingOperation } from "./types.js"
+import { compress } from "./tokenizer.js"
 
 export class SuperCollider extends EventEmitter {
   private readonly config: SclangConfig
@@ -281,7 +282,9 @@ export class SuperCollider extends EventEmitter {
       debug("ERROR: No stdin available")
       return
     }
-    const result = this.process.stdin.write(code + "\n")
+    const compressed = compress(code)
+    debug(`compressed: ${compressed}`)
+    const result = this.process.stdin.write(compressed + "\n")
     debug(`stdin.write returned: ${result}`)
   }
 }
