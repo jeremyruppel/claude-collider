@@ -11,9 +11,14 @@ import {
 import { SuperCollider } from "./supercollider.js";
 import { getSynthDef, getSynthDefNames, synthdefs } from "./synthdefs.js";
 import { MIDIManager } from "./midi.js";
+import { EffectsManager } from "./effects.js";
+import { effectsLibrary } from "./effects-library.js";
 
 const sc = new SuperCollider();
 const midi = new MIDIManager(sc);
+const effects = new EffectsManager(sc);
+
+const effectNames = Object.keys(effectsLibrary);
 
 const server = new Server(
   {
@@ -402,6 +407,137 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: ["name", "notes", "durations", "velocities"],
+        },
+      },
+      // Effects tools
+      {
+        name: "fx_load",
+        description: `Load a pre-built audio effect. Available: ${effectNames.join(", ")}. Returns the effect's input bus for routing audio.`,
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              enum: effectNames,
+              description: "Effect name",
+            },
+            slot: {
+              type: "string",
+              description: "Ndef slot name (default: fx_<name>)",
+            },
+          },
+          required: ["name"],
+        },
+      },
+      {
+        name: "fx_set",
+        description: "Set parameters on a loaded effect.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            slot: {
+              type: "string",
+              description: "Effect slot name",
+            },
+            params: {
+              type: "object",
+              description: "Parameter name/value pairs",
+            },
+          },
+          required: ["slot", "params"],
+        },
+      },
+      {
+        name: "fx_chain",
+        description:
+          "Create a chain of effects in series. Returns the input bus for the chain.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Name for this chain",
+            },
+            effects: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: {
+                    type: "string",
+                    enum: effectNames,
+                    description: "Effect name",
+                  },
+                  params: {
+                    type: "object",
+                    description: "Initial parameters",
+                  },
+                },
+                required: ["name"],
+              },
+              description: "Ordered list of effects",
+            },
+          },
+          required: ["name", "effects"],
+        },
+      },
+      {
+        name: "fx_route",
+        description: "Route a sound source (Pdef or Ndef) to an effect or chain.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            source: {
+              type: "string",
+              description: "Pdef or Ndef name",
+            },
+            target: {
+              type: "string",
+              description: "Effect slot or chain name",
+            },
+          },
+          required: ["source", "target"],
+        },
+      },
+      {
+        name: "fx_bypass",
+        description: "Bypass an effect (pass audio through unchanged).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            slot: {
+              type: "string",
+              description: "Effect slot or chain name",
+            },
+            bypass: {
+              type: "boolean",
+              description: "true to bypass, false to re-enable (default: true)",
+            },
+          },
+          required: ["slot"],
+        },
+      },
+      {
+        name: "fx_remove",
+        description: "Remove an effect and free its resources.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            slot: {
+              type: "string",
+              description: "Effect slot or chain name",
+            },
+          },
+          required: ["slot"],
+        },
+      },
+      {
+        name: "fx_list",
+        description: "List all loaded effects and their current parameters.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
         },
       },
     ],
@@ -804,6 +940,105 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
         return {
           content: [{ type: "text", text: result }],
+        };
+      }
+
+      // Effects tools
+      case "fx_load": {
+        const { name: effectName, slot } = args as {
+          name: string;
+          slot?: string;
+        };
+        const result = await effects.load(effectName, slot);
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Loaded effect: ${result.slot}\nInput bus: ${result.inputBus}\nParams: ${Object.keys(result.params).join(", ")}\n${result.usage}`,
+            },
+          ],
+        };
+      }
+
+      case "fx_set": {
+        const { slot, params } = args as {
+          slot: string;
+          params: Record<string, number>;
+        };
+        const result = await effects.set(slot, params);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "fx_chain": {
+        const { name: chainName, effects: chainEffects } = args as {
+          name: string;
+          effects: Array<{ name: string; params?: Record<string, number> }>;
+        };
+        const result = await effects.chain(chainName, chainEffects);
+        let text = `Created chain: ${result.name}\nInput bus: ${result.inputBus}\nEffects: ${result.effects.map((e) => e.name).join(" → ")}\n${result.usage}`;
+        return {
+          content: [{ type: "text", text }],
+        };
+      }
+
+      case "fx_route": {
+        const { source, target } = args as {
+          source: string;
+          target: string;
+        };
+        const result = await effects.route(source, target);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "fx_bypass": {
+        const { slot, bypass = true } = args as {
+          slot: string;
+          bypass?: boolean;
+        };
+        const result = await effects.bypass(slot, bypass);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "fx_remove": {
+        const { slot } = args as { slot: string };
+        const result = await effects.remove(slot);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "fx_list": {
+        const result = await effects.list();
+        let text = "Loaded Effects:\n";
+        if (result.effects.length === 0) {
+          text += "  (none)\n";
+        } else {
+          for (const effect of result.effects) {
+            const chainInfo = effect.chain ? ` (chain: ${effect.chain})` : "";
+            const bypassInfo = effect.bypassed ? " [BYPASSED]" : "";
+            text += `  ${effect.slot} (${effect.type})${chainInfo}${bypassInfo}\n`;
+            text += `    Params: ${Object.entries(effect.params)
+              .map(([k, v]) => `${k}=${v.default}`)
+              .join(", ")}\n`;
+          }
+        }
+        text += "\nChains:\n";
+        if (result.chains.length === 0) {
+          text += "  (none)\n";
+        } else {
+          for (const chain of result.chains) {
+            text += `  ${chain.name}: ${chain.effects.join(" → ")}\n`;
+            text += `    Input bus: ${chain.inputBus}\n`;
+          }
+        }
+        return {
+          content: [{ type: "text", text }],
         };
       }
 
