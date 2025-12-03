@@ -48,6 +48,42 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "sc_setup",
+        description:
+          "Boot SuperCollider with audio configuration in one step. Boots, applies config, and restarts with new settings.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            outputDevice: {
+              type: "string",
+              description: "Output device by name",
+            },
+            inputDevice: {
+              type: "string",
+              description: "Input device by name",
+            },
+            sampleRate: {
+              type: "number",
+              description: "Sample rate (e.g. 44100, 48000, 96000)",
+            },
+            blockSize: {
+              type: "number",
+              description:
+                "Hardware buffer size (e.g. 64, 128, 256, 512, 1024). Lower = less latency but more CPU",
+            },
+            numOutputs: {
+              type: "number",
+              description: "Number of output channels",
+            },
+            numInputs: {
+              type: "number",
+              description: "Number of input channels",
+            },
+          },
+          required: [],
+        },
+      },
+      {
         name: "sc_execute",
         description:
           "Execute SuperCollider code. Use for playing sounds, defining synths, creating patterns, etc.",
@@ -629,6 +665,82 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await sc.boot();
         return {
           content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "sc_setup": {
+        const {
+          outputDevice,
+          inputDevice,
+          sampleRate,
+          blockSize,
+          numOutputs,
+          numInputs,
+        } = args as {
+          outputDevice?: string;
+          inputDevice?: string;
+          sampleRate?: number;
+          blockSize?: number;
+          numOutputs?: number;
+          numInputs?: number;
+        };
+
+        const steps: string[] = [];
+
+        // Step 1: Boot
+        steps.push("Booting SuperCollider...");
+        await sc.boot();
+        steps.push("Booted");
+
+        // Step 2: Apply config if any options provided
+        const hasConfig =
+          outputDevice !== undefined ||
+          inputDevice !== undefined ||
+          sampleRate !== undefined ||
+          blockSize !== undefined ||
+          numOutputs !== undefined ||
+          numInputs !== undefined;
+
+        if (hasConfig) {
+          const configChanges: string[] = [];
+
+          if (outputDevice !== undefined) {
+            await sc.execute(`s.options.outDevice = "${outputDevice}";`);
+            configChanges.push(`output: ${outputDevice}`);
+          }
+          if (inputDevice !== undefined) {
+            await sc.execute(`s.options.inDevice = "${inputDevice}";`);
+            configChanges.push(`input: ${inputDevice}`);
+          }
+          if (sampleRate !== undefined) {
+            await sc.execute(`s.options.sampleRate = ${sampleRate};`);
+            configChanges.push(`sampleRate: ${sampleRate}`);
+          }
+          if (blockSize !== undefined) {
+            await sc.execute(`s.options.hardwareBufferSize = ${blockSize};`);
+            configChanges.push(`blockSize: ${blockSize}`);
+          }
+          if (numOutputs !== undefined) {
+            await sc.execute(`s.options.numOutputBusChannels = ${numOutputs};`);
+            configChanges.push(`outputs: ${numOutputs}`);
+          }
+          if (numInputs !== undefined) {
+            await sc.execute(`s.options.numInputBusChannels = ${numInputs};`);
+            configChanges.push(`inputs: ${numInputs}`);
+          }
+
+          steps.push(`Configured: ${configChanges.join(", ")}`);
+
+          // Step 3: Restart to apply config
+          steps.push("Restarting with new config...");
+          await sc.restart();
+          steps.push("Ready");
+        } else {
+          steps.push("Ready (no config changes)");
+        }
+
+        return {
+          content: [{ type: "text", text: steps.join("\n") }],
         };
       }
 

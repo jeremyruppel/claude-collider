@@ -41,6 +41,7 @@ Restart Claude Desktop after updating the config.
 | Tool | Description |
 |------|-------------|
 | `sc_boot` | Start SuperCollider and boot the audio server |
+| `sc_setup` | Boot with audio config in one step (output device, sample rate, block size, etc.) |
 | `sc_execute` | Execute arbitrary SuperCollider code |
 | `sc_stop` | Stop all sounds (Cmd+Period equivalent) |
 | `sc_free_all` | Free all synth nodes (nuclear option) |
