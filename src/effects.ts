@@ -50,12 +50,37 @@ export interface FxListResult {
     inputBus: string;
     effects: string[];
   }>;
+  sidechains: Array<{
+    name: string;
+    inputBus: string;
+    sidechainBus: string;
+  }>;
+}
+
+export interface SidechainEffect {
+  name: string;
+  inputBus: string;
+  sidechainBus: string;
+  params: {
+    threshold: number;
+    ratio: number;
+    attack: number;
+    release: number;
+  };
+}
+
+export interface FxSidechainResult {
+  name: string;
+  inputBus: string;
+  sidechainBus: string;
+  usage: string;
 }
 
 export class EffectsManager {
   private sc: SuperCollider;
   private effects: Map<string, LoadedEffect> = new Map();
   private chains: Map<string, EffectChain> = new Map();
+  private sidechains: Map<string, SidechainEffect> = new Map();
 
   constructor(supercollider: SuperCollider) {
     this.sc = supercollider;
@@ -368,6 +393,118 @@ ${effect.inputBus}.free;
   }
 
   /**
+   * Create a sidechain compressor with separate audio and trigger inputs
+   */
+  async sidechain(
+    name: string,
+    options: {
+      threshold?: number;
+      ratio?: number;
+      attack?: number;
+      release?: number;
+    } = {}
+  ): Promise<FxSidechainResult> {
+    const {
+      threshold = 0.1,
+      ratio = 4,
+      attack = 0.01,
+      release = 0.1,
+    } = options;
+
+    const inputBus = `~sc_${name}_in`;
+    const sidechainBus = `~sc_${name}_trigger`;
+    const slot = `sidechain_${name}`;
+
+    // Generate SuperCollider code for sidechain compressor
+    // Uses Compander with sidechain input for amplitude detection
+    const code = `
+${inputBus} = Bus.audio(s, 2);
+${sidechainBus} = Bus.audio(s, 2);
+Ndef(\\${slot}, {
+  var sig = In.ar(${inputBus}, 2);
+  var trigger = In.ar(${sidechainBus}, 2);
+  Compander.ar(sig, trigger, ${threshold}, 1, ${ratio}.reciprocal, ${attack}, ${release})
+}).play;
+"Sidechain ${name} created"
+`;
+
+    await this.sc.execute(code);
+
+    // Track the sidechain
+    this.sidechains.set(name, {
+      name,
+      inputBus,
+      sidechainBus,
+      params: { threshold, ratio, attack, release },
+    });
+
+    return {
+      name,
+      inputBus,
+      sidechainBus,
+      usage: `Route audio to ${inputBus}, route trigger (e.g. kick) to ${sidechainBus}`,
+    };
+  }
+
+  /**
+   * Set parameters on a sidechain compressor
+   */
+  async setSidechain(
+    name: string,
+    params: {
+      threshold?: number;
+      ratio?: number;
+      attack?: number;
+      release?: number;
+    }
+  ): Promise<string> {
+    const sc = this.sidechains.get(name);
+    if (!sc) {
+      const available = Array.from(this.sidechains.keys()).join(', ') || '(none)';
+      throw new Error(`Sidechain not found: ${name}. Available: ${available}`);
+    }
+
+    // Update stored params
+    const newParams = { ...sc.params, ...params };
+    sc.params = newParams;
+
+    // Rebuild the Ndef with new params
+    const slot = `sidechain_${name}`;
+    const code = `
+Ndef(\\${slot}, {
+  var sig = In.ar(${sc.inputBus}, 2);
+  var trigger = In.ar(${sc.sidechainBus}, 2);
+  Compander.ar(sig, trigger, ${newParams.threshold}, 1, ${newParams.ratio}.reciprocal, ${newParams.attack}, ${newParams.release})
+});
+`;
+    await this.sc.execute(code);
+
+    return `Updated sidechain ${name}: threshold=${newParams.threshold}, ratio=${newParams.ratio}, attack=${newParams.attack}, release=${newParams.release}`;
+  }
+
+  /**
+   * Remove a sidechain compressor
+   */
+  async removeSidechain(name: string): Promise<string> {
+    const sc = this.sidechains.get(name);
+    if (!sc) {
+      throw new Error(`Sidechain not found: ${name}`);
+    }
+
+    const slot = `sidechain_${name}`;
+    const code = `
+Ndef(\\${slot}).clear;
+${sc.inputBus}.free;
+${sc.sidechainBus}.free;
+"Sidechain ${name} removed"
+`;
+    await this.sc.execute(code);
+    this.sidechains.delete(name);
+
+    return `Removed sidechain ${name}`;
+  }
+
+  /**
    * List all loaded effects and chains
    */
   async list(): Promise<FxListResult> {
@@ -404,9 +541,20 @@ ${effect.inputBus}.free;
       });
     }
 
+    // List sidechains
+    const sidechainsList: FxListResult['sidechains'] = [];
+    for (const [name, sc] of this.sidechains) {
+      sidechainsList.push({
+        name,
+        inputBus: sc.inputBus,
+        sidechainBus: sc.sidechainBus,
+      });
+    }
+
     return {
       effects: effectsList,
       chains: chainsList,
+      sidechains: sidechainsList,
     };
   }
 

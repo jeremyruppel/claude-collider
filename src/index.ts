@@ -540,6 +540,81 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: [],
         },
       },
+      {
+        name: "fx_sidechain",
+        description:
+          "Create a sidechain compressor. Routes audio through compression triggered by a separate signal (e.g. kick ducking bass).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Name for this sidechain (e.g. 'bassDuck')",
+            },
+            threshold: {
+              type: "number",
+              description: "Compression threshold 0-1 (default: 0.1)",
+            },
+            ratio: {
+              type: "number",
+              description: "Compression ratio 1-20 (default: 4)",
+            },
+            attack: {
+              type: "number",
+              description: "Attack time in seconds (default: 0.01)",
+            },
+            release: {
+              type: "number",
+              description: "Release time in seconds (default: 0.1)",
+            },
+          },
+          required: ["name"],
+        },
+      },
+      {
+        name: "fx_sidechain_set",
+        description: "Update parameters on a sidechain compressor.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Sidechain name",
+            },
+            threshold: {
+              type: "number",
+              description: "Compression threshold 0-1",
+            },
+            ratio: {
+              type: "number",
+              description: "Compression ratio 1-20",
+            },
+            attack: {
+              type: "number",
+              description: "Attack time in seconds",
+            },
+            release: {
+              type: "number",
+              description: "Release time in seconds",
+            },
+          },
+          required: ["name"],
+        },
+      },
+      {
+        name: "fx_sidechain_remove",
+        description: "Remove a sidechain compressor and free its resources.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Sidechain name to remove",
+            },
+          },
+          required: ["name"],
+        },
+      },
     ],
   };
 });
@@ -1037,8 +1112,69 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             text += `    Input bus: ${chain.inputBus}\n`;
           }
         }
+        text += "\nSidechains:\n";
+        if (result.sidechains.length === 0) {
+          text += "  (none)\n";
+        } else {
+          for (const sc of result.sidechains) {
+            text += `  ${sc.name}\n`;
+            text += `    Audio input: ${sc.inputBus}\n`;
+            text += `    Trigger input: ${sc.sidechainBus}\n`;
+          }
+        }
         return {
           content: [{ type: "text", text }],
+        };
+      }
+
+      case "fx_sidechain": {
+        const { name: scName, threshold, ratio, attack, release } = args as {
+          name: string;
+          threshold?: number;
+          ratio?: number;
+          attack?: number;
+          release?: number;
+        };
+        const result = await effects.sidechain(scName, {
+          threshold,
+          ratio,
+          attack,
+          release,
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Created sidechain: ${result.name}\nAudio input: ${result.inputBus}\nTrigger input: ${result.sidechainBus}\n${result.usage}`,
+            },
+          ],
+        };
+      }
+
+      case "fx_sidechain_set": {
+        const { name: scName, threshold, ratio, attack, release } = args as {
+          name: string;
+          threshold?: number;
+          ratio?: number;
+          attack?: number;
+          release?: number;
+        };
+        const result = await effects.setSidechain(scName, {
+          threshold,
+          ratio,
+          attack,
+          release,
+        });
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "fx_sidechain_remove": {
+        const { name: scName } = args as { name: string };
+        const result = await effects.removeSidechain(scName);
+        return {
+          content: [{ type: "text", text: result }],
         };
       }
 
