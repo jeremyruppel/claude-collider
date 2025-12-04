@@ -1,0 +1,8 @@
+(
+  name: "ClaudeCollider",
+  summary: "Live coding toolkit for MCP/Claude integration with SuperCollider",
+  author: "Jeremy Ruppel",
+  version: "0.1.0",
+  schelp: "CC",
+  url: "https://github.com/jeremyruppel/claude-collider"
+)

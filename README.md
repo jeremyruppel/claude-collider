@@ -40,14 +40,15 @@ Restart Claude Desktop after updating the config.
 
 | Tool | Description |
 |------|-------------|
-| `sc_boot` | Start SuperCollider and boot the audio server |
-| `sc_setup` | Boot with audio config in one step (output device, sample rate, block size, etc.) |
+| `sc_boot` | Boot ClaudeCollider and the SuperCollider audio server |
 | `sc_execute` | Execute arbitrary SuperCollider code |
 | `sc_stop` | Stop all sounds (Cmd+Period equivalent) |
-| `sc_free_all` | Free all synth nodes (nuclear option) |
-| `sc_restart` | Restart SuperCollider from scratch |
-| `sc_load_synthdef` | Load a pre-built synth (kick, snare, hihat, clap, bass, acid, pad) |
-| `sc_status` | Show synth count and CPU usage |
+| `sc_status` | Get status: tempo, synths, CPU, active patterns |
+| `sc_tempo` | Get or set the tempo in BPM |
+| `sc_clear` | Stop all sounds and clear patterns, effects, and MIDI mappings |
+| `sc_reboot` | Reboot the audio server with optional new device |
+| `sc_load_synthdef` | Load a pre-built synth (kick, snare, hihat, clap, bass, acid, lead, pad) |
+| `sc_audio_devices` | List available audio input and output devices |
 
 ### MIDI Tools
 
@@ -57,10 +58,7 @@ Restart Claude Desktop after updating the config.
 | `midi_connect` | Connect to a MIDI device by name or index |
 | `midi_map_notes` | Map MIDI notes to trigger a synth (polyphonic or mono) |
 | `midi_map_cc` | Map a MIDI CC to a control bus for parameter modulation |
-| `midi_learn` | Wait for a CC message to detect which knob/fader to map |
-| `midi_send` | Send MIDI messages to external gear |
-| `midi_get_recent` | Get recent MIDI events (for "what did I just play?") |
-| `midi_clear_mappings` | Remove all MIDI mappings |
+| `midi_clear` | Remove all MIDI mappings |
 
 ### Effects Tools
 
@@ -69,18 +67,17 @@ Restart Claude Desktop after updating the config.
 | `fx_load` | Load a pre-built effect (lpf, hpf, reverb, delay, chorus, distortion, etc.) |
 | `fx_set` | Set parameters on a loaded effect |
 | `fx_chain` | Create a chain of effects in series |
-| `fx_route` | Route a sound source to an effect or chain |
+| `fx_route` | Route a sound source (Pdef/Ndef) to an effect or chain |
+| `fx_sidechain` | Create a sidechain compressor (e.g., kick ducking bass) |
+| `fx_route_trigger` | Route a source to the trigger input of a sidechain |
 | `fx_bypass` | Bypass an effect (pass audio through unchanged) |
 | `fx_remove` | Remove an effect and free its resources |
-| `fx_list` | List all loaded effects and their parameters |
-| `fx_sidechain` | Create a sidechain compressor (e.g., kick ducking bass) |
-| `fx_sidechain_set` | Update sidechain compressor parameters |
-| `fx_sidechain_remove` | Remove a sidechain compressor |
+| `fx_list` | List all loaded effects, chains, and sidechains |
 
 ## Available Resources
 
 - `supercollider://synthdefs` - List of all pre-built synths with parameters
-- `supercollider://examples` - Common code snippets for reference
+- `supercollider://effects` - List of all pre-built effects with parameters
 
 ## Pre-built SynthDefs
 
@@ -92,7 +89,19 @@ After booting, load synths with `sc_load_synthdef`:
 - **clap** - Hand clap with layered noise
 - **bass** - Simple sub bass with harmonics
 - **acid** - Resonant 303-style filter bass
+- **lead** - Detuned saw lead with filter
 - **pad** - Soft ambient pad with detuned oscillators
+
+## Pre-built Effects
+
+Load effects with `fx_load`:
+
+- **Filters**: lpf, hpf, bpf
+- **Time-based**: reverb, delay, pingpong
+- **Modulation**: chorus, flanger, phaser, tremolo
+- **Distortion**: distortion, bitcrush, wavefold
+- **Dynamics**: compressor, limiter, gate
+- **Stereo**: widener, autopan
 
 ## Example Prompts
 
@@ -100,11 +109,10 @@ After booting, load synths with `sc_load_synthdef`:
 - "Load the kick and snare synths and make a basic beat"
 - "Create an ambient pad that slowly evolves"
 - "Make a 303-style acid bassline"
-- "Show me the server status"
+- "Set the tempo to 120 BPM"
 - "Connect my MIDI keyboard and let me play the pad synth"
-- "Map my filter knob to control the cutoff frequency"
-- "What did I just play on the keyboard?"
-- "Turn those notes into a loop"
+- "Map CC 1 to control the filter cutoff"
+- "Show me the server status"
 - "Add some reverb to the drums"
 - "Create an effect chain with filter, distortion, and delay for the bass"
 - "Set up sidechain compression so the kick ducks the bass"
