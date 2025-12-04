@@ -11,7 +11,7 @@ export class SuperCollider extends EventEmitter {
   private process: ChildProcess | null = null
   private state: ServerState = ServerState.Stopped
   private pendingBoot: PendingOperation | null = null
-  private pendingExec: PendingOperation | null = null
+  private execController: AbortController | null = null
   private bootCommandSent = false
 
   constructor() {
@@ -54,21 +54,45 @@ export class SuperCollider extends EventEmitter {
       )
     }
 
-    if (this.pendingExec) {
+    if (this.execController) {
       throw new Error("Another execution is already in progress")
     }
 
     this.parser.clear()
+    this.execController = new AbortController()
+    const { signal } = this.execController
 
-    return new Promise<string>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.pendingExec = null
-        reject(new Error("Execution timed out"))
-      }, this.config.execTimeout)
+    try {
+      return await new Promise<string>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("Execution timed out"))
+        }, this.config.execTimeout)
 
-      this.pendingExec = { resolve, reject, timeout }
-      this.sendCode(OutputParser.wrapCode(code))
-    })
+        signal.addEventListener("abort", () => {
+          clearTimeout(timeout)
+          reject(signal.reason)
+        })
+
+        const onResult = (result: string) => {
+          clearTimeout(timeout)
+          this.removeListener("exec-error", onError)
+          resolve(result)
+        }
+
+        const onError = (error: Error) => {
+          clearTimeout(timeout)
+          this.removeListener("exec-result", onResult)
+          reject(error)
+        }
+
+        this.once("exec-result", onResult)
+        this.once("exec-error", onError)
+
+        this.sendCode(OutputParser.wrapCode(code))
+      })
+    } finally {
+      this.execController = null
+    }
   }
 
   async stop(): Promise<void> {
@@ -203,21 +227,18 @@ export class SuperCollider extends EventEmitter {
   }
 
   private checkForExecResult(): void {
-    if (this.state === ServerState.Running && this.pendingExec) {
+    if (this.state === ServerState.Running && this.execController) {
       const result = this.parser.extractResult()
       if (result !== null) {
         debug(`Execution result: ${result}`)
-        clearTimeout(this.pendingExec.timeout)
-        const { resolve, reject } = this.pendingExec
-        this.pendingExec = null
 
         // Check if there was an error in the output
         const formattedError = this.parser.formatError()
         if (formattedError) {
           debug(`Detected error: ${formattedError}`)
-          reject(new Error(formattedError))
+          this.emit("exec-error", new Error(formattedError))
         } else {
-          resolve(result)
+          this.emit("exec-result", result)
         }
       }
     }
@@ -251,10 +272,8 @@ export class SuperCollider extends EventEmitter {
       this.pendingBoot = null
     }
 
-    if (this.pendingExec) {
-      clearTimeout(this.pendingExec.timeout)
-      this.pendingExec.reject(error)
-      this.pendingExec = null
+    if (this.execController) {
+      this.execController.abort(error)
     }
 
     this.emit("exit", code)
@@ -269,9 +288,9 @@ export class SuperCollider extends EventEmitter {
       clearTimeout(this.pendingBoot.timeout)
       this.pendingBoot = null
     }
-    if (this.pendingExec) {
-      clearTimeout(this.pendingExec.timeout)
-      this.pendingExec = null
+    if (this.execController) {
+      this.execController.abort(new Error("Operation cancelled"))
+      this.execController = null
     }
   }
 
