@@ -82,14 +82,42 @@ Restart Claude Desktop after updating the config.
 
 All synths are automatically loaded when you call `sc_boot`. Use them with the `\cc_` prefix:
 
+**Drums**:
 - **cc_kick** - Punchy kick drum with sub bass
 - **cc_snare** - Snare drum with noise burst
 - **cc_hihat** - Closed hi-hat
+- **cc_openhat** - Open hi-hat with longer decay
 - **cc_clap** - Hand clap with layered noise
+- **cc_tom** - Tunable tom drum for fills
+- **cc_rim** - Rimshot / sidestick
+- **cc_shaker** - Shaker / maraca
+- **cc_cowbell** - 808-style cowbell
+
+**Bass**:
 - **cc_bass** - Simple sub bass with harmonics
 - **cc_acid** - Resonant 303-style filter bass
+- **cc_sub** - Pure sub bass for layering
+- **cc_reese** - Detuned saw bass (DnB/dubstep)
+- **cc_fmbass** - FM bass for growly tones
+
+**Leads & Melodic**:
 - **cc_lead** - Detuned saw lead with filter
+- **cc_pluck** - Karplus-Strong plucked string
+- **cc_bell** - FM bell / glassy tone
+- **cc_keys** - Electric piano / Rhodes-ish
+- **cc_strings** - String ensemble pad
+
+**Pads & Textural**:
 - **cc_pad** - Soft ambient pad with detuned oscillators
+- **cc_noise** - Filtered noise source
+- **cc_drone** - Evolving ambient texture
+- **cc_riser** - Tension building sweep
+
+**Utility**:
+- **cc_click** - Metronome click
+- **cc_sine** - Pure sine tone
+- **cc_sampler** - Basic sample playback
+- **cc_grains** - Granular sample playback
 
 ## Pre-built Effects
 

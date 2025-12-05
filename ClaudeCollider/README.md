@@ -59,16 +59,52 @@ Pre-built SynthDefs with `cc_` prefix. All synths are auto-loaded on boot.
 
 **Available synths**:
 
+*Drums*:
 | Name | Description | Params |
 |------|-------------|--------|
 | kick | Punchy kick drum with sub bass | out, freq, amp, decay |
 | snare | Snare drum with noise burst | out, freq, amp, decay |
 | hihat | Closed hi-hat | out, amp, decay |
+| openhat | Open hi-hat with longer decay | out, amp, decay |
 | clap | Hand clap with layered noise | out, amp, decay |
+| tom | Tunable tom drum for fills | out, freq, amp, decay |
+| rim | Rimshot / sidestick | out, amp, freq |
+| shaker | Shaker / maraca | out, amp, decay, color |
+| cowbell | 808-style cowbell | out, amp, decay |
+
+*Bass*:
+| Name | Description | Params |
+|------|-------------|--------|
 | bass | Simple sub bass with harmonics | out, freq, amp, decay, gate |
 | acid | Resonant 303-style filter bass | out, freq, amp, cutoff, res, decay, gate |
+| sub | Pure sub bass for layering | out, freq, amp, decay, gate |
+| reese | Detuned saw bass (DnB/dubstep) | out, freq, amp, detune, cutoff, gate |
+| fmbass | FM bass for growly tones | out, freq, amp, index, ratio, gate |
+
+*Leads & Melodic*:
+| Name | Description | Params |
+|------|-------------|--------|
 | lead | Detuned saw lead with filter | out, freq, amp, pan, gate, att, rel, cutoff, res |
+| pluck | Karplus-Strong plucked string | out, freq, amp, decay, color |
+| bell | FM bell / glassy tone | out, freq, amp, decay, brightness |
+| keys | Electric piano / Rhodes-ish | out, freq, amp, attack, release, brightness, gate |
+| strings | String ensemble pad | out, freq, amp, attack, release, detune, gate |
+
+*Pads & Textural*:
+| Name | Description | Params |
+|------|-------------|--------|
 | pad | Soft ambient pad | out, freq, amp, attack, release, gate |
+| noise | Filtered noise source | out, amp, cutoff, res, type, gate |
+| drone | Evolving ambient texture | out, freq, amp, spread, movement, gate |
+| riser | Tension building sweep | out, amp, duration, startFreq, endFreq |
+
+*Utility*:
+| Name | Description | Params |
+|------|-------------|--------|
+| click | Metronome click | out, amp, freq |
+| sine | Pure sine tone | out, freq, amp, gate |
+| sampler | Basic sample playback | out, buf, amp, rate, start |
+| grains | Granular sample playback | out, buf, amp, pos, posSpeed, grainSize, grainRate, pitch, spread, gate |
 
 **Note**: When using drum synths with Pbind, explicitly set `\freq` to avoid SuperCollider's default pitch conversion overriding the synth's default frequency.
 
