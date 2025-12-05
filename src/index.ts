@@ -35,8 +35,9 @@ Stop all sounds:
 
 ## Using sc_execute
 
-The sc_execute tool runs SuperCollider code. Always send code as a single line.
-Use semicolons to separate statements: { var x = 1; x + 1 }.value
+- The sc_execute tool runs SuperCollider code. ALWAYS send code as a single line.
+- Use semicolons to separate statements: { var x = 1; x + 1 }.value
+- The system will append a trailing semicolon, do not include one at the end.
 
 You can create your own synths and effects using sclang:
   SynthDef(\\mySynth, { |out=0, freq=440| Out.ar(out, SinOsc.ar(freq) * 0.2) }).add
@@ -66,9 +67,6 @@ Load an effect:
 
 Route a pattern through it:
   fx_route with source and target
-
-Chain multiple effects:
-  fx_chain with name and effects array
 
 ## Tips
 
@@ -364,39 +362,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: ["slot", "params"],
-        },
-      },
-      {
-        name: "fx_chain",
-        description:
-          "Create a chain of effects in series. Returns the input bus for the chain.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            name: {
-              type: "string",
-              description: "Name for this chain",
-            },
-            effects: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: {
-                    type: "string",
-                    description: "Effect name",
-                  },
-                  params: {
-                    type: "object",
-                    description: "Initial parameters",
-                  },
-                },
-                required: ["name"],
-              },
-              description: "Ordered list of effects",
-            },
-          },
-          required: ["name", "effects"],
         },
       },
       {
@@ -802,35 +767,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
 
-      case "fx_chain": {
-        const { name: chainName, effects: chainEffects } = args as {
-          name: string
-          effects: Array<{ name: string; params?: Record<string, number> }>
-        }
-        // Build SC array
-        const fxArray = chainEffects
-          .map((fx) => {
-            if (fx.params && Object.keys(fx.params).length > 0) {
-              return `\\${fx.name} -> [${formatParams(fx.params)}]`
-            }
-            return `\\${fx.name}`
-          })
-          .join(", ")
-        const result = await sc.execute(
-          `~cc.fx.chain(\\${chainName}, [${fxArray}])`
-        )
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Created chain: ${chainName}\n${result}\nEffects: ${chainEffects
-                .map((e) => e.name)
-                .join(" → ")}`,
-            },
-          ],
-        }
-      }
-
       case "fx_route": {
         const { source, target } = args as {
           source: string
@@ -967,7 +903,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 })
-
 
 // Handle graceful shutdown
 process.on("SIGINT", async () => {

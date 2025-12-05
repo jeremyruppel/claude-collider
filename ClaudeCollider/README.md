@@ -146,12 +146,6 @@ Ndef-based effects system with routing and chaining.
 // Set parameters
 ~cc.fx.set(\fx_reverb, \mix, 0.5, \room, 0.8)
 
-// Create effect chain
-~cc.fx.chain(\drums, [\distortion, \reverb, \limiter])
-
-// Chain with initial params
-~cc.fx.chain(\drums, [\distortion -> [\drive, 4], \reverb, \limiter])
-
 // Route sources to effects
 ~cc.fx.route(\kickPattern, \fx_reverb)
 

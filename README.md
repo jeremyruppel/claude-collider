@@ -65,7 +65,6 @@ Restart Claude Desktop after updating the config.
 |------|-------------|
 | `fx_load` | Load a pre-built effect (returns input bus for routing) |
 | `fx_set` | Set parameters on a loaded effect |
-| `fx_chain` | Create a chain of effects in series |
 | `fx_route` | Route a sound source (Pdef/Ndef) to an effect or chain |
 | `fx_sidechain` | Create a sidechain compressor (e.g., kick ducking bass) |
 | `fx_route_trigger` | Route a source to the trigger input of a sidechain |
