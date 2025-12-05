@@ -77,6 +77,15 @@ Connect effects in series:
 Create a chain in one call:
   fx_chain with name and effects array
 
+## Recording
+
+Record your jam to a WAV file:
+  recording_start - begin recording (auto-generates timestamped filename)
+  recording_stop - stop and save the file
+  recording_status - check if recording
+
+Recordings are saved to ~/.claudecollider/recordings/
+
 ## Tips
 
 - All built-in synths are prefixed with \\cc_ (e.g. \\cc_kick, \\cc_bass)
@@ -609,6 +618,42 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: [],
         },
       },
+      // Recording tools
+      {
+        name: "recording_start",
+        description:
+          "Start recording audio output to a WAV file. Returns the file path.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            filename: {
+              type: "string",
+              description:
+                "Custom filename (optional). Auto-generates timestamped name if omitted.",
+            },
+          },
+          required: [],
+        },
+      },
+      {
+        name: "recording_stop",
+        description:
+          "Stop recording and save the file. Returns the path to the saved recording.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
+      {
+        name: "recording_status",
+        description: "Check if recording is active and get current file path.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
     ],
   }
 })
@@ -1065,6 +1110,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const sampleList = await samples.format()
         return {
           content: [{ type: "text", text: `Reloaded samples directory.\n\n${sampleList}` }],
+        }
+      }
+
+      // Recording tools
+      case "recording_start": {
+        const { filename } = args as { filename?: string }
+        const arg = filename ? `"${filename}"` : "nil"
+        const result = await sc.execute(`~cc.recorder.start(${arg})`)
+        return {
+          content: [{ type: "text", text: result }],
+          isError: result.includes("Already recording"),
+        }
+      }
+
+      case "recording_stop": {
+        const result = await sc.execute("~cc.recorder.stop")
+        return {
+          content: [{ type: "text", text: result }],
+          isError: result === "Not recording",
+        }
+      }
+
+      case "recording_status": {
+        const result = await sc.execute("~cc.recorder.status")
+        return {
+          content: [{ type: "text", text: result }],
         }
       }
 

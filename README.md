@@ -85,6 +85,16 @@ Place WAV or AIFF files in `~/.claudecollider/samples/`. Samples are discovered 
 | `sample_free` | Free a sample buffer from memory |
 | `sample_reload` | Rescan samples directory for new files |
 
+### Recording Tools
+
+Record your jams to WAV files in `~/.claudecollider/recordings/`.
+
+| Tool | Description |
+|------|-------------|
+| `recording_start` | Start recording audio output to a WAV file |
+| `recording_stop` | Stop recording and get the saved file path |
+| `recording_status` | Check if recording is active |
+
 ## Pre-built SynthDefs
 
 All synths are automatically loaded when you call `sc_boot`. Use them with the `\cc_` prefix:
@@ -150,6 +160,8 @@ Load effects with `fx_load`:
 - "Add some reverb to the drums"
 - "Create an effect chain with filter, distortion, and delay for the bass"
 - "Set up sidechain compression so the kick ducks the bass"
+- "Start recording my jam"
+- "Stop recording and save the file"
 
 ## Debug Mode
 

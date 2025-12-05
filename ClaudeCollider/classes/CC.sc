@@ -10,6 +10,7 @@ CC {
   var <fx;
   var <midi;
   var <state;
+  var <recorder;
   var <isBooted;
 
   *new { |server|
@@ -29,6 +30,7 @@ CC {
     fx = CCFX(this);
     midi = CCMIDI(this);
     state = CCState(this);
+    recorder = CCRecorder(this);
     isBooted = false;
   }
 
@@ -96,6 +98,7 @@ CC {
     fx.clearAll;
     midi.clearAll;
     samples.freeAll;
+    if(recorder.isRecording) { recorder.stop };
     state.clear;
   }
 

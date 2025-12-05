@@ -33,7 +33,7 @@ Then recompile the class library (Cmd+Shift+L in the IDE).
 
 ### CC
 
-Main facade class. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.state`.
+Main facade class. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`.
 
 ```supercollider
 CC.boot(server, device, onComplete)  // Boot and initialize
@@ -221,6 +221,23 @@ MIDI device management and mapping.
 ~cc.midi.clearAll                 // Clear everything including connections
 ~cc.midi.status                   // Get MIDI status
 ```
+
+### CCRecorder
+
+Audio recording to WAV files in `~/.claudecollider/recordings/`.
+
+```supercollider
+// Access via ~cc.recorder
+
+~cc.recorder.start                    // Start recording with auto-generated filename
+~cc.recorder.start("mysong.wav")      // Start with custom filename
+~cc.recorder.stop                     // Stop recording and save file
+~cc.recorder.status                   // Check recording state
+~cc.recorder.isRecording              // Boolean: currently recording?
+~cc.recorder.currentPath              // Path to current recording (nil if not recording)
+```
+
+Recordings are saved as 16-bit WAV files. Auto-generated filenames use the format `recording_YYYY_MM_DD_HHMMSS.wav`.
 
 ### CCState
 
