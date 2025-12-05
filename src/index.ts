@@ -17,13 +17,6 @@ const synthdefs = new SynthDefs(sc)
 const effects = new Effects(sc)
 
 function formatBootReadme(): string {
-  const synthList = synthdefs
-    .all()
-    .map((s) => `  - ${s.name}: ${s.description}`)
-    .join("\n")
-
-  const fxList = effects.formatList()
-
   return `# ClaudeCollider
 
 SuperCollider is ready for sound synthesis and music creation.
@@ -50,15 +43,11 @@ You can create your own synths and effects using sclang:
 
 ## Available Synths
 
-${synthList}
-
-For detailed parameters, read the supercollider://synthdefs resource.
+${synthdefs.format()}
 
 ## Available Effects
 
-${fxList}
-
-For detailed parameters, read the supercollider://effects resource.
+${effects.format()}
 
 ## Effect Routing
 
@@ -499,7 +488,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const deviceArg = device ? `"${device}"` : "nil"
         await sc.boot()
         await sc.execute(`~cc = CC.boot(device: ${deviceArg})`)
-        await Promise.all([synthdefs.load(), effects.load()])
+        await synthdefs.load()
+        await effects.load()
         return {
           content: [{ type: "text", text: formatBootReadme() }],
         }
@@ -697,16 +687,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           name: string
           slot?: string
         }
-        const meta = effects.get(effectName)
-        if (!meta) {
-          const msg = effects.isEmpty()
-            ? `Unknown effect: ${effectName}. Boot SuperCollider first with sc_boot.`
-            : `Unknown effect: ${effectName}. Available: ${effects.names().join(", ")}`
-          return {
-            content: [{ type: "text", text: msg }],
-            isError: true,
-          }
-        }
         const slotArg = slot ? `\\${slot}` : "nil"
         const result = await sc.execute(
           `~cc.fx.load(\\${effectName}, ${slotArg})`
@@ -715,7 +695,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `Loaded effect: ${slot || `fx_${effectName}`}\n${result}\nParams: ${meta.params.map((p) => p.name).join(", ")}`,
+              text: `Loaded effect: ${slot || `fx_${effectName}`}\n${result}`,
             },
           ],
         }
@@ -889,38 +869,11 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
   switch (uri) {
     case "supercollider://synthdefs": {
-      if (synthdefs.isEmpty()) {
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: "text/plain",
-              text: "SynthDefs not loaded yet. Boot SuperCollider first with sc_boot.",
-            },
-          ],
-        }
-      }
-      const synthContent = synthdefs
-        .all()
-        .map((s) => {
-          const paramList = s.params.map((p) => `    - ${p}`).join("\n")
-          return `### ${s.name}
-
-${s.description}
-
-Parameters:
-${paramList}
-
-Example:
-    Synth(\\cc_${s.name}, [freq: 440, amp: 0.5])`
-        })
-        .join("\n\n")
-
       const text = `# Available SynthDefs
 
 All synths are pre-loaded and ready to use. Names are prefixed with \\cc_.
 
-${synthContent}`
+${synthdefs.format()}`
 
       return {
         contents: [{ uri, mimeType: "text/plain", text }],
@@ -928,37 +881,11 @@ ${synthContent}`
     }
 
     case "supercollider://effects": {
-      if (effects.isEmpty()) {
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: "text/plain",
-              text: "Effects not loaded yet. Boot SuperCollider first with sc_boot.",
-            },
-          ],
-        }
-      }
-      const fxContent = effects
-        .all()
-        .map((e) => {
-          const paramList = e.params
-            .map((p) => `    - ${p.name} (default: ${p.default})`)
-            .join("\n")
-          return `### ${e.name}
-
-${e.description}
-
-Parameters:
-${paramList}`
-        })
-        .join("\n\n")
-
       const text = `# Available Effects
 
 Effects must be loaded before use with fx_load. Then route audio to them with fx_route.
 
-${fxContent}
+${effects.format()}
 
 ## Usage
 

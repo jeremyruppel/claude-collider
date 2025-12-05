@@ -3,6 +3,7 @@ import { EventEmitter } from "events"
 import { debug } from "./debug.js"
 import { SclangConfig } from "./config.js"
 import { OutputParser } from "./parser.js"
+import { compress } from "./tokenizer.js"
 import { ServerState, PendingOperation } from "./types.js"
 
 export class SuperCollider extends EventEmitter {
@@ -295,12 +296,13 @@ export class SuperCollider extends EventEmitter {
   }
 
   private sendCode(code: string): void {
-    debug(`sendCode called with: ${code}`)
+    const compressed = compress(code)
+    debug(`sendCode called with: ${compressed}`)
     if (!this.process?.stdin) {
       debug("ERROR: No stdin available")
       return
     }
-    const result = this.process.stdin.write(code + "\n")
+    const result = this.process.stdin.write(compressed + "\n")
     debug(`stdin.write returned: ${result}`)
   }
 }

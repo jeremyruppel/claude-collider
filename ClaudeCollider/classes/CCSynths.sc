@@ -175,9 +175,9 @@ CCSynths {
     var lines = defs.keys.asArray.sort.collect { |name|
       var entry = defs[name];
       var synthDef = entry[\def].value;
-      var params = synthDef.allControlNames.collect { |c| c.name.asString }.join(",");
-      "%|%|%".format(name, entry[\description], params);
+      var params = synthDef.allControlNames.collect { |c| c.name.asString }.join(", ");
+      "% - %\n  params: %".format(name, entry[\description], params);
     };
-    ^lines.join("\n");
+    lines.join("\n").postln;
   }
 }

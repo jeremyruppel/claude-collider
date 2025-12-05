@@ -7,7 +7,6 @@ export interface ScError {
 }
 
 export class OutputParser {
-  private static readonly BEGIN_MARKER = ">>>BEGIN>>>"
   private static readonly END_MARKER = "<<<END<<<"
   private static readonly SERVER_READY = "SERVER_READY"
   private static readonly SCLANG_READY = "Welcome to SuperCollider"
@@ -31,22 +30,16 @@ export class OutputParser {
   }
 
   extractResult(): string | null {
-    const beginIndex = this.buffer.indexOf(OutputParser.BEGIN_MARKER)
     const endIndex = this.buffer.indexOf(OutputParser.END_MARKER)
 
-    if (beginIndex !== -1 && endIndex !== -1 && endIndex > beginIndex) {
-      const startPos = beginIndex + OutputParser.BEGIN_MARKER.length
-      return this.buffer.slice(startPos, endIndex).trim() || "OK"
+    if (endIndex !== -1) {
+      return this.buffer.slice(0, endIndex).trim() || "OK"
     }
     return null
   }
 
   static wrapCode(code: string): string {
-    return `
-      "${OutputParser.BEGIN_MARKER}".postln;
-      (${code.trim()}).value;
-      "${OutputParser.END_MARKER}".postln;
-    `
+    return `${code.trim()}; "${OutputParser.END_MARKER}".postln;`
   }
 
   static bootCommand(): string {

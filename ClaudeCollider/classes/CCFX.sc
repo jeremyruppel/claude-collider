@@ -214,7 +214,7 @@ CCFX {
 
   load { |name, slot|
     var def = defs[name];
-    var slotName, inBus, ndef;
+    var slotName, inBus, ndef, func, paramPairs;
 
     if(def.isNil) {
       "CCFX: unknown effect '%'".format(name).warn;
@@ -223,12 +223,14 @@ CCFX {
 
     slotName = slot ?? ("fx_" ++ name);
     inBus = Bus.audio(cc.server, 2);
+    func = def[\func];
+    paramPairs = def[\params].clump(2);
 
     ndef = Ndef(slotName.asSymbol, { |in|
-      var params = def.params.clump(2).collect { |pair|
+      var params = paramPairs.collect { |pair|
         NamedControl.kr(pair[0], pair[1]);
       };
-      def.func.valueArray([in] ++ params);
+      func.valueArray([in] ++ params);
     });
     ndef.set(\in, inBus);
     ndef.play;
@@ -237,10 +239,10 @@ CCFX {
       name: name,
       ndef: ndef,
       inBus: inBus,
-      params: def.params
+      params: def[\params]
     );
 
-    ^(slot: slotName, bus: inBus);
+    "Loaded % on bus %".format(slotName, inBus.index).postln;
   }
 
   set { |slot ...args|
@@ -482,10 +484,10 @@ CCFX {
     var lines = defs.keys.asArray.sort.collect { |name|
       var entry = defs[name];
       var params = entry[\params].clump(2).collect { |pair|
-        "%:%".format(pair[0], pair[1]);
-      }.join(",");
-      "%|%|%".format(name, entry[\description], params);
+        "% (default: %)".format(pair[0], pair[1]);
+      }.join(", ");
+      "% - %\n  params: %".format(name, entry[\description], params);
     };
-    ^lines.join("\n");
+    lines.join("\n").postln;
   }
 }
