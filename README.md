@@ -83,11 +83,6 @@ Place WAV or AIFF files in `~/.claudecollider/samples/`. Samples are discovered 
 | `sample_play` | Play a sample once (loads buffer if needed) |
 | `sample_free` | Free a sample buffer from memory |
 
-## Available Resources
-
-- `supercollider://synthdefs` - List of all pre-built synths with parameters
-- `supercollider://effects` - List of all pre-built effects with parameters
-
 ## Pre-built SynthDefs
 
 All synths are automatically loaded when you call `sc_boot`. Use them with the `\cc_` prefix:

@@ -5,8 +5,6 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { SuperCollider } from "./supercollider.js"
 import { SynthDefs } from "./synthdefs.js"
@@ -334,7 +332,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "fx_load",
         description:
-          "Load a pre-built audio effect. Query supercollider://effects resource for available effects. Returns the effect's input bus for routing audio.",
+          "Load a pre-built audio effect. Use fx_describe to see available effects. Returns the effect's input bus for routing audio.",
         inputSchema: {
           type: "object",
           properties: {
@@ -970,71 +968,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 })
 
-// List available resources
-server.setRequestHandler(ListResourcesRequestSchema, async () => {
-  return {
-    resources: [
-      {
-        uri: "supercollider://synthdefs",
-        name: "Available SynthDefs",
-        description:
-          "List of pre-built synthesizer definitions with parameters",
-        mimeType: "text/plain",
-      },
-      {
-        uri: "supercollider://effects",
-        name: "Available Effects",
-        description: "List of pre-built audio effects with parameters",
-        mimeType: "text/plain",
-      },
-    ],
-  }
-})
-
-// Read resource content
-server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-  const { uri } = request.params
-
-  switch (uri) {
-    case "supercollider://synthdefs": {
-      const text = `# Available SynthDefs
-
-All synths are pre-loaded and ready to use. Names are prefixed with \\cc_.
-
-${synthdefs.format()}`
-
-      return {
-        contents: [{ uri, mimeType: "text/plain", text }],
-      }
-    }
-
-    case "supercollider://effects": {
-      const text = `# Available Effects
-
-Effects must be loaded before use with fx_load. Then route audio to them with fx_route.
-
-${effects.format()}
-
-## Usage
-
-1. Load an effect:
-     fx_load with name: "reverb"
-
-2. Route a pattern to it:
-     fx_route with source: "myPattern", target: "fx_reverb"
-
-3. Adjust parameters:
-     fx_set with slot: "fx_reverb", params: { mix: 0.5, room: 0.9 }`
-
-      return {
-        contents: [{ uri, mimeType: "text/plain", text }],
-      }
-    }
-
-    default:
-      throw new Error(`Unknown resource: ${uri}`)
-  }
-})
 
 // Handle graceful shutdown
 process.on("SIGINT", async () => {
