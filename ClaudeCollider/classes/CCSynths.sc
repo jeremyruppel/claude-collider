@@ -21,7 +21,7 @@ CCSynths {
       kick: (
         description: "Punchy kick drum with sub bass",
         def: {
-          SynthDef(\cc_kick, { |out=0, freq=60, amp=0.5, decay=0.3|
+          SynthDef(\cc_kick, { |out=0, freq=48, amp=0.5, decay=0.3|
             var sig, env;
             env = EnvGen.kr(Env.perc(0.001, decay), doneAction: 2);
             sig = SinOsc.ar(freq * EnvGen.kr(Env([2, 1], [0.02])));

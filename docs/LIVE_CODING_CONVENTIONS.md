@@ -389,6 +389,31 @@ Pdef.all.keys;  // all defined pattern names
 Ndef.all.keys;  // all defined node names
 ```
 
+## Drum Patterns and Frequency
+
+When using `Pbind` with drum synths like `\cc_kick` and `\cc_snare`, be aware that SuperCollider's Event system automatically sets `\freq` based on `\degree` (default 0), which converts to ~261 Hz (middle C). This overrides the synth's default frequency.
+
+**Problem:**
+```supercollider
+// BAD: freq gets set to ~261 Hz by default Event behavior
+Pdef(\kick, Pbind(\instrument, \cc_kick, \dur, 1)).play;
+```
+
+**Solutions:**
+
+```supercollider
+// GOOD: Explicitly set freq to use synth's intended pitch
+Pdef(\kick, Pbind(\instrument, \cc_kick, \dur, 1, \freq, 48)).play;
+
+// GOOD: Use \degree, \rest to bypass freq conversion entirely
+Pdef(\kick, Pbind(\instrument, \cc_kick, \dur, 1, \degree, \rest)).play;
+
+// GOOD: Set \midinote directly (48 = G1, nice low kick)
+Pdef(\kick, Pbind(\instrument, \cc_kick, \dur, 1, \midinote, 36)).play;
+```
+
+This applies to any drum synth that uses a `freq` parameter. Melodic synths (bass, lead, pad) typically *want* the Event's pitch conversion, so this is only an issue for drums.
+
 ## Anti-Patterns
 
 **Don't do this:**

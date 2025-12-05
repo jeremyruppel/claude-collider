@@ -65,7 +65,31 @@ Chain multiple effects:
 - All built-in synths are prefixed with \\cc_ (e.g. \\cc_kick, \\cc_bass)
 - Use sc_tempo to set BPM for patterns
 - Use sc_status to see what's playing
-- Use sc_clear to reset everything`
+- Use sc_clear to reset everything
+
+## Live Coding Conventions
+
+Always use proxy objects for live-updatable sounds:
+- Pdef: Patterns (beats, sequences) — crossfades at next loop point
+- Ndef: Continuous synths (drones, pads, effects) — crossfades over fadeTime
+- Tdef: Tasks (algorithmic sequences) — restarts with new definition
+
+### Drum Patterns and Frequency
+
+Pbind auto-sets \\freq from \\degree (default ~261 Hz), overriding synth defaults.
+
+Fix by explicitly setting freq:
+  Pdef(\\kick, Pbind(\\instrument, \\cc_kick, \\dur, 1, \\freq, 48)).play
+
+### Quantization
+
+Set Pdef.defaultQuant = 4 so changes land on bar boundaries.
+
+### Quick Reference
+
+Start:  Pdef(\\x).play / Ndef(\\x).play
+Stop:   Pdef(\\x).stop / Ndef(\\x).stop
+Tempo:  TempoClock.default.tempo = 120/60`
 }
 
 const server = new Server(
