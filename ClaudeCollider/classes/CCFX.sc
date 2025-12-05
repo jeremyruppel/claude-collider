@@ -23,6 +23,7 @@ CCFX {
     ^(
       // ========== FILTERS ==========
       lpf: (
+        description: "Low pass filter with resonance",
         params: [\cutoff, 1000, \resonance, 0.5],
         func: { |in, cutoff=1000, resonance=0.5|
           RLPF.ar(In.ar(in, 2), cutoff, resonance);
@@ -30,6 +31,7 @@ CCFX {
       ),
 
       hpf: (
+        description: "High pass filter with resonance",
         params: [\cutoff, 200, \resonance, 0.5],
         func: { |in, cutoff=200, resonance=0.5|
           RHPF.ar(In.ar(in, 2), cutoff, resonance);
@@ -37,6 +39,7 @@ CCFX {
       ),
 
       bpf: (
+        description: "Band pass filter",
         params: [\freq, 1000, \bw, 0.5],
         func: { |in, freq=1000, bw=0.5|
           BPF.ar(In.ar(in, 2), freq, bw);
@@ -45,6 +48,7 @@ CCFX {
 
       // ========== TIME-BASED ==========
       reverb: (
+        description: "Stereo reverb",
         params: [\mix, 0.33, \room, 0.8, \damp, 0.5],
         func: { |in, mix=0.33, room=0.8, damp=0.5|
           var sig = In.ar(in, 2);
@@ -53,6 +57,7 @@ CCFX {
       ),
 
       delay: (
+        description: "Stereo delay with feedback",
         params: [\time, 0.375, \feedback, 0.5, \mix, 0.5],
         func: { |in, time=0.375, feedback=0.5, mix=0.5|
           var sig = In.ar(in, 2);
@@ -62,6 +67,7 @@ CCFX {
       ),
 
       pingpong: (
+        description: "Ping pong stereo delay",
         params: [\time, 0.375, \feedback, 0.5, \mix, 0.5],
         func: { |in, time=0.375, feedback=0.5, mix=0.5|
           var sig = In.ar(in, 2);
@@ -74,6 +80,7 @@ CCFX {
 
       // ========== MODULATION ==========
       chorus: (
+        description: "Stereo chorus",
         params: [\rate, 0.5, \depth, 0.005, \mix, 0.5],
         func: { |in, rate=0.5, depth=0.005, mix=0.5|
           var sig = In.ar(in, 2);
@@ -84,6 +91,7 @@ CCFX {
       ),
 
       flanger: (
+        description: "Flanger with feedback",
         params: [\rate, 0.2, \depth, 0.003, \feedback, 0.5, \mix, 0.5],
         func: { |in, rate=0.2, depth=0.003, feedback=0.5, mix=0.5|
           var sig = In.ar(in, 2);
@@ -95,6 +103,7 @@ CCFX {
       ),
 
       phaser: (
+        description: "Phaser effect",
         params: [\rate, 0.3, \depth, 2, \mix, 0.5],
         func: { |in, rate=0.3, depth=2, mix=0.5|
           var sig = In.ar(in, 2);
@@ -105,6 +114,7 @@ CCFX {
       ),
 
       tremolo: (
+        description: "Amplitude modulation tremolo",
         params: [\rate, 4, \depth, 0.5],
         func: { |in, rate=4, depth=0.5|
           var sig = In.ar(in, 2);
@@ -115,6 +125,7 @@ CCFX {
 
       // ========== DISTORTION ==========
       distortion: (
+        description: "Soft clip distortion with tone control",
         params: [\drive, 2, \tone, 0.5, \mix, 1],
         func: { |in, drive=2, tone=0.5, mix=1|
           var sig = In.ar(in, 2);
@@ -125,6 +136,7 @@ CCFX {
       ),
 
       bitcrush: (
+        description: "Bit crusher with sample rate reduction",
         params: [\bits, 8, \rate, 44100, \mix, 1],
         func: { |in, bits=8, rate=44100, mix=1|
           var sig = In.ar(in, 2);
@@ -135,6 +147,7 @@ CCFX {
       ),
 
       wavefold: (
+        description: "Wave folder distortion",
         params: [\amount, 2, \mix, 1],
         func: { |in, amount=2, mix=1|
           var sig = In.ar(in, 2);
@@ -145,6 +158,7 @@ CCFX {
 
       // ========== DYNAMICS ==========
       compressor: (
+        description: "Dynamics compressor",
         params: [\threshold, 0.5, \ratio, 4, \attack, 0.01, \release, 0.1, \makeup, 1],
         func: { |in, threshold=0.5, ratio=4, attack=0.01, release=0.1, makeup=1|
           var sig = In.ar(in, 2);
@@ -153,6 +167,7 @@ CCFX {
       ),
 
       limiter: (
+        description: "Brickwall limiter",
         params: [\level, 0.95, \lookahead, 0.01],
         func: { |in, level=0.95, lookahead=0.01|
           Limiter.ar(In.ar(in, 2), level, lookahead);
@@ -160,6 +175,7 @@ CCFX {
       ),
 
       gate: (
+        description: "Noise gate",
         params: [\threshold, 0.1, \attack, 0.01, \release, 0.1],
         func: { |in, threshold=0.1, attack=0.01, release=0.1|
           var sig = In.ar(in, 2);
@@ -170,6 +186,7 @@ CCFX {
 
       // ========== STEREO ==========
       widener: (
+        description: "Stereo width control",
         params: [\width, 1.5],
         func: { |in, width=1.5|
           var sig = In.ar(in, 2);
@@ -180,6 +197,7 @@ CCFX {
       ),
 
       autopan: (
+        description: "Automatic stereo panning",
         params: [\rate, 1, \depth, 1],
         func: { |in, rate=1, depth=1|
           var sig = In.ar(in, 2);
@@ -458,5 +476,16 @@ CCFX {
       chains: chains.keys.asArray,
       sidechains: sidechains.keys.asArray
     );
+  }
+
+  describe {
+    var lines = defs.keys.asArray.sort.collect { |name|
+      var entry = defs[name];
+      var params = entry[\params].clump(2).collect { |pair|
+        "%:%".format(pair[0], pair[1]);
+      }.join(",");
+      "%|%|%".format(name, entry[\description], params);
+    };
+    ^lines.join("\n");
   }
 }

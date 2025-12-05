@@ -10,14 +10,11 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { SuperCollider } from "./supercollider.js"
 import { SynthDefs } from "./synthdefs.js"
-import {
-  effectsLibrary,
-  effectNames,
-  validateEffectParams,
-} from "./effects-library.js"
+import { Effects } from "./effects.js"
 
 const sc = new SuperCollider()
 const synthdefs = new SynthDefs(sc)
+const effects = new Effects(sc)
 
 function formatBootReadme(): string {
   const synthList = synthdefs
@@ -25,9 +22,7 @@ function formatBootReadme(): string {
     .map((s) => `  - ${s.name}: ${s.description}`)
     .join("\n")
 
-  const fxList = Object.values(effectsLibrary)
-    .map((e) => `  - ${e.name}: ${e.description}`)
-    .join("\n")
+  const fxList = effects.formatList()
 
   return `# ClaudeCollider
 
@@ -312,14 +307,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       // Effects tools
       {
         name: "fx_load",
-        description: `Load a pre-built audio effect. Available: ${effectNames.join(", ")}. Returns the effect's input bus for routing audio.`,
+        description:
+          "Load a pre-built audio effect. Query supercollider://effects resource for available effects. Returns the effect's input bus for routing audio.",
         inputSchema: {
           type: "object",
           properties: {
             name: {
               type: "string",
-              enum: effectNames,
-              description: "Effect name",
+              description: "Effect name (e.g. reverb, delay, distortion)",
             },
             slot: {
               type: "string",
@@ -365,7 +360,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 properties: {
                   name: {
                     type: "string",
-                    enum: effectNames,
                     description: "Effect name",
                   },
                   params: {
@@ -505,7 +499,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const deviceArg = device ? `"${device}"` : "nil"
         await sc.boot()
         await sc.execute(`~cc = CC.boot(device: ${deviceArg})`)
-        await synthdefs.load()
+        await Promise.all([synthdefs.load(), effects.load()])
         return {
           content: [{ type: "text", text: formatBootReadme() }],
         }
@@ -703,14 +697,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           name: string
           slot?: string
         }
-        if (!effectsLibrary[effectName]) {
+        const meta = effects.get(effectName)
+        if (!meta) {
+          const msg = effects.isEmpty()
+            ? `Unknown effect: ${effectName}. Boot SuperCollider first with sc_boot.`
+            : `Unknown effect: ${effectName}. Available: ${effects.names().join(", ")}`
           return {
-            content: [
-              {
-                type: "text",
-                text: `Unknown effect: ${effectName}. Available: ${effectNames.join(", ")}`,
-              },
-            ],
+            content: [{ type: "text", text: msg }],
             isError: true,
           }
         }
@@ -718,12 +711,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await sc.execute(
           `~cc.fx.load(\\${effectName}, ${slotArg})`
         )
-        const meta = effectsLibrary[effectName]
         return {
           content: [
             {
               type: "text",
-              text: `Loaded effect: ${slot || `fx_${effectName}`}\n${result}\nParams: ${Object.keys(meta.params).join(", ")}`,
+              text: `Loaded effect: ${slot || `fx_${effectName}`}\n${result}\nParams: ${meta.params.map((p) => p.name).join(", ")}`,
             },
           ],
         }
@@ -734,31 +726,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           slot: string
           params: Record<string, number>
         }
-        // Get effect name from slot to validate params
-        const effectName = slot.replace(/^(fx_|chain_\w+_)/, "")
-        if (effectsLibrary[effectName]) {
-          const { valid, warnings } = validateEffectParams(effectName, params)
-          const paramStr = formatParams(valid)
-          await sc.execute(`~cc.fx.set(\\${slot}, ${paramStr})`)
-          let text = `Set ${Object.keys(params).join(", ")} on ${slot}`
-          if (warnings.length > 0) {
-            text += ` (${warnings.join("; ")})`
-          }
-          return {
-            content: [{ type: "text", text }],
-          }
-        } else {
-          // Unknown effect type, pass through without validation
-          const paramStr = formatParams(params)
-          await sc.execute(`~cc.fx.set(\\${slot}, ${paramStr})`)
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Set ${Object.keys(params).join(", ")} on ${slot}`,
-              },
-            ],
-          }
+        const paramStr = formatParams(params)
+        await sc.execute(`~cc.fx.set(\\${slot}, ${paramStr})`)
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Set ${Object.keys(params).join(", ")} on ${slot}`,
+            },
+          ],
         }
       }
 
@@ -766,20 +742,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { name: chainName, effects: chainEffects } = args as {
           name: string
           effects: Array<{ name: string; params?: Record<string, number> }>
-        }
-        // Validate all effects exist
-        for (const fx of chainEffects) {
-          if (!effectsLibrary[fx.name]) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Unknown effect: ${fx.name}. Available: ${effectNames.join(", ")}`,
-                },
-              ],
-              isError: true,
-            }
-          }
         }
         // Build SC array
         const fxArray = chainEffects
@@ -956,10 +918,22 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     }
 
     case "supercollider://effects": {
-      const content = Object.values(effectsLibrary)
+      if (effects.isEmpty()) {
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: "text/plain",
+              text: "Effects not loaded yet. Boot SuperCollider first with sc_boot.",
+            },
+          ],
+        }
+      }
+      const content = effects
+        .all()
         .map((e) => {
-          const params = Object.entries(e.params)
-            .map(([k, v]) => `${k} (${v.min}-${v.max}, default: ${v.default})`)
+          const params = e.params
+            .map((p) => `${p.name} (default: ${p.default})`)
             .join(", ")
           return `${e.name} - ${e.description}\n  Params: ${params}`
         })
