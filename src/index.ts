@@ -130,8 +130,10 @@ Tempo:  TempoClock.default.tempo = 120/60`
 
 const server = new Server(
   {
-    name: "claude-collider",
+    name: "ClaudeCollider",
     version: "0.1.0",
+    // TODO branding!
+    icons: [],
   },
   {
     capabilities: {
@@ -155,7 +157,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "sc_boot",
         description:
-          "Boot ClaudeCollider and the SuperCollider audio server. Must be called before playing any sounds.",
+          "Start the SuperCollider audio server. Must be called first before any other tools.",
         inputSchema: {
           type: "object",
           properties: {
@@ -171,7 +173,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "sc_execute",
         description:
-          "Execute SuperCollider code. Use for playing sounds, defining synths, creating patterns, etc.",
+          "Run SuperCollider code directly. For custom synths, patterns, or anything not covered by other tools.",
         inputSchema: {
           type: "object",
           properties: {
@@ -186,7 +188,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "sc_stop",
         description:
-          "Stop all currently playing sounds (equivalent to Cmd+Period in SuperCollider IDE)",
+          "Stop all currently playing sounds immediately (Cmd+Period equivalent)",
         inputSchema: {
           type: "object",
           properties: {},
@@ -196,7 +198,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "sc_status",
         description:
-          "Get ClaudeCollider status: tempo, synths, CPU, active patterns.",
+          "Show current state: tempo, running patterns, active synths, and server CPU usage.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -220,7 +222,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "sc_clear",
         description:
-          "Stop all sounds and clear all patterns, effects, and MIDI mappings.",
+          "Full reset: stop all sounds, clear patterns, remove effects, and disconnect MIDI.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -230,7 +232,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "sc_reboot",
         description:
-          "Reboot the audio server with optional new device. Use to change audio device at runtime.",
+          "Restart the audio server, optionally switching to a different audio device.",
         inputSchema: {
           type: "object",
           properties: {
@@ -284,7 +286,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "midi_map_notes",
         description:
-          "Map MIDI note input to trigger a synth. The synth should accept 'freq', 'amp', and 'gate' arguments.",
+          "Route MIDI keyboard notes to a synth. Synth must accept freq, amp, and gate parameters.",
         inputSchema: {
           type: "object",
           properties: {
@@ -314,7 +316,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "midi_map_cc",
         description:
-          "Map a MIDI CC to a control bus that can modulate synth parameters.",
+          "Route a MIDI control change (knob/slider) to a named bus for modulating synth parameters.",
         inputSchema: {
           type: "object",
           properties: {
@@ -358,7 +360,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "fx_load",
         description:
-          "Load a pre-built audio effect. Use fx_describe to see available effects. Returns the effect's input bus for routing audio.",
+          "Load an effect (reverb, delay, distortion, etc). Returns the slot name for routing.",
         inputSchema: {
           type: "object",
           properties: {
@@ -414,7 +416,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "fx_sidechain",
         description:
-          "Create a sidechain compressor. Routes audio through compression triggered by a separate signal (e.g. kick ducking bass).",
+          "Create a sidechain compressor for ducking effects (e.g., kick ducking bass).",
         inputSchema: {
           type: "object",
           properties: {
@@ -523,13 +525,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "fx_chain",
         description:
-          "Create a named chain of effects wired in series. Returns the chain's input slot for routing sources.",
+          "Create a named series of effects (e.g., distortion → delay → reverb). Route sources to the first slot.",
         inputSchema: {
           type: "object",
           properties: {
             name: {
               type: "string",
-              description: "Name for this chain (e.g. 'bass_chain', 'vocal_chain')",
+              description:
+                "Name for this chain (e.g. 'bass_chain', 'vocal_chain')",
             },
             effects: {
               type: "array",
@@ -546,11 +549,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                       name: {
                         type: "string",
-                        description: "Effect name (e.g. 'reverb', 'distortion')",
+                        description:
+                          "Effect name (e.g. 'reverb', 'distortion')",
                       },
                       params: {
                         type: "object",
-                        description: "Parameter key/value pairs for this effect",
+                        description:
+                          "Parameter key/value pairs for this effect",
                       },
                     },
                     required: ["name"],
@@ -611,7 +616,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "sample_reload",
         description:
-          "Rescan the samples directory for new files. Use after adding samples to the configured samples directory",
+          "Rescan the samples directory for newly added audio files.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -621,8 +626,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       // Recording tools
       {
         name: "recording_start",
-        description:
-          "Start recording audio output to a WAV file. Returns the file path.",
+        description: "Begin recording all audio output to a WAV file.",
         inputSchema: {
           type: "object",
           properties: {
@@ -638,7 +642,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "recording_stop",
         description:
-          "Stop recording and save the file. Returns the path to the saved recording.",
+          "Stop recording and save the WAV file. Returns the saved file path.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -668,7 +672,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { device } = args as { device?: string }
         const deviceArg = device ? `"${device}"` : "nil"
         await sc.boot()
-        await sc.execute(`~cc = CC.boot(device: ${deviceArg}, samplesDir: "${sc.getSamplesPath()}", recordingsDir: "${sc.getRecordingsPath()}")`)
+        await sc.execute(
+          `~cc = CC.boot(device: ${deviceArg}, samplesDir: "${sc.getSamplesPath()}", recordingsDir: "${sc.getRecordingsPath()}")`
+        )
         await synthdefs.load()
         await effects.load()
         await samples.load()
@@ -992,7 +998,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await sc.execute(`~cc.fx.connect(\\${from}, \\${to})`)
         if (result.includes("nil")) {
           return {
-            content: [{ type: "text", text: `Failed to connect ${from} → ${to}` }],
+            content: [
+              { type: "text", text: `Failed to connect ${from} → ${to}` },
+            ],
             isError: true,
           }
         }
@@ -1004,12 +1012,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "fx_chain": {
         const { name: chainName, effects: fxList } = args as {
           name: string
-          effects: Array<string | { name: string; params?: Record<string, number> }>
+          effects: Array<
+            string | { name: string; params?: Record<string, number> }
+          >
         }
 
         if (!fxList || fxList.length === 0) {
           return {
-            content: [{ type: "text", text: "Error: effects array cannot be empty" }],
+            content: [
+              { type: "text", text: "Error: effects array cannot be empty" },
+            ],
             isError: true,
           }
         }
@@ -1021,7 +1033,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         for (let i = 0; i < fxList.length; i++) {
           const fx = fxList[i]
           const fxName = typeof fx === "string" ? fx : fx.name
-          const fxParams = typeof fx === "object" && fx.params ? fx.params : null
+          const fxParams =
+            typeof fx === "object" && fx.params ? fx.params : null
           const slotName = `${chainName}_${i}_${fxName}`
 
           // Load the effect
@@ -1057,7 +1070,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         // Register the chain for tracking
         const slotsArray = slots.map((s) => `\\${s}`).join(", ")
-        await sc.execute(`~cc.fx.registerChain(\\${chainName}, [${slotsArray}])`)
+        await sc.execute(
+          `~cc.fx.registerChain(\\${chainName}, [${slotsArray}])`
+        )
 
         results.push("  → main out")
         results.unshift(`Created chain: ${chainName}`)
@@ -1109,7 +1124,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await sc.execute("~cc.samples.reload")
         const sampleList = await samples.format()
         return {
-          content: [{ type: "text", text: `Reloaded samples directory.\n\n${sampleList}` }],
+          content: [
+            {
+              type: "text",
+              text: `Reloaded samples directory.\n\n${sampleList}`,
+            },
+          ],
         }
       }
 
