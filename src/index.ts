@@ -900,20 +900,30 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
           ],
         }
       }
-      const content = synthdefs
+      const synthContent = synthdefs
         .all()
         .map((s) => {
-          return `\\cc_${s.name} - ${s.description}\n  Params: ${s.params.join(", ")}\n  Usage: Synth(\\cc_${s.name}, [freq: 440, amp: 0.5])`
+          const paramList = s.params.map((p) => `    - ${p}`).join("\n")
+          return `### ${s.name}
+
+${s.description}
+
+Parameters:
+${paramList}
+
+Example:
+    Synth(\\cc_${s.name}, [freq: 440, amp: 0.5])`
         })
         .join("\n\n")
+
+      const text = `# Available SynthDefs
+
+All synths are pre-loaded and ready to use. Names are prefixed with \\cc_.
+
+${synthContent}`
+
       return {
-        contents: [
-          {
-            uri,
-            mimeType: "text/plain",
-            text: `Available SynthDefs:\n\n${content}`,
-          },
-        ],
+        contents: [{ uri, mimeType: "text/plain", text }],
       }
     }
 
@@ -929,23 +939,40 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
           ],
         }
       }
-      const content = effects
+      const fxContent = effects
         .all()
         .map((e) => {
-          const params = e.params
-            .map((p) => `${p.name} (default: ${p.default})`)
-            .join(", ")
-          return `${e.name} - ${e.description}\n  Params: ${params}`
+          const paramList = e.params
+            .map((p) => `    - ${p.name} (default: ${p.default})`)
+            .join("\n")
+          return `### ${e.name}
+
+${e.description}
+
+Parameters:
+${paramList}`
         })
         .join("\n\n")
+
+      const text = `# Available Effects
+
+Effects must be loaded before use with fx_load. Then route audio to them with fx_route.
+
+${fxContent}
+
+## Usage
+
+1. Load an effect:
+     fx_load with name: "reverb"
+
+2. Route a pattern to it:
+     fx_route with source: "myPattern", target: "fx_reverb"
+
+3. Adjust parameters:
+     fx_set with slot: "fx_reverb", params: { mix: 0.5, room: 0.9 }`
+
       return {
-        contents: [
-          {
-            uri,
-            mimeType: "text/plain",
-            text: `Available Effects:\n\n${content}`,
-          },
-        ],
+        contents: [{ uri, mimeType: "text/plain", text }],
       }
     }
 
