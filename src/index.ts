@@ -60,6 +60,9 @@ Play a sample once (also loads the buffer):
 Use in a pattern (after playing once to load):
   Pdef(\\beat, Pbind(\\instrument, \\cc_sampler, \\buf, ~cc.samples.at("sampleName"), \\dur, 1)).play
 
+Rescan for new samples (after adding files to ~/.claudecollider/samples/):
+  Use the sample_reload tool
+
 ## Effect Routing
 
 Load an effect:
@@ -596,6 +599,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["name"],
         },
       },
+      {
+        name: "sample_reload",
+        description:
+          "Rescan the samples directory for new files. Use after adding samples to ~/.claudecollider/samples/",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
     ],
   }
 })
@@ -1044,6 +1057,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await samples.free(sampleName)
         return {
           content: [{ type: "text", text: `Freed sample "${sampleName}"` }],
+        }
+      }
+
+      case "sample_reload": {
+        await sc.execute("~cc.samples.reload")
+        const sampleList = await samples.format()
+        return {
+          content: [{ type: "text", text: `Reloaded samples directory.\n\n${sampleList}` }],
         }
       }
 

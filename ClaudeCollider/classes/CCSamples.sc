@@ -87,6 +87,19 @@ CCSamples {
     buffers.clear;
   }
 
+  // Reload samples directory (discovers new files, keeps loaded buffers)
+  reload {
+    var oldPaths = paths.copy;
+    var newCount = 0;
+    paths.clear;
+    this.loadAll;
+    paths.keysValuesDo { |name, path|
+      if(oldPaths.at(name).isNil) { newCount = newCount + 1 };
+    };
+    "CCSamples: found % samples (% new)".format(paths.size, newCount).postln;
+    ^paths.size;
+  }
+
   // Describe samples for display
   describe {
     this.names.do { |name|

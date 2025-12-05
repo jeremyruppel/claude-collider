@@ -129,6 +129,7 @@ Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1).play
 // Memory management
 ~cc.samples.free(\kick)       // Free single sample buffer
 ~cc.samples.freeAll           // Free all loaded buffers
+~cc.samples.reload            // Rescan directory for new samples
 ~cc.samples.describe          // Print sample status (loaded/unloaded)
 ```
 
