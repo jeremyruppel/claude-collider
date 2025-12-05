@@ -81,6 +81,16 @@ Create a chain in one call:
 - Use sc_status to see what's playing
 - Use sc_clear to reset everything
 
+## Architecture Note: SynthDef vs Ndef
+
+Built-in synths use SynthDef (not Ndef) because most are one-shots with doneAction:2 that free themselves.
+
+- **SynthDefs** (cc_kick, cc_snare, etc.): Fire-and-forget. Create with Synth(), auto-free when done.
+- **Ndefs**: Persistent named slots for continuous sounds. Better for drones/pads you want to tweak live.
+
+For evolving textures, consider wrapping in Ndef:
+  Ndef(\\myDrone, { ~cc.synths.play(\\drone, \\freq, 55) })
+
 ## Live Coding Conventions
 
 Always use proxy objects for live-updatable sounds:
