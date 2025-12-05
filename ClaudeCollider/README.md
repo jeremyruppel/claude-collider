@@ -108,6 +108,32 @@ Pre-built SynthDefs with `cc_` prefix. All synths are auto-loaded on boot.
 
 **Note**: When using drum synths with Pbind, explicitly set `\freq` to avoid SuperCollider's default pitch conversion overriding the synth's default frequency.
 
+### CCSamples
+
+Sample management with lazy loading from `~/.claudecollider/samples`.
+
+Place WAV or AIFF files in the samples directory. On boot, file paths are scanned but buffers are only loaded on first use.
+
+```supercollider
+// Access via ~cc.samples
+
+~cc.samples.list              // List available sample names
+~cc.samples.at(\kick)         // Get buffer by name (nil if not loaded)
+~cc.samples.play(\kick)       // One-shot playback (lazy loads buffer)
+~cc.samples.play(\snare, 0.5, 0.8)  // With rate and amp
+
+// Use in patterns (play once first to load the buffer)
+~cc.samples.play(\kick);
+Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1).play
+
+// Memory management
+~cc.samples.free(\kick)       // Free single sample buffer
+~cc.samples.freeAll           // Free all loaded buffers
+~cc.samples.describe          // Print sample status (loaded/unloaded)
+```
+
+**Note**: Call `~cc.samples.play(\name)` first to lazy-load a buffer before using `at(\name)` in Pbind.
+
 ### CCFX
 
 Ndef-based effects system with routing and chaining.

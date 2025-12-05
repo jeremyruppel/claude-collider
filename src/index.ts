@@ -11,12 +11,14 @@ import {
 import { SuperCollider } from "./supercollider.js"
 import { SynthDefs } from "./synthdefs.js"
 import { Effects } from "./effects.js"
+import { Samples } from "./samples.js"
 
 const sc = new SuperCollider()
+const samples = new Samples(sc)
 const synthdefs = new SynthDefs(sc)
 const effects = new Effects(sc)
 
-function formatBootReadme(): string {
+async function formatBootReadme(): Promise<string> {
   return `# ClaudeCollider
 
 SuperCollider is ready for sound synthesis and music creation.
@@ -48,6 +50,16 @@ ${synthdefs.format()}
 ## Available Effects
 
 ${effects.format()}
+
+## Samples
+
+${await samples.format()}
+
+Play a sample once (also loads the buffer):
+  ~cc.samples.play("sampleName")
+
+Use in a pattern (after playing once to load):
+  Pdef(\\beat, Pbind(\\instrument, \\cc_sampler, \\buf, ~cc.samples.at("sampleName"), \\dur, 1)).play
 
 ## Effect Routing
 
@@ -259,7 +271,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             channel: {
               type: "number",
-              description: "MIDI channel 0-15. Omit to respond to all channels.",
+              description:
+                "MIDI channel 0-15. Omit to respond to all channels.",
             },
             velocityToAmp: {
               type: "boolean",
@@ -497,6 +510,52 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: [],
         },
       },
+      // Sample tools
+      {
+        name: "sample_list",
+        description: "List all loaded samples with duration and channel info.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
+      {
+        name: "sample_play",
+        description: "Play a loaded sample once.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Sample name",
+            },
+            rate: {
+              type: "number",
+              description: "Playback rate (default: 1, negative for reverse)",
+            },
+            amp: {
+              type: "number",
+              description: "Amplitude 0-1 (default: 0.5)",
+            },
+          },
+          required: ["name"],
+        },
+      },
+      {
+        name: "sample_free",
+        description: "Free a sample buffer and remove it from memory.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Sample name to free",
+            },
+          },
+          required: ["name"],
+        },
+      },
     ],
   }
 })
@@ -514,8 +573,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await sc.execute(`~cc = CC.boot(device: ${deviceArg})`)
         await synthdefs.load()
         await effects.load()
+        await samples.load()
         return {
-          content: [{ type: "text", text: formatBootReadme() }],
+          content: [{ type: "text", text: await formatBootReadme() }],
         }
       }
 
@@ -692,7 +752,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `Mapped CC ${cc} to ~${busName} (${range?.[0] ?? 0}-${range?.[1] ?? 1}, ${curve ?? "lin"})`,
+              text: `Mapped CC ${cc} to ~${busName} (${range?.[0] ?? 0}-${
+                range?.[1] ?? 1
+              }, ${curve ?? "lin"})`,
             },
           ],
         }
@@ -763,7 +825,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `Created chain: ${chainName}\n${result}\nEffects: ${chainEffects.map((e) => e.name).join(" → ")}`,
+              text: `Created chain: ${chainName}\n${result}\nEffects: ${chainEffects
+                .map((e) => e.name)
+                .join(" → ")}`,
             },
           ],
         }
@@ -831,7 +895,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await sc.execute(`~cc.fx.bypass(\\${slot}, ${bypass})`)
         return {
           content: [
-            { type: "text", text: bypass ? `Bypassed ${slot}` : `Enabled ${slot}` },
+            {
+              type: "text",
+              text: bypass ? `Bypassed ${slot}` : `Enabled ${slot}`,
+            },
           ],
         }
       }
@@ -848,6 +915,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await sc.execute("~cc.fx.status")
         return {
           content: [{ type: "text", text: result }],
+        }
+      }
+
+      // Sample tools
+      case "sample_list": {
+        const sampleList = await samples.format()
+        return {
+          content: [{ type: "text", text: sampleList }],
+        }
+      }
+
+      case "sample_play": {
+        const {
+          name: sampleName,
+          rate = 1,
+          amp = 0.5,
+        } = args as {
+          name: string
+          rate?: number
+          amp?: number
+        }
+        await samples.play(sampleName, rate, amp)
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Playing "${sampleName}" (rate: ${rate}, amp: ${amp})`,
+            },
+          ],
+        }
+      }
+
+      case "sample_free": {
+        const { name: sampleName } = args as { name: string }
+        await samples.free(sampleName)
+        return {
+          content: [{ type: "text", text: `Freed sample "${sampleName}"` }],
         }
       }
 

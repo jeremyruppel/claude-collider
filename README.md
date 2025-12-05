@@ -73,6 +73,16 @@ Restart Claude Desktop after updating the config.
 | `fx_remove` | Remove an effect and free its resources |
 | `fx_list` | List all loaded effects, chains, and sidechains |
 
+### Sample Tools
+
+Place WAV or AIFF files in `~/.claudecollider/samples/`. Samples are discovered on boot and lazy loaded on first use.
+
+| Tool | Description |
+|------|-------------|
+| `sample_list` | List available samples (shows loaded/unloaded status) |
+| `sample_play` | Play a sample once (loads buffer if needed) |
+| `sample_free` | Free a sample buffer from memory |
+
 ## Available Resources
 
 - `supercollider://synthdefs` - List of all pre-built synths with parameters

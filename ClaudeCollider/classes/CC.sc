@@ -6,6 +6,7 @@ CC {
 
   var <server;
   var <synths;
+  var <samples;
   var <fx;
   var <midi;
   var <state;
@@ -24,6 +25,7 @@ CC {
   init { |argServer|
     server = argServer;
     synths = CCSynths(this);
+    samples = CCSamples(this);
     fx = CCFX(this);
     midi = CCMIDI(this);
     state = CCState(this);
@@ -35,6 +37,7 @@ CC {
 
     server.waitForBoot {
       this.loadSynthDefs;
+      this.loadSamples;
       Pdef.defaultQuant = 4;
       isBooted = true;
       "*** ClaudeCollider ready ***".postln;
@@ -64,6 +67,14 @@ CC {
     fx.loadDefs;
   }
 
+  loadSamples {
+    var names = samples.loadAll;
+    if(names.size > 0) {
+      "SAMPLES_FOUND:%".format(names.join(",")).postln;
+    };
+    ^names;
+  }
+
   tempo { |bpm|
     if(bpm.notNil) {
       TempoClock.default.tempo = bpm / 60;
@@ -84,18 +95,29 @@ CC {
     Ndef.all.do(_.clear);
     fx.clearAll;
     midi.clearAll;
+    samples.freeAll;
     state.clear;
   }
 
   status {
-    ^(
-      booted: isBooted,
-      tempo: this.tempo,
-      device: server.options.device,
-      synths: server.numSynths,
-      cpu: server.avgCPU.round(0.1),
-      pdefs: Pdef.all.select(_.isPlaying).keys.asArray,
-      ndefs: Ndef.all.select(_.isPlaying).keys.asArray
-    );
+    var playingPdefs = Pdef.all.select(_.isPlaying).keys.asArray;
+    var playingNdefs = Ndef.all.select(_.isPlaying).keys.asArray;
+    var loadedSamples = samples.buffers.size;
+    var totalSamples = samples.paths.size;
+    var lines = [
+      "Server: % | CPU: %% | Synths: %".format(
+        if(server.serverRunning) { "running" } { "stopped" },
+        server.avgCPU.round(0.1),
+        server.numSynths
+      ),
+      "Tempo: % BPM | Device: %".format(
+        this.tempo.round(0.1),
+        server.options.device ?? "default"
+      ),
+      "Samples: %/% loaded".format(loadedSamples, totalSamples),
+      "Pdefs playing: %".format(if(playingPdefs.isEmpty) { "none" } { playingPdefs.join(", ") }),
+      "Ndefs playing: %".format(if(playingNdefs.isEmpty) { "none" } { playingNdefs.join(", ") })
+    ];
+    lines.join("\n").postln;
   }
 }
