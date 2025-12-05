@@ -41,13 +41,12 @@ Restart Claude Desktop after updating the config.
 | Tool | Description |
 |------|-------------|
 | `sc_boot` | Boot ClaudeCollider and the SuperCollider audio server |
-| `sc_execute` | Execute arbitrary SuperCollider code |
+| `sc_execute` | Execute SuperCollider code (play sounds, define synths, create patterns) |
 | `sc_stop` | Stop all sounds (Cmd+Period equivalent) |
 | `sc_status` | Get status: tempo, synths, CPU, active patterns |
 | `sc_tempo` | Get or set the tempo in BPM |
 | `sc_clear` | Stop all sounds and clear patterns, effects, and MIDI mappings |
 | `sc_reboot` | Reboot the audio server with optional new device |
-| `sc_load_synthdef` | Load a pre-built synth (kick, snare, hihat, clap, bass, acid, lead, pad) |
 | `sc_audio_devices` | List available audio input and output devices |
 
 ### MIDI Tools
@@ -55,16 +54,16 @@ Restart Claude Desktop after updating the config.
 | Tool | Description |
 |------|-------------|
 | `midi_list_devices` | List available MIDI input and output devices |
-| `midi_connect` | Connect to a MIDI device by name or index |
+| `midi_connect` | Connect to a MIDI device by name or index (use 'all' for all inputs) |
 | `midi_map_notes` | Map MIDI notes to trigger a synth (polyphonic or mono) |
 | `midi_map_cc` | Map a MIDI CC to a control bus for parameter modulation |
-| `midi_clear` | Remove all MIDI mappings |
+| `midi_clear` | Clear all MIDI mappings |
 
 ### Effects Tools
 
 | Tool | Description |
 |------|-------------|
-| `fx_load` | Load a pre-built effect (lpf, hpf, reverb, delay, chorus, distortion, etc.) |
+| `fx_load` | Load a pre-built effect (returns input bus for routing) |
 | `fx_set` | Set parameters on a loaded effect |
 | `fx_chain` | Create a chain of effects in series |
 | `fx_route` | Route a sound source (Pdef/Ndef) to an effect or chain |
@@ -81,16 +80,16 @@ Restart Claude Desktop after updating the config.
 
 ## Pre-built SynthDefs
 
-After booting, load synths with `sc_load_synthdef`:
+All synths are automatically loaded when you call `sc_boot`. Use them with the `\cc_` prefix:
 
-- **kick** - Punchy kick drum with sub bass
-- **snare** - Snare drum with noise burst
-- **hihat** - Closed hi-hat
-- **clap** - Hand clap with layered noise
-- **bass** - Simple sub bass with harmonics
-- **acid** - Resonant 303-style filter bass
-- **lead** - Detuned saw lead with filter
-- **pad** - Soft ambient pad with detuned oscillators
+- **cc_kick** - Punchy kick drum with sub bass
+- **cc_snare** - Snare drum with noise burst
+- **cc_hihat** - Closed hi-hat
+- **cc_clap** - Hand clap with layered noise
+- **cc_bass** - Simple sub bass with harmonics
+- **cc_acid** - Resonant 303-style filter bass
+- **cc_lead** - Detuned saw lead with filter
+- **cc_pad** - Soft ambient pad with detuned oscillators
 
 ## Pre-built Effects
 
