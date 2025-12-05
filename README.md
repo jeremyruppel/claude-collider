@@ -26,11 +26,17 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
   "mcpServers": {
     "supercollider": {
       "command": "node",
-      "args": ["/path/to/claude-collider/dist/index.js"]
+      "args": ["/path/to/claude-collider/dist/index.js"],
+      "env": {
+        "CC_SAMPLES_PATH": "/path/to/your/samples",
+        "CC_RECORDINGS_PATH": "/path/to/your/recordings"
+      }
     }
   }
 }
 ```
+
+The `env` block is optional - paths default to `~/.claudecollider/samples` and `~/.claudecollider/recordings`.
 
 Restart Claude Desktop after updating the config.
 
@@ -76,7 +82,7 @@ Restart Claude Desktop after updating the config.
 
 ### Sample Tools
 
-Place WAV or AIFF files in `~/.claudecollider/samples/`. Samples are discovered on boot and lazy loaded on first use.
+Place WAV or AIFF files in your samples directory (default: `~/.claudecollider/samples/`). Samples are discovered on boot and lazy loaded on first use.
 
 | Tool | Description |
 |------|-------------|
@@ -87,7 +93,7 @@ Place WAV or AIFF files in `~/.claudecollider/samples/`. Samples are discovered 
 
 ### Recording Tools
 
-Record your jams to WAV files in `~/.claudecollider/recordings/`.
+Record your jams to WAV files in your recordings directory (default: `~/.claudecollider/recordings/`).
 
 | Tool | Description |
 |------|-------------|
@@ -180,6 +186,8 @@ Logs are written to `/tmp/claude-collider.log`.
 | `SCLANG_PATH` | Auto-detected | Path to sclang executable |
 | `SC_BOOT_TIMEOUT` | 10000 | Boot timeout in ms |
 | `SC_EXEC_TIMEOUT` | 2000 | Execution timeout in ms |
+| `CC_SAMPLES_PATH` | `~/.claudecollider/samples` | Directory for audio samples |
+| `CC_RECORDINGS_PATH` | `~/.claudecollider/recordings` | Directory for recorded audio |
 | `DEBUG` | - | Set to `claude-collider` for debug logs |
 
 ## License

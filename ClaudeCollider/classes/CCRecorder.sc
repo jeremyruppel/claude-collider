@@ -6,11 +6,11 @@ CCRecorder {
   var <isRecording;
   var <currentPath;
 
-  *new { |cc| ^super.new.init(cc) }
+  *new { |cc, recordingsDir| ^super.new.init(cc, recordingsDir) }
 
-  init { |argCC|
+  init { |argCC, argRecordingsDir|
     cc = argCC;
-    recordingsDir = Platform.userHomeDir +/+ ".claudecollider" +/+ "recordings";
+    recordingsDir = argRecordingsDir;
     isRecording = false;
     currentPath = nil;
     this.ensureDir;

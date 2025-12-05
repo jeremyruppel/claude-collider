@@ -145,6 +145,14 @@ export class SuperCollider extends EventEmitter {
     return this.state
   }
 
+  getSamplesPath(): string {
+    return this.config.samplesPath.replace(/"/g, '\\"')
+  }
+
+  getRecordingsPath(): string {
+    return this.config.recordingsPath.replace(/"/g, '\\"')
+  }
+
   private startProcess(): void {
     debug(`startProcess() called`)
     debug(`sclang path: ${this.config.path}`)

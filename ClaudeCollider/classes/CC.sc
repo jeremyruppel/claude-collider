@@ -13,24 +13,24 @@ CC {
   var <recorder;
   var <isBooted;
 
-  *new { |server|
-    ^super.new.init(server ?? Server.default);
+  *new { |server, samplesDir, recordingsDir|
+    ^super.new.init(server ?? Server.default, samplesDir, recordingsDir);
   }
 
-  *boot { |server, device, onComplete|
-    instance = this.new(server);
+  *boot { |server, device, onComplete, samplesDir, recordingsDir|
+    instance = this.new(server, samplesDir, recordingsDir);
     instance.boot(device, onComplete);
     ^instance;
   }
 
-  init { |argServer|
+  init { |argServer, argSamplesDir, argRecordingsDir|
     server = argServer;
     synths = CCSynths(this);
-    samples = CCSamples(this);
+    samples = CCSamples(this, argSamplesDir);
     fx = CCFX(this);
     midi = CCMIDI(this);
     state = CCState(this);
-    recorder = CCRecorder(this);
+    recorder = CCRecorder(this, argRecordingsDir);
     isBooted = false;
   }
 

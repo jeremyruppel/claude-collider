@@ -60,7 +60,7 @@ Play a sample once (also loads the buffer):
 Use in a pattern (after playing once to load):
   Pdef(\\beat, Pbind(\\instrument, \\cc_sampler, \\buf, ~cc.samples.at("sampleName"), \\dur, 1)).play
 
-Rescan for new samples (after adding files to ~/.claudecollider/samples/):
+Rescan for new samples (after adding files to the samples directory):
   Use the sample_reload tool
 
 ## Effect Routing
@@ -84,7 +84,7 @@ Record your jam to a WAV file:
   recording_stop - stop and save the file
   recording_status - check if recording
 
-Recordings are saved to ~/.claudecollider/recordings/
+Recordings are saved to the configured recordings directory (default: ~/.claudecollider/recordings/)
 
 ## Tips
 
@@ -611,7 +611,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "sample_reload",
         description:
-          "Rescan the samples directory for new files. Use after adding samples to ~/.claudecollider/samples/",
+          "Rescan the samples directory for new files. Use after adding samples to the configured samples directory",
         inputSchema: {
           type: "object",
           properties: {},
@@ -668,7 +668,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { device } = args as { device?: string }
         const deviceArg = device ? `"${device}"` : "nil"
         await sc.boot()
-        await sc.execute(`~cc = CC.boot(device: ${deviceArg})`)
+        await sc.execute(`~cc = CC.boot(device: ${deviceArg}, samplesDir: "${sc.getSamplesPath()}", recordingsDir: "${sc.getRecordingsPath()}")`)
         await synthdefs.load()
         await effects.load()
         await samples.load()

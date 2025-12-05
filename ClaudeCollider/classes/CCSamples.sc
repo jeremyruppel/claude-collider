@@ -14,7 +14,7 @@ CCSamples {
     cc = argCC;
     paths = Dictionary.new;
     buffers = Dictionary.new;
-    samplesDir = argSamplesDir ?? (Platform.userHomeDir +/+ ".claudecollider" +/+ "samples");
+    samplesDir = argSamplesDir;
   }
 
   // Scan samples directory and store file paths (fast, sync)
