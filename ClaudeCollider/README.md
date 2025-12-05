@@ -149,6 +149,12 @@ Ndef-based effects system with routing and chaining.
 // Route sources to effects
 ~cc.fx.route(\kickPattern, \fx_reverb)
 
+// Connect effects in series (effect → effect)
+~cc.fx.load(\distortion, \fx_dist)
+~cc.fx.load(\reverb, \fx_verb)
+~cc.fx.connect(\fx_dist, \fx_verb)  // distortion → reverb → main out
+~cc.fx.route(\bass, \fx_dist)       // bass → distortion → reverb → main out
+
 // Sidechain compression
 ~cc.fx.sidechain(\bassDuck, threshold: 0.1, ratio: 4, attack: 0.01, release: 0.1)
 ~cc.fx.route(\bassPattern, \bassDuck)
@@ -161,7 +167,7 @@ Ndef-based effects system with routing and chaining.
 // Info
 ~cc.fx.list                 // List available effect names
 ~cc.fx.describe             // Print all effects with descriptions and params
-~cc.fx.status               // Get loaded effects, chains, sidechains
+~cc.fx.status               // Get loaded effects, sidechains, connections
 ```
 
 **Available effects**:

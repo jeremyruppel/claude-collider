@@ -4,8 +4,10 @@ CCFX {
   var <cc;
   var <defs;
   var <loaded;      // slot -> (name, ndef, inBus)
-  var <chains;      // chainName -> (inBus, slots, buses)
   var <sidechains;  // name -> (inBus, triggerBus)
+  var <connections; // from -> to (effect-to-effect connections)
+  var <chains;      // chainName -> [slot1, slot2, ...]
+  var <routes;      // source -> target
 
   *new { |cc|
     ^super.new.init(cc);
@@ -14,8 +16,10 @@ CCFX {
   init { |argCC|
     cc = argCC;
     loaded = Dictionary[];
-    chains = Dictionary[];
     sidechains = Dictionary[];
+    connections = Dictionary[];
+    chains = Dictionary[];
+    routes = Dictionary[];
     defs = this.defineEffects;
   }
 
@@ -256,65 +260,62 @@ CCFX {
     };
   }
 
-  chain { |name, effects|
-    var buses = [];
-    var slots = [];
-    var chainIn = Bus.audio(cc.server, 2);
+  connect { |from, to|
+    var fromInfo, toInfo, routeSlot;
 
-    buses = buses.add(chainIn);
-
-    effects.do { |fx, i|
-      var fxName, fxParams, slotName, def, ndef, nextBus;
-
-      if(fx.isKindOf(Association)) {
-        fxName = fx.key;
-        fxParams = fx.value;
-      } {
-        fxName = fx;
-        fxParams = [];
-      };
-
-      def = defs[fxName];
-      if(def.isNil) {
-        "CCFX: unknown effect '%' in chain".format(fxName).warn;
-      } {
-        slotName = "chain_%_%".format(name, fxName).asSymbol;
-
-        if(i < (effects.size - 1)) {
-          nextBus = Bus.audio(cc.server, 2);
-          buses = buses.add(nextBus);
-        };
-
-        ndef = Ndef(slotName, { |in|
-          var sig = def.func.value(in);
-          if(nextBus.notNil) {
-            Out.ar(nextBus, sig);
-          } {
-            sig;
-          };
-        });
-        ndef.set(\in, buses[i]);
-        ndef.set(*fxParams);
-        ndef.play;
-
-        loaded[slotName] = (
-          name: fxName,
-          ndef: ndef,
-          inBus: buses[i],
-          chain: name
-        );
-
-        slots = slots.add(slotName);
-      };
+    // Validate from slot exists
+    fromInfo = loaded[from.asSymbol];
+    if(fromInfo.isNil) {
+      "CCFX: source effect '%' not found".format(from).warn;
+      ^nil;
     };
 
-    chains[name.asSymbol] = (
-      inBus: chainIn,
-      slots: slots,
-      buses: buses
+    // Validate to slot exists
+    toInfo = loaded[to.asSymbol];
+    if(toInfo.isNil) {
+      "CCFX: destination effect '%' not found".format(to).warn;
+      ^nil;
+    };
+
+    // Check for self-connection
+    if(from.asSymbol == to.asSymbol) {
+      "CCFX: cannot connect effect to itself".format(from).warn;
+      ^nil;
+    };
+
+    // Check for circular connection
+    if(this.wouldCreateCycle(from.asSymbol, to.asSymbol)) {
+      "CCFX: circular connection detected".warn;
+      ^nil;
+    };
+
+    // Create a routing Ndef that reads from `from` and writes to `to`'s input bus
+    routeSlot = (from ++ "_to_" ++ to).asSymbol;
+    Ndef(routeSlot, {
+      Out.ar(toInfo.inBus, Ndef(from.asSymbol).ar);
+    }).play;
+
+    // Store the connection
+    connections[from.asSymbol] = (
+      to: to.asSymbol,
+      routeNdef: Ndef(routeSlot)
     );
 
-    ^(name: name, bus: chainIn, slots: slots);
+    "Connected % → %".format(from, to).postln;
+    ^true;
+  }
+
+  wouldCreateCycle { |from, to|
+    var current = to;
+    while { connections[current].notNil } {
+      current = connections[current].to;
+      if(current == from) { ^true };
+    };
+    ^false;
+  }
+
+  registerChain { |name, slots|
+    chains[name.asSymbol] = slots;
   }
 
   sidechain { |name, threshold=0.1, ratio=4, attack=0.01, release=0.1|
@@ -344,15 +345,11 @@ CCFX {
     var targetInfo, targetBus;
 
     // Find target bus
-    if(chains[target.asSymbol].notNil) {
-      targetBus = chains[target.asSymbol].inBus;
+    if(loaded[target.asSymbol].notNil) {
+      targetBus = loaded[target.asSymbol].inBus;
     } {
-      if(loaded[target.asSymbol].notNil) {
-        targetBus = loaded[target.asSymbol].inBus;
-      } {
-        if(sidechains[target.asSymbol].notNil) {
-          targetBus = sidechains[target.asSymbol].inBus;
-        };
+      if(sidechains[target.asSymbol].notNil) {
+        targetBus = sidechains[target.asSymbol].inBus;
       };
     };
 
@@ -374,6 +371,9 @@ CCFX {
         ^false;
       };
     };
+
+    // Track the route
+    routes[source.asSymbol] = target.asSymbol;
 
     ^true;
   }
@@ -415,25 +415,26 @@ CCFX {
   }
 
   remove { |slot|
-    var info, chainInfo, scInfo;
+    var info, scInfo, connInfo;
 
     info = loaded[slot.asSymbol];
     if(info.notNil) {
+      // Remove any connections from this effect
+      connInfo = connections[slot.asSymbol];
+      if(connInfo.notNil) {
+        connInfo.routeNdef.clear;
+        connections.removeAt(slot.asSymbol);
+      };
+      // Remove any connections to this effect
+      connections.keysValuesDo { |from, conn|
+        if(conn.to == slot.asSymbol) {
+          conn.routeNdef.clear;
+          connections.removeAt(from);
+        };
+      };
       info.ndef.clear;
       info.inBus.free;
       loaded.removeAt(slot.asSymbol);
-      ^true;
-    };
-
-    // Check if it's a chain
-    chainInfo = chains[slot.asSymbol];
-    if(chainInfo.notNil) {
-      chainInfo.slots.do { |s|
-        loaded[s].ndef.clear;
-        loaded.removeAt(s);
-      };
-      chainInfo.buses.do(_.free);
-      chains.removeAt(slot.asSymbol);
       ^true;
     };
 
@@ -451,21 +452,27 @@ CCFX {
   }
 
   clearAll {
+    // Clear connections first
+    connections.keysValuesDo { |from, conn|
+      conn.routeNdef.clear;
+    };
+    connections.clear;
+    // Clear effects
     loaded.keysValuesDo { |slot, info|
       info.ndef.clear;
       info.inBus.free;
     };
-    chains.keysValuesDo { |name, info|
-      info.buses.do(_.free);
-    };
+    loaded.clear;
+    // Clear sidechains
     sidechains.keysValuesDo { |name, info|
       Ndef(info.slot).clear;
       info.inBus.free;
       info.triggerBus.free;
     };
-    loaded.clear;
-    chains.clear;
     sidechains.clear;
+    // Clear chains and routes
+    chains.clear;
+    routes.clear;
   }
 
   list {
@@ -473,11 +480,84 @@ CCFX {
   }
 
   status {
-    ^(
-      effects: loaded.keys.asArray,
-      chains: chains.keys.asArray,
-      sidechains: sidechains.keys.asArray
-    );
+    var lines = [];
+    var standaloneEffects, chainSlots;
+
+    // Collect all slots that are part of chains
+    chainSlots = Set[];
+    chains.do { |slots| slots.do { |s| chainSlots.add(s.asSymbol) } };
+
+    // Effects section (standalone effects not in chains)
+    standaloneEffects = loaded.keys.select { |slot| chainSlots.includes(slot).not };
+    if(standaloneEffects.size > 0) {
+      lines = lines.add("Effects:");
+      standaloneEffects.do { |slot|
+        var info = loaded[slot];
+        lines = lines.add("  % (%) - bus %".format(slot, info.name, info.inBus.index));
+      };
+    };
+
+    // Chains section
+    if(chains.size > 0) {
+      if(lines.size > 0) { lines = lines.add("") };
+      lines = lines.add("Chains:");
+      chains.keysValuesDo { |name, slots|
+        lines = lines.add("  %:".format(name));
+        slots.do { |slot|
+          lines = lines.add("    → %".format(slot));
+        };
+        lines = lines.add("    → main out");
+      };
+    };
+
+    // Connections section (non-chain connections)
+    if(connections.size > 0) {
+      // Filter out chain connections
+      var nonChainConnections = connections.select { |conn, from|
+        var isChainConn = false;
+        chains.do { |slots|
+          slots.do { |slot, i|
+            if((i < (slots.size - 1)) && (from == slot.asSymbol)) {
+              if(conn.to == slots[i + 1].asSymbol) {
+                isChainConn = true;
+              };
+            };
+          };
+        };
+        isChainConn.not;
+      };
+      if(nonChainConnections.size > 0) {
+        if(lines.size > 0) { lines = lines.add("") };
+        lines = lines.add("Connections:");
+        nonChainConnections.keysValuesDo { |from, conn|
+          lines = lines.add("  % → %".format(from, conn.to));
+        };
+      };
+    };
+
+    // Routes section
+    if(routes.size > 0) {
+      if(lines.size > 0) { lines = lines.add("") };
+      lines = lines.add("Routes:");
+      routes.keysValuesDo { |source, target|
+        lines = lines.add("  % → %".format(source, target));
+      };
+    };
+
+    // Sidechains section
+    if(sidechains.size > 0) {
+      if(lines.size > 0) { lines = lines.add("") };
+      lines = lines.add("Sidechains:");
+      sidechains.keysValuesDo { |name, info|
+        lines = lines.add("  % - input bus %, trigger bus %".format(name, info.inBus.index, info.triggerBus.index));
+      };
+    };
+
+    if(lines.size == 0) {
+      "No effects loaded".postln;
+    } {
+      lines.join("\n").postln;
+    };
   }
 
   describe {

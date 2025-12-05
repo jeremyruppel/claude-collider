@@ -68,6 +68,12 @@ Load an effect:
 Route a pattern through it:
   fx_route with source and target
 
+Connect effects in series:
+  fx_connect with from and to
+
+Create a chain in one call:
+  fx_chain with name and effects array
+
 ## Tips
 
 - All built-in synths are prefixed with \\cc_ (e.g. \\cc_kick, \\cc_bass)
@@ -466,11 +472,72 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "fx_list",
-        description: "List all loaded effects, chains, and sidechains.",
+        description: "List all loaded effects, sidechains, and connections.",
         inputSchema: {
           type: "object",
           properties: {},
           required: [],
+        },
+      },
+      {
+        name: "fx_connect",
+        description:
+          "Connect one effect's output to another effect's input for serial processing.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            from: {
+              type: "string",
+              description: "Source effect slot name (e.g. 'fx_distortion')",
+            },
+            to: {
+              type: "string",
+              description: "Destination effect slot name (e.g. 'fx_reverb')",
+            },
+          },
+          required: ["from", "to"],
+        },
+      },
+      {
+        name: "fx_chain",
+        description:
+          "Create a named chain of effects wired in series. Returns the chain's input slot for routing sources.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Name for this chain (e.g. 'bass_chain', 'vocal_chain')",
+            },
+            effects: {
+              type: "array",
+              description:
+                "Ordered list of effects. Each item can be a string (effect name with defaults) or an object with name and params.",
+              items: {
+                oneOf: [
+                  {
+                    type: "string",
+                    description: "Effect name with default parameters",
+                  },
+                  {
+                    type: "object",
+                    properties: {
+                      name: {
+                        type: "string",
+                        description: "Effect name (e.g. 'reverb', 'distortion')",
+                      },
+                      params: {
+                        type: "object",
+                        description: "Parameter key/value pairs for this effect",
+                      },
+                    },
+                    required: ["name"],
+                  },
+                ],
+              },
+            },
+          },
+          required: ["name", "effects"],
         },
       },
       // Sample tools
@@ -849,6 +916,87 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await sc.execute("~cc.fx.status")
         return {
           content: [{ type: "text", text: result }],
+        }
+      }
+
+      case "fx_connect": {
+        const { from, to } = args as { from: string; to: string }
+        const result = await sc.execute(`~cc.fx.connect(\\${from}, \\${to})`)
+        if (result.includes("nil")) {
+          return {
+            content: [{ type: "text", text: `Failed to connect ${from} → ${to}` }],
+            isError: true,
+          }
+        }
+        return {
+          content: [{ type: "text", text: `Connected ${from} → ${to}` }],
+        }
+      }
+
+      case "fx_chain": {
+        const { name: chainName, effects: fxList } = args as {
+          name: string
+          effects: Array<string | { name: string; params?: Record<string, number> }>
+        }
+
+        if (!fxList || fxList.length === 0) {
+          return {
+            content: [{ type: "text", text: "Error: effects array cannot be empty" }],
+            isError: true,
+          }
+        }
+
+        const slots: string[] = []
+        const results: string[] = []
+
+        // Load each effect with chain-specific slot names
+        for (let i = 0; i < fxList.length; i++) {
+          const fx = fxList[i]
+          const fxName = typeof fx === "string" ? fx : fx.name
+          const fxParams = typeof fx === "object" && fx.params ? fx.params : null
+          const slotName = `${chainName}_${i}_${fxName}`
+
+          // Load the effect
+          const loadResult = await sc.execute(
+            `~cc.fx.load(\\${fxName}, \\${slotName})`
+          )
+          if (loadResult.includes("unknown effect")) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Error: Unknown effect '${fxName}' at position ${i}`,
+                },
+              ],
+              isError: true,
+            }
+          }
+
+          // Set params if provided
+          if (fxParams) {
+            const paramStr = formatParams(fxParams)
+            await sc.execute(`~cc.fx.set(\\${slotName}, ${paramStr})`)
+          }
+
+          slots.push(slotName)
+          results.push(`  → ${slotName}`)
+        }
+
+        // Connect effects in series
+        for (let i = 0; i < slots.length - 1; i++) {
+          await sc.execute(`~cc.fx.connect(\\${slots[i]}, \\${slots[i + 1]})`)
+        }
+
+        // Register the chain for tracking
+        const slotsArray = slots.map((s) => `\\${s}`).join(", ")
+        await sc.execute(`~cc.fx.registerChain(\\${chainName}, [${slotsArray}])`)
+
+        results.push("  → main out")
+        results.unshift(`Created chain: ${chainName}`)
+        results.push(`Route sources to: ${slots[0]}`)
+
+        return {
+          content: [{ type: "text", text: results.join("\n") }],
         }
       }
 
