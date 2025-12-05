@@ -1,5 +1,6 @@
-// SynthDef metadata for validation and MCP tool schemas
-// Actual SynthDef code lives in ClaudeCollider Quark (CCSynths.sc)
+// SynthDef metadata - populated dynamically from SuperCollider
+
+import { SuperCollider } from "./supercollider.js"
 
 export interface SynthDefMeta {
   name: string
@@ -7,60 +8,48 @@ export interface SynthDefMeta {
   params: string[]
 }
 
-export const synthdefs: Record<string, SynthDefMeta> = {
-  kick: {
-    name: "kick",
-    description: "Punchy kick drum with sub bass",
-    params: ["out", "freq", "amp", "decay"],
-  },
+export class SynthDefs {
+  private defs: Record<string, SynthDefMeta> = {}
+  private sc: SuperCollider
 
-  snare: {
-    name: "snare",
-    description: "Snare drum with noise burst",
-    params: ["out", "freq", "amp", "decay"],
-  },
+  constructor(sc: SuperCollider) {
+    this.sc = sc
+  }
 
-  hihat: {
-    name: "hihat",
-    description: "Closed hi-hat",
-    params: ["out", "amp", "decay"],
-  },
+  async load(): Promise<void> {
+    const result = await this.sc.execute("~cc.synths.describe")
+    this.defs = {}
+    for (const line of result.split("\n")) {
+      const [name, description, paramsStr] = line.split("|")
+      if (name) {
+        this.defs[name] = {
+          name,
+          description: description || "",
+          params: paramsStr ? paramsStr.split(",") : [],
+        }
+      }
+    }
+  }
 
-  clap: {
-    name: "clap",
-    description: "Hand clap with layered noise bursts",
-    params: ["out", "amp", "decay"],
-  },
+  get(name: string): SynthDefMeta | undefined {
+    return this.defs[name]
+  }
 
-  bass: {
-    name: "bass",
-    description: "Simple sub bass with slight harmonics",
-    params: ["out", "freq", "amp", "decay", "gate"],
-  },
+  names(): string[] {
+    return Object.keys(this.defs)
+  }
 
-  acid: {
-    name: "acid",
-    description: "Resonant filter bass (303-style)",
-    params: ["out", "freq", "amp", "cutoff", "res", "decay", "gate"],
-  },
+  all(): SynthDefMeta[] {
+    return Object.values(this.defs)
+  }
 
-  lead: {
-    name: "lead",
-    description: "Detuned saw lead with filter",
-    params: ["out", "freq", "amp", "pan", "gate", "att", "rel", "cutoff", "res"],
-  },
+  isEmpty(): boolean {
+    return Object.keys(this.defs).length === 0
+  }
 
-  pad: {
-    name: "pad",
-    description: "Soft ambient pad with detuned oscillators",
-    params: ["out", "freq", "amp", "attack", "release", "gate"],
-  },
-}
-
-export function getSynthDefNames(): string[] {
-  return Object.keys(synthdefs)
-}
-
-export function getSynthDef(name: string): SynthDefMeta | undefined {
-  return synthdefs[name]
+  formatList(): string {
+    return this.all()
+      .map((s) => `  ${s.name}: ${s.description}`)
+      .join("\n")
+  }
 }

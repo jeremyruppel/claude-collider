@@ -9,7 +9,7 @@ import {
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { SuperCollider } from "./supercollider.js"
-import { getSynthDef, getSynthDefNames, synthdefs } from "./synthdefs.js"
+import { SynthDefs } from "./synthdefs.js"
 import {
   effectsLibrary,
   effectNames,
@@ -17,6 +17,72 @@ import {
 } from "./effects-library.js"
 
 const sc = new SuperCollider()
+const synthdefs = new SynthDefs(sc)
+
+function formatBootReadme(): string {
+  const synthList = synthdefs
+    .all()
+    .map((s) => `  - ${s.name}: ${s.description}`)
+    .join("\n")
+
+  const fxList = Object.values(effectsLibrary)
+    .map((e) => `  - ${e.name}: ${e.description}`)
+    .join("\n")
+
+  return `# ClaudeCollider
+
+SuperCollider is ready for sound synthesis and music creation.
+
+## Quick Start
+
+Play a synth:
+  Synth(\\cc_kick)
+  Synth(\\cc_lead, [freq: 440, amp: 0.3])
+
+Create a pattern:
+  Pdef(\\beat, Pbind(\\instrument, \\cc_kick, \\dur, 0.5)).play
+
+Stop all sounds:
+  Use the sc_stop tool
+
+## Using sc_execute
+
+The sc_execute tool runs SuperCollider code. Always send code as a single line.
+Use semicolons to separate statements: { var x = 1; x + 1 }.value
+
+You can create your own synths and effects using sclang:
+  SynthDef(\\mySynth, { |out=0, freq=440| Out.ar(out, SinOsc.ar(freq) * 0.2) }).add
+
+## Available Synths
+
+${synthList}
+
+For detailed parameters, read the supercollider://synthdefs resource.
+
+## Available Effects
+
+${fxList}
+
+For detailed parameters, read the supercollider://effects resource.
+
+## Effect Routing
+
+Load an effect:
+  fx_load with name (e.g. "reverb")
+
+Route a pattern through it:
+  fx_route with source and target
+
+Chain multiple effects:
+  fx_chain with name and effects array
+
+## Tips
+
+- All built-in synths are prefixed with \\cc_ (e.g. \\cc_kick, \\cc_bass)
+- Use sc_tempo to set BPM for patterns
+- Use sc_status to see what's playing
+- Use sc_clear to reset everything`
+}
 
 const server = new Server(
   {
@@ -130,21 +196,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: [],
-        },
-      },
-      {
-        name: "sc_load_synthdef",
-        description: `Load a pre-built SynthDef. Available: ${getSynthDefNames().join(", ")}. After loading, play with Synth(\\cc_name, [args]).`,
-        inputSchema: {
-          type: "object",
-          properties: {
-            name: {
-              type: "string",
-              description: "Name of the synthdef to load",
-              enum: getSynthDefNames(),
-            },
-          },
-          required: ["name"],
         },
       },
       {
@@ -453,14 +504,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { device } = args as { device?: string }
         const deviceArg = device ? `"${device}"` : "nil"
         await sc.boot()
-        const result = await sc.execute(`~cc = CC.boot(device: ${deviceArg})`)
+        await sc.execute(`~cc = CC.boot(device: ${deviceArg})`)
+        await synthdefs.load()
         return {
-          content: [
-            {
-              type: "text",
-              text: `ClaudeCollider booted${device ? ` with device: ${device}` : ""}\n${result}`,
-            },
-          ],
+          content: [{ type: "text", text: formatBootReadme() }],
         }
       }
 
@@ -530,31 +577,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: "text",
               text: `Rebooted${device ? ` with device: ${device}` : ""}`,
-            },
-          ],
-        }
-      }
-
-      case "sc_load_synthdef": {
-        const synthName = (args as { name: string }).name
-        const synthdef = getSynthDef(synthName)
-        if (!synthdef) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Unknown synthdef: ${synthName}. Available: ${getSynthDefNames().join(", ")}`,
-              },
-            ],
-            isError: true,
-          }
-        }
-        await sc.execute(`~cc.synths.load(\\${synthName})`)
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Loaded \\cc_${synthdef.name}: ${synthdef.description}\nParams: ${synthdef.params.join(", ")}\nPlay with: Synth(\\cc_${synthdef.name}, [freq: 440, amp: 0.5])`,
             },
           ],
         }
@@ -905,7 +927,19 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
   switch (uri) {
     case "supercollider://synthdefs": {
-      const content = Object.values(synthdefs)
+      if (synthdefs.isEmpty()) {
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: "text/plain",
+              text: "SynthDefs not loaded yet. Boot SuperCollider first with sc_boot.",
+            },
+          ],
+        }
+      }
+      const content = synthdefs
+        .all()
         .map((s) => {
           return `\\cc_${s.name} - ${s.description}\n  Params: ${s.params.join(", ")}\n  Usage: Synth(\\cc_${s.name}, [freq: 440, amp: 0.5])`
         })
