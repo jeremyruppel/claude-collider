@@ -1,24 +1,30 @@
-import { spawn, ChildProcess } from "child_process"
 import { EventEmitter } from "events"
 import { debug } from "./debug.js"
 import { SclangConfig } from "./config.js"
 import { OutputParser } from "./parser.js"
-import { compress } from "./tokenizer.js"
-import { ServerState, PendingOperation } from "./types.js"
+import { SclangProcess } from "./process.js"
+import { ServerState } from "./types.js"
 
 export class SuperCollider extends EventEmitter {
   private readonly config: SclangConfig
-  private readonly parser: OutputParser
-  private process: ChildProcess | null = null
+  private _process: SclangProcess | null = null
   private state: ServerState = ServerState.Stopped
-  private pendingBoot: PendingOperation | null = null
-  private execController: AbortController | null = null
   private bootCommandSent = false
 
   constructor() {
     super()
     this.config = new SclangConfig()
-    this.parser = new OutputParser()
+  }
+
+  private get process(): SclangProcess {
+    if (!this._process) {
+      throw new Error("SuperCollider process is not running")
+    }
+    return this._process
+  }
+
+  private set process(value: SclangProcess | null) {
+    this._process = value
   }
 
   async boot(): Promise<string> {
@@ -33,18 +39,53 @@ export class SuperCollider extends EventEmitter {
     }
 
     this.state = ServerState.Booting
+    this.bootCommandSent = false
     debug("State set to Booting")
 
     return new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        this.pendingBoot = null
         this.state = ServerState.Stopped
         reject(new Error("SuperCollider boot timed out"))
         this.quit()
       }, this.config.bootTimeout)
 
-      this.pendingBoot = { resolve, reject, timeout }
-      this.startProcess()
+      this.process = new SclangProcess(this.config)
+
+      this.process.once("sclang-ready", () => {
+        if (!this.bootCommandSent) {
+          debug("sclang ready, sending boot command")
+          this.bootCommandSent = true
+          this.process?.send(OutputParser.bootCommand())
+        }
+      })
+
+      this.process.once("server-ready", () => {
+        debug("Server ready")
+        clearTimeout(timeout)
+        this.state = ServerState.Running
+        resolve("SuperCollider server booted successfully")
+      })
+
+      this.process.once("error", (err) => {
+        clearTimeout(timeout)
+        this.state = ServerState.Stopped
+        reject(new Error(`Failed to start sclang: ${err.message}`))
+      })
+
+      this.process.on("exit", (code) => {
+        const wasRunning = this.state === ServerState.Running
+        this.state = ServerState.Stopped
+        this.process = null
+        this.emit("exit", code)
+        if (wasRunning) {
+          this.emit("crash", code)
+        }
+      })
+
+      this.process.on("stdout", (data) => this.emit("stdout", data))
+      this.process.on("stderr", (data) => this.emit("stderr", data))
+
+      this.process.spawn()
     })
   }
 
@@ -55,77 +96,48 @@ export class SuperCollider extends EventEmitter {
       )
     }
 
-    if (this.execController) {
-      throw new Error("Another execution is already in progress")
-    }
+    return new Promise<string>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error("Execution timed out"))
+      }, this.config.execTimeout)
 
-    this.parser.clear()
-    this.execController = new AbortController()
-    const { signal } = this.execController
+      const cleanup = () => {
+        clearTimeout(timeout)
+        this.process?.removeListener("exec-result", onResult)
+        this.process?.removeListener("exec-error", onError)
+      }
 
-    try {
-      return await new Promise<string>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error("Execution timed out"))
-        }, this.config.execTimeout)
+      const onResult = (result: string) => {
+        cleanup()
+        resolve(result)
+      }
 
-        signal.addEventListener("abort", () => {
-          clearTimeout(timeout)
-          reject(signal.reason)
-        })
+      const onError = (error: Error) => {
+        cleanup()
+        reject(error)
+      }
 
-        const onResult = (result: string) => {
-          clearTimeout(timeout)
-          this.removeListener("exec-error", onError)
-          resolve(result)
-        }
-
-        const onError = (error: Error) => {
-          clearTimeout(timeout)
-          this.removeListener("exec-result", onResult)
-          reject(error)
-        }
-
-        this.once("exec-result", onResult)
-        this.once("exec-error", onError)
-
-        this.sendCode(OutputParser.wrapCode(code))
-      })
-    } finally {
-      this.execController = null
-    }
+      this.process.once("exec-result", onResult)
+      this.process.once("exec-error", onError)
+      this.process.sendWrapped(code)
+    })
   }
 
   async stop(): Promise<void> {
-    if (this.process) {
-      this.sendCode("CmdPeriod.run;")
-    }
+    this._process?.send("CmdPeriod.run;")
   }
 
   async freeAll(): Promise<void> {
-    if (this.process) {
-      this.sendCode("s.freeAll;")
-    }
+    this._process?.send("s.freeAll;")
   }
 
   async quit(): Promise<void> {
-    if (this.process) {
-      const proc = this.process
-      this.process = null // Clear before kill to prevent handleExit from rejecting new pendingBoot
-      this.state = ServerState.Stopped
-      this.bootCommandSent = false
-      this.clearPending()
-
-      // Wait for process to actually exit
-      await new Promise<void>((resolve) => {
-        proc.once("exit", () => resolve())
-        proc.kill()
-      })
-    } else {
-      this.state = ServerState.Stopped
-      this.bootCommandSent = false
-      this.clearPending()
+    if (this._process) {
+      await this._process.kill()
+      this.process = null
     }
+    this.state = ServerState.Stopped
+    this.bootCommandSent = false
   }
 
   async restart(): Promise<string> {
@@ -151,166 +163,5 @@ export class SuperCollider extends EventEmitter {
 
   getRecordingsPath(): string {
     return this.config.recordingsPath.replace(/"/g, '\\"')
-  }
-
-  private startProcess(): void {
-    debug(`startProcess() called`)
-    debug(`sclang path: ${this.config.path}`)
-
-    this.process = spawn(this.config.path, [], {
-      stdio: ["pipe", "pipe", "pipe"],
-    })
-
-    debug(`Process spawned, pid: ${this.process.pid}`)
-
-    this.parser.clear()
-    this.bootCommandSent = false
-    this.setupProcessHandlers()
-  }
-
-  private setupProcessHandlers(): void {
-    if (!this.process) {
-      return
-    }
-
-    this.process.stdout?.on("data", (data: Buffer) => {
-      this.handleStdout(data.toString())
-    })
-
-    this.process.stderr?.on("data", (data: Buffer) => {
-      this.handleStderr(data.toString())
-    })
-
-    this.process.on("error", (err) => {
-      this.handleProcessError(err)
-    })
-
-    this.process.on("exit", (code) => {
-      this.handleExit(code)
-    })
-  }
-
-  private handleStdout(data: string): void {
-    debug(`[stdout] ${data}`)
-    this.parser.append(data)
-    this.emit("stdout", data)
-    this.checkForSclangReady()
-    this.checkForServerReady()
-    this.checkForExecResult()
-  }
-
-  private checkForSclangReady(): void {
-    if (
-      this.state === ServerState.Booting &&
-      !this.bootCommandSent &&
-      this.parser.hasSclangReady()
-    ) {
-      debug("sclang ready, sending boot command")
-      this.bootCommandSent = true
-      this.sendCode(OutputParser.bootCommand())
-    }
-  }
-
-  private handleStderr(data: string): void {
-    debug(`[stderr] ${data}`)
-    this.parser.append(data)
-    this.emit("stderr", data)
-    this.checkForServerReady()
-
-    if (data.includes("ERROR")) {
-      this.emit("error", new Error(data))
-    }
-  }
-
-  private checkForServerReady(): void {
-    if (this.state === ServerState.Booting && this.pendingBoot) {
-      if (this.parser.hasServerReady()) {
-        debug("SERVER_READY detected, transitioning to Running state")
-        this.state = ServerState.Running
-        clearTimeout(this.pendingBoot.timeout)
-        const { resolve } = this.pendingBoot
-        this.pendingBoot = null
-        resolve("SuperCollider server booted successfully")
-      }
-    }
-  }
-
-  private checkForExecResult(): void {
-    if (this.state === ServerState.Running && this.execController) {
-      const result = this.parser.extractResult()
-      if (result !== null) {
-        debug(`Execution result: ${result}`)
-
-        // Check if there was an error in the output
-        const formattedError = this.parser.formatError()
-        if (formattedError) {
-          debug(`Detected error: ${formattedError}`)
-          this.emit("exec-error", new Error(formattedError))
-        } else {
-          this.emit("exec-result", result)
-        }
-      }
-    }
-  }
-
-  private handleProcessError(err: Error): void {
-    debug(`Process error: ${err.message}`)
-    const error = new Error(`Failed to start sclang: ${err.message}`)
-
-    if (this.pendingBoot) {
-      clearTimeout(this.pendingBoot.timeout)
-      this.pendingBoot.reject(error)
-      this.pendingBoot = null
-    }
-
-    this.state = ServerState.Stopped
-    this.emit("error", error)
-  }
-
-  private handleExit(code: number | null): void {
-    debug(`Process exited with code: ${code}`)
-    const wasRunning = this.state === ServerState.Running
-    this.state = ServerState.Stopped
-    this.process = null
-
-    const error = new Error(`sclang exited with code ${code}`)
-
-    if (this.pendingBoot) {
-      clearTimeout(this.pendingBoot.timeout)
-      this.pendingBoot.reject(error)
-      this.pendingBoot = null
-    }
-
-    if (this.execController) {
-      this.execController.abort(error)
-    }
-
-    this.emit("exit", code)
-
-    if (wasRunning) {
-      this.emit("crash", code)
-    }
-  }
-
-  private clearPending(): void {
-    if (this.pendingBoot) {
-      clearTimeout(this.pendingBoot.timeout)
-      this.pendingBoot = null
-    }
-    if (this.execController) {
-      this.execController.abort(new Error("Operation cancelled"))
-      this.execController = null
-    }
-  }
-
-  private sendCode(code: string): void {
-    const compressed = compress(code)
-    debug(`sendCode called with: ${compressed}`)
-    if (!this.process?.stdin) {
-      debug("ERROR: No stdin available")
-      return
-    }
-    const result = this.process.stdin.write(compressed + "\n")
-    debug(`stdin.write returned: ${result}`)
   }
 }

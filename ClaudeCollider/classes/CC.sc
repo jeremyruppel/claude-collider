@@ -11,6 +11,7 @@ CC {
   var <midi;
   var <state;
   var <recorder;
+  var <formatter;
   var <isBooted;
 
   *new { |server, samplesDir, recordingsDir|
@@ -31,6 +32,7 @@ CC {
     midi = CCMIDI(this);
     state = CCState(this);
     recorder = CCRecorder(this, argRecordingsDir);
+    formatter = CCFormatter(this);
     isBooted = false;
   }
 
@@ -103,24 +105,6 @@ CC {
   }
 
   status {
-    var playingPdefs = Pdef.all.select(_.isPlaying).keys.asArray;
-    var playingNdefs = Ndef.all.select(_.isPlaying).keys.asArray;
-    var loadedSamples = samples.buffers.size;
-    var totalSamples = samples.paths.size;
-    var lines = [
-      "Server: % | CPU: %% | Synths: %".format(
-        if(server.serverRunning) { "running" } { "stopped" },
-        server.avgCPU.round(0.1),
-        server.numSynths
-      ),
-      "Tempo: % BPM | Device: %".format(
-        this.tempo.round(0.1),
-        server.options.device ?? "default"
-      ),
-      "Samples: %/% loaded".format(loadedSamples, totalSamples),
-      "Pdefs playing: %".format(if(playingPdefs.isEmpty) { "none" } { playingPdefs.join(", ") }),
-      "Ndefs playing: %".format(if(playingNdefs.isEmpty) { "none" } { playingNdefs.join(", ") })
-    ];
-    lines.join("\n").postln;
+    formatter.print;
   }
 }

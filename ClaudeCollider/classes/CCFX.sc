@@ -362,7 +362,7 @@ CCFX {
     if(Pdef.all[source.asSymbol].notNil) {
       Pdef(source.asSymbol).set(\out, targetBus);
     } {
-      if(Ndef.all[source.asSymbol].notNil) {
+      if(Ndef.all[cc.server].includesKey(source.asSymbol)) {
         Ndef((source ++ "_routed").asSymbol, {
           Out.ar(targetBus, Ndef(source.asSymbol).ar);
         }).play;
@@ -388,7 +388,7 @@ CCFX {
     if(Pdef.all[source.asSymbol].notNil) {
       Pdef(source.asSymbol).set(\out, sc.triggerBus);
     } {
-      if(Ndef.all[source.asSymbol].notNil) {
+      if(Ndef.all[cc.server].includesKey(source.asSymbol)) {
         Ndef((source ++ "_trigger").asSymbol, {
           Out.ar(sc.triggerBus, Ndef(source.asSymbol).ar);
         }).play;
