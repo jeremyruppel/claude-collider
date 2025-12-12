@@ -86,12 +86,31 @@ Record your jam to a WAV file:
 
 Recordings are saved to the configured recordings directory (default: ~/.claudecollider/recordings/)
 
+## Debugging
+
+Use routing_debug to see the full audio signal flow:
+- Effects with bus indices and current parameter values
+- Chains with slot order and bus numbers
+- Connections between effects
+- Routes from sources to effects
+- Sidechains with trigger info
+
+## GUI Tools
+
+SuperCollider has built-in GUI tools for visualization and debugging:
+- s.meter — Audio level meters for inputs/outputs
+- s.scope — Oscilloscope showing audio waveforms
+- s.freqscope — Frequency spectrum analyzer
+- s.plotTree — Visual tree of running synths and groups
+
 ## Tips
 
 - All built-in synths are prefixed with \\cc_ (e.g. \\cc_kick, \\cc_bass)
 - Use sc_tempo to set BPM for patterns
-- Use sc_status to see what's playing
+- Use sc_status to see what's playing or for troubleshooting
+- Use routing_debug to debug audio routing issues
 - Use sc_clear to reset everything
+- NEVER call Synth() or ~cc.synths.play() inside an Ndef — causes infinite synth spawning and timeout
 
 ## Architecture Note: SynthDef vs Ndef
 
@@ -99,9 +118,6 @@ Built-in synths use SynthDef (not Ndef) because most are one-shots with doneActi
 
 - **SynthDefs** (cc_kick, cc_snare, etc.): Fire-and-forget. Create with Synth(), auto-free when done.
 - **Ndefs**: Persistent named slots for continuous sounds. Better for drones/pads you want to tweak live.
-
-For evolving textures, consider wrapping in Ndef:
-  Ndef(\\myDrone, { ~cc.synths.play(\\drone, \\freq, 55) })
 
 ## Live Coding Conventions
 
@@ -658,6 +674,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: [],
         },
       },
+      // Debug tools
+      {
+        name: "routing_debug",
+        description:
+          "Debug the current audio routing: shows signal flow, bus indices, effect parameters, and active sources.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
     ],
   }
 })
@@ -1154,6 +1181,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "recording_status": {
         const result = await sc.execute("~cc.recorder.status")
+        return {
+          content: [{ type: "text", text: result }],
+        }
+      }
+
+      // Debug tools
+      case "routing_debug": {
+        const result = await sc.execute("~cc.formatter.formatRoutingDebug")
         return {
           content: [{ type: "text", text: result }],
         }
