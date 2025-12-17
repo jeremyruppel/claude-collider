@@ -59,7 +59,7 @@ Pre-built SynthDefs with `cc_` prefix. All synths are auto-loaded on boot.
 
 **Available synths**:
 
-*Drums*:
+_Drums_:
 | Name | Description | Params |
 |------|-------------|--------|
 | kick | Punchy kick drum with sub bass | out, freq, amp, decay |
@@ -72,7 +72,7 @@ Pre-built SynthDefs with `cc_` prefix. All synths are auto-loaded on boot.
 | shaker | Shaker / maraca | out, amp, decay, color |
 | cowbell | 808-style cowbell | out, amp, decay |
 
-*Bass*:
+_Bass_:
 | Name | Description | Params |
 |------|-------------|--------|
 | bass | Simple sub bass with harmonics | out, freq, amp, decay, gate |
@@ -81,7 +81,7 @@ Pre-built SynthDefs with `cc_` prefix. All synths are auto-loaded on boot.
 | reese | Detuned saw bass (DnB/dubstep) | out, freq, amp, detune, cutoff, gate |
 | fmbass | FM bass for growly tones | out, freq, amp, index, ratio, gate |
 
-*Leads & Melodic*:
+_Leads & Melodic_:
 | Name | Description | Params |
 |------|-------------|--------|
 | lead | Detuned saw lead with filter | out, freq, amp, pan, gate, att, rel, cutoff, res |
@@ -90,7 +90,7 @@ Pre-built SynthDefs with `cc_` prefix. All synths are auto-loaded on boot.
 | keys | Electric piano / Rhodes-ish | out, freq, amp, attack, release, brightness, gate |
 | strings | String ensemble pad | out, freq, amp, attack, release, detune, gate |
 
-*Pads & Textural*:
+_Pads & Textural_:
 | Name | Description | Params |
 |------|-------------|--------|
 | pad | Soft ambient pad | out, freq, amp, attack, release, gate |
@@ -98,7 +98,7 @@ Pre-built SynthDefs with `cc_` prefix. All synths are auto-loaded on boot.
 | drone | Evolving ambient texture | out, freq, amp, spread, movement, gate |
 | riser | Tension building sweep | out, amp, duration, startFreq, endFreq |
 
-*Utility*:
+_Utility_:
 | Name | Description | Params |
 |------|-------------|--------|
 | click | Metronome click | out, amp, freq |
@@ -173,14 +173,14 @@ Ndef-based effects system with routing and chaining.
 
 **Available effects**:
 
-| Category | Effects |
-|----------|---------|
-| Filters | lpf, hpf, bpf |
-| Time-based | reverb, delay, pingpong |
+| Category   | Effects                          |
+| ---------- | -------------------------------- |
+| Filters    | lpf, hpf, bpf                    |
+| Time-based | reverb, delay, pingpong          |
 | Modulation | chorus, flanger, phaser, tremolo |
-| Distortion | distortion, bitcrush, wavefold |
-| Dynamics | compressor, limiter, gate |
-| Stereo | widener, autopan |
+| Distortion | distortion, bitcrush, wavefold   |
+| Dynamics   | compressor, limiter, gate        |
+| Stereo     | widener, autopan                 |
 
 ### CCMIDI
 

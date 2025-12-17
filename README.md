@@ -11,7 +11,7 @@ An MCP (Model Context Protocol) server that enables Claude to generate and play 
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/claude-collider.git
+git clone https://github.com/jeremyruppel/claude-collider.git
 cd claude-collider
 npm install
 npm run build
@@ -44,68 +44,69 @@ Restart Claude Desktop after updating the config.
 
 ### SuperCollider Tools
 
-| Tool | Description |
-|------|-------------|
-| `sc_boot` | Boot ClaudeCollider and the SuperCollider audio server |
-| `sc_execute` | Execute SuperCollider code (play sounds, define synths, create patterns) |
-| `sc_stop` | Stop all sounds (Cmd+Period equivalent) |
-| `sc_status` | Get status: tempo, synths, CPU, active patterns |
-| `sc_tempo` | Get or set the tempo in BPM |
-| `sc_clear` | Stop all sounds and clear patterns, effects, and MIDI mappings |
-| `sc_reboot` | Reboot the audio server with optional new device |
-| `sc_audio_devices` | List available audio input and output devices |
+| Tool               | Description                                                              |
+| ------------------ | ------------------------------------------------------------------------ |
+| `sc_boot`          | Boot ClaudeCollider and the SuperCollider audio server                   |
+| `sc_execute`       | Execute SuperCollider code (play sounds, define synths, create patterns) |
+| `sc_stop`          | Stop all sounds (Cmd+Period equivalent)                                  |
+| `sc_status`        | Get status: tempo, synths, CPU, active patterns                          |
+| `sc_tempo`         | Get or set the tempo in BPM                                              |
+| `sc_clear`         | Stop all sounds and clear patterns, effects, and MIDI mappings           |
+| `sc_reboot`        | Reboot the audio server with optional new device                         |
+| `sc_audio_devices` | List available audio input and output devices                            |
 
 ### MIDI Tools
 
-| Tool | Description |
-|------|-------------|
-| `midi_list_devices` | List available MIDI input and output devices |
-| `midi_connect` | Connect to a MIDI device by name or index (use 'all' for all inputs) |
-| `midi_map_notes` | Map MIDI notes to trigger a synth (polyphonic or mono) |
-| `midi_map_cc` | Map a MIDI CC to a control bus for parameter modulation |
-| `midi_clear` | Clear all MIDI mappings |
+| Tool                | Description                                                          |
+| ------------------- | -------------------------------------------------------------------- |
+| `midi_list_devices` | List available MIDI input and output devices                         |
+| `midi_connect`      | Connect to a MIDI device by name or index (use 'all' for all inputs) |
+| `midi_map_notes`    | Map MIDI notes to trigger a synth (polyphonic or mono)               |
+| `midi_map_cc`       | Map a MIDI CC to a control bus for parameter modulation              |
+| `midi_clear`        | Clear all MIDI mappings                                              |
 
 ### Effects Tools
 
-| Tool | Description |
-|------|-------------|
-| `fx_load` | Load a pre-built effect (returns input bus for routing) |
-| `fx_set` | Set parameters on a loaded effect |
-| `fx_route` | Route a sound source (Pdef/Ndef) to an effect |
-| `fx_connect` | Connect one effect's output to another effect's input |
-| `fx_chain` | Create a named chain of effects wired in series |
-| `fx_sidechain` | Create a sidechain compressor (e.g., kick ducking bass) |
-| `fx_route_trigger` | Route a source to the trigger input of a sidechain |
-| `fx_bypass` | Bypass an effect (pass audio through unchanged) |
-| `fx_remove` | Remove an effect and free its resources |
-| `fx_list` | List all loaded effects, sidechains, and connections |
+| Tool               | Description                                             |
+| ------------------ | ------------------------------------------------------- |
+| `fx_load`          | Load a pre-built effect (returns input bus for routing) |
+| `fx_set`           | Set parameters on a loaded effect                       |
+| `fx_route`         | Route a sound source (Pdef/Ndef) to an effect           |
+| `fx_connect`       | Connect one effect's output to another effect's input   |
+| `fx_chain`         | Create a named chain of effects wired in series         |
+| `fx_sidechain`     | Create a sidechain compressor (e.g., kick ducking bass) |
+| `fx_route_trigger` | Route a source to the trigger input of a sidechain      |
+| `fx_bypass`        | Bypass an effect (pass audio through unchanged)         |
+| `fx_remove`        | Remove an effect and free its resources                 |
+| `fx_list`          | List all loaded effects, sidechains, and connections    |
 
 ### Sample Tools
 
 Place WAV or AIFF files in your samples directory (default: `~/.claudecollider/samples/`). Samples are discovered on boot and lazy loaded on first use.
 
-| Tool | Description |
-|------|-------------|
-| `sample_list` | List available samples (shows loaded/unloaded status) |
-| `sample_play` | Play a sample once (loads buffer if needed) |
-| `sample_free` | Free a sample buffer from memory |
-| `sample_reload` | Rescan samples directory for new files |
+| Tool            | Description                                           |
+| --------------- | ----------------------------------------------------- |
+| `sample_list`   | List available samples (shows loaded/unloaded status) |
+| `sample_play`   | Play a sample once (loads buffer if needed)           |
+| `sample_free`   | Free a sample buffer from memory                      |
+| `sample_reload` | Rescan samples directory for new files                |
 
 ### Recording Tools
 
 Record your jams to WAV files in your recordings directory (default: `~/.claudecollider/recordings/`).
 
-| Tool | Description |
-|------|-------------|
-| `recording_start` | Start recording audio output to a WAV file |
-| `recording_stop` | Stop recording and get the saved file path |
-| `recording_status` | Check if recording is active |
+| Tool               | Description                                |
+| ------------------ | ------------------------------------------ |
+| `recording_start`  | Start recording audio output to a WAV file |
+| `recording_stop`   | Stop recording and get the saved file path |
+| `recording_status` | Check if recording is active               |
 
 ## Pre-built SynthDefs
 
 All synths are automatically loaded when you call `sc_boot`. Use them with the `\cc_` prefix:
 
 **Drums**:
+
 - **cc_kick** - Punchy kick drum with sub bass
 - **cc_snare** - Snare drum with noise burst
 - **cc_hihat** - Closed hi-hat
@@ -117,6 +118,7 @@ All synths are automatically loaded when you call `sc_boot`. Use them with the `
 - **cc_cowbell** - 808-style cowbell
 
 **Bass**:
+
 - **cc_bass** - Simple sub bass with harmonics
 - **cc_acid** - Resonant 303-style filter bass
 - **cc_sub** - Pure sub bass for layering
@@ -124,6 +126,7 @@ All synths are automatically loaded when you call `sc_boot`. Use them with the `
 - **cc_fmbass** - FM bass for growly tones
 
 **Leads & Melodic**:
+
 - **cc_lead** - Detuned saw lead with filter
 - **cc_pluck** - Karplus-Strong plucked string
 - **cc_bell** - FM bell / glassy tone
@@ -131,12 +134,14 @@ All synths are automatically loaded when you call `sc_boot`. Use them with the `
 - **cc_strings** - String ensemble pad
 
 **Pads & Textural**:
+
 - **cc_pad** - Soft ambient pad with detuned oscillators
 - **cc_noise** - Filtered noise source
 - **cc_drone** - Evolving ambient texture
 - **cc_riser** - Tension building sweep
 
 **Utility**:
+
 - **cc_click** - Metronome click
 - **cc_sine** - Pure sine tone
 - **cc_sampler** - Basic sample playback
@@ -181,14 +186,14 @@ Logs are written to `/tmp/claude-collider.log`.
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SCLANG_PATH` | Auto-detected | Path to sclang executable |
-| `SC_BOOT_TIMEOUT` | 10000 | Boot timeout in ms |
-| `SC_EXEC_TIMEOUT` | 2000 | Execution timeout in ms |
-| `CC_SAMPLES_PATH` | `~/.claudecollider/samples` | Directory for audio samples |
-| `CC_RECORDINGS_PATH` | `~/.claudecollider/recordings` | Directory for recorded audio |
-| `DEBUG` | - | Set to `claude-collider` for debug logs |
+| Variable             | Default                        | Description                             |
+| -------------------- | ------------------------------ | --------------------------------------- |
+| `SCLANG_PATH`        | Auto-detected                  | Path to sclang executable               |
+| `SC_BOOT_TIMEOUT`    | 10000                          | Boot timeout in ms                      |
+| `SC_EXEC_TIMEOUT`    | 2000                           | Execution timeout in ms                 |
+| `CC_SAMPLES_PATH`    | `~/.claudecollider/samples`    | Directory for audio samples             |
+| `CC_RECORDINGS_PATH` | `~/.claudecollider/recordings` | Directory for recorded audio            |
+| `DEBUG`              | -                              | Set to `claude-collider` for debug logs |
 
 ## License
 
