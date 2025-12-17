@@ -9,6 +9,9 @@
     "start": "node dist/index.js",
     "dev": "tsc --watch"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "mcp",
     "supercollider",
