@@ -17,6 +17,14 @@ npm install
 npm run build
 ```
 
+## ClaudeCollider Quark
+
+Symlink or copy the ClaudeCollider folder to your Extensions directory:
+
+```bash
+ln -s /path/to/claude-collider/ClaudeCollider ~/Library/Application\ Support/SuperCollider/Extensions/ClaudeCollider
+```
+
 ## Claude Desktop Configuration
 
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
