@@ -1,6 +1,6 @@
 {
   "name": "claude-collider",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for live coding music with SuperCollider",
   "type": "module",
   "main": "dist/index.js",
