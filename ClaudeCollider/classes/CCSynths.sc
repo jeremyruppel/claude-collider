@@ -401,20 +401,24 @@ CCSynths {
       ),
 
       riser: (
-        description: "Tension riser/sweep. Two detuned saws + HPF noise, all sweeping exponentially from startFreq (200Hz) to endFreq (4kHz) over duration (4s). Noise crescendos during sweep. One-shot, self-timed.",
+        description: "Tension riser/sweep. Two detuned saws + layered noise, all sweeping exponentially from startFreq (200Hz) to endFreq (4kHz) over duration (4s). Noise crescendos during sweep. One-shot, self-timed.",
         def: {
           SynthDef(\cc_riser, { |out=0, amp=0.4, duration=4, startFreq=200, endFreq=4000|
-            var sig, env, fenv, noise;
+            var sig, env, fenv, noise, noise2, noiseEnv;
             env = EnvGen.kr(Env([0, 1, 0], [duration, 0.01]), doneAction: 2);
+            noiseEnv = EnvGen.kr(Env([0.001, 1], [duration], \exp));
             // Frequency sweep
             fenv = EnvGen.kr(Env([startFreq, endFreq], [duration], \exp));
             // Oscillator sweep
-            sig = Saw.ar(fenv) * 0.5;
-            sig = sig + (Saw.ar(fenv * 1.01) * 0.3);
-            // Noise crescendo
-            noise = HPF.ar(WhiteNoise.ar, fenv);
-            noise = noise * EnvGen.kr(Env([0, 1], [duration], \exp));
-            sig = sig + (noise * 0.4);
+            sig = Saw.ar(fenv) * 0.4;
+            sig = sig + (Saw.ar(fenv * 1.01) * 0.25);
+            // Noise layer 1: HPF white noise following sweep
+            noise = HPF.ar(WhiteNoise.ar, fenv) * noiseEnv * 0.5;
+            // Noise layer 2: BPF noise centered on sweep freq for resonant screech
+            noise2 = BPF.ar(WhiteNoise.ar, fenv * 1.5, 0.1) * noiseEnv * 2;
+            // Noise layer 3: broadband crackle
+            noise = noise + (HPF.ar(PinkNoise.ar, 2000) * noiseEnv * 0.4);
+            sig = sig + noise + noise2;
             // Filter sweep
             sig = RLPF.ar(sig, fenv * 2, 0.3);
             sig = sig * env * amp;
