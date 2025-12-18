@@ -257,11 +257,27 @@ CCFormatter {
   }
 
   getPdefOutBus { |pdef|
-    var out;
+    var out, source;
     if(pdef.isNil || pdef.source.isNil) { ^nil };
-    out = pdef.source.at(\out);
-    if(out.isKindOf(Bus)) { ^out.index };
-    ^out;
+    source = pdef.source;
+    // Handle Pbind and similar patterns that store pairs
+    if(source.respondsTo(\patternpairs)) {
+      var pairs = source.patternpairs;
+      pairs.pairsDo { |key, val|
+        if(key == \out) {
+          out = val;
+          if(out.isKindOf(Bus)) { ^out.index };
+          ^out;
+        };
+      };
+    };
+    // Handle Event sources
+    if(source.respondsTo(\at)) {
+      out = source.at(\out);
+      if(out.isKindOf(Bus)) { ^out.index };
+      ^out;
+    };
+    ^nil;
   }
 
   appendDebugSidechains { |lines|
