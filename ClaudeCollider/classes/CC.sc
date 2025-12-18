@@ -94,6 +94,7 @@ CC {
   }
 
   clear {
+    server.freeAll;
     this.stop;
     Pdef.all.do(_.clear);
     Ndef.all.do(_.clear);
