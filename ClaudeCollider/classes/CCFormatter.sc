@@ -42,9 +42,9 @@ CCFormatter {
   }
 
   formatServer {
-    ^"Server: % | CPU: %% | Synths: %".format(
+    ^"Server: % | CPU: % | Synths: %".format(
       if(cc.server.serverRunning) { "running" } { "stopped" },
-      cc.server.avgCPU.round(0.1),
+      cc.server.avgCPU.round(0.1).asString ++ "%",
       cc.server.numSynths
     );
   }
