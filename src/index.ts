@@ -125,6 +125,16 @@ Always use proxy objects for live-updatable sounds:
 - Pdef: Patterns (beats, sequences) — crossfades at next loop point
 - Ndef: Continuous synths (drones, pads, effects) — crossfades over fadeTime
 - Tdef: Tasks (algorithmic sequences) — restarts with new definition
+- Ppar: Combine patterns to start simultaneously (use inside Pdef for synchronized multi-part arrangements)
+
+### Ppar for Synchronized Patterns
+
+Use Ppar when multiple patterns must start at exactly the same time:
+  Pdef(\\song, Ppar([
+    Pbind(\\instrument, \\cc_kick, \\dur, 1, \\freq, 48),
+    Pbind(\\instrument, \\cc_bass, \\dur, 0.5, \\midinote, Pseq([36, 38], inf)),
+    Pbind(\\instrument, \\cc_lead, \\dur, 1, \\midinote, Pseq([60, 62, 64], inf))
+  ])).play
 
 ### Drum Patterns and Frequency
 

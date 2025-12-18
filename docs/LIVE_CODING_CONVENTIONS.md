@@ -70,6 +70,39 @@ Pdef(\hats).stop;
 Pdef.all.do(_.stop);
 ```
 
+### Ppar — Parallel Patterns
+
+Use `Ppar` to combine multiple patterns into one that plays them simultaneously. This ensures all patterns start at exactly the same time.
+
+```supercollider
+// Combine patterns to start together
+Pdef(\song, Ppar([
+  Pbind(\instrument, \cc_kick, \dur, 1, \freq, 48),
+  Pbind(\instrument, \cc_hihat, \dur, 0.5, \amp, 0.3),
+  Pbind(\instrument, \cc_bass, \dur, 0.5, \midinote, Pseq([36, 36, 38, 36], inf))
+])).play;
+
+// All three patterns are guaranteed to start on the same beat
+// Updating the Pdef updates all patterns together
+```
+
+**When to use Ppar vs separate Pdefs:**
+
+| Approach | Use When |
+| -------- | -------- |
+| Separate Pdefs | Parts need independent start/stop control |
+| Ppar in one Pdef | Parts must stay perfectly synchronized |
+| Ppar in one Pdef | Parts share the same musical structure |
+
+```supercollider
+// Ppar is especially useful for multi-part arrangements from notation
+Pdef(\verse, Ppar([
+  Pbind(\instrument, \cc_bass, \dur, ..., \midinote, ...),    // bass line
+  Pbind(\instrument, \cc_keys, \dur, ..., \midinote, ...),    // chords
+  Pbind(\instrument, \cc_lead, \dur, ..., \midinote, ...)     // melody
+])).play;
+```
+
 ## Ndef — Node Proxies
 
 Use `Ndef` for continuous sounds: drones, pads, effects, audio processing.
