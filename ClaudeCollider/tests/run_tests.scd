@@ -3,12 +3,14 @@
 
 (
 fork {
-  UnitTest.reportPasses = true;
-  CCFormatterTest.run;
-  CCFXTest.run;
-  CCSynthsTest.run;
-  CCSamplesTest.run;
-  1.wait;
-  0.exit;
+  UnitTest.runAll;
+  2.wait;
+  if(UnitTest.failures.size > 0) {
+    "FAILED: % test(s) failed".format(UnitTest.failures.size).postln;
+    1.exit;
+  } {
+    "All tests passed".postln;
+    0.exit;
+  };
 };
 )

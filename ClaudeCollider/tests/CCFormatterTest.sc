@@ -410,10 +410,10 @@ CCFormatterTest : UnitTest {
     var result;
     mockCC.fx.connections = Dictionary[\fx_dist -> (to: \fx_reverb)];
     mockCC.fx.chains = Dictionary[];
-    result = formatter.appendDebugConnections(["existing", "lines"]);
+    result = formatter.appendDebugConnections(["a", "b", "c"]);
     this.assertEquals(
       result,
-      ["existing", "lines", "", "Connections:", "  fx_dist → fx_reverb"],
+      ["a", "b", "c", "", "Connections:", "  fx_dist → fx_reverb"],
       "appendDebugConnections should format non-chain connections"
     );
   }
@@ -444,10 +444,10 @@ CCFormatterTest : UnitTest {
     Pdef(\testPdef1).clear;
     mockCC.fx.routes = Dictionary[\testPdef1 -> \fx_reverb];
     mockCC.fx.loaded = Dictionary[];
-    result = formatter.appendDebugSources(["existing"], Dictionary[], warnings);
+    result = formatter.appendDebugSources(["a", "b", "c"], Dictionary[], warnings);
     this.assertEquals(
       result,
-      ["existing", "", "Sources:", "  testPdef1 → fx_reverb"],
+      ["a", "b", "c", "", "Sources:", "  testPdef1 → fx_reverb"],
       "appendDebugSources should format source routes"
     );
   }

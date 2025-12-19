@@ -18,7 +18,9 @@ CCRecorder {
   }
 
   ensureDir {
-    if(File.exists(recordingsDir).not) { File.mkdir(recordingsDir) };
+    if(recordingsDir.notNil and: { File.exists(recordingsDir).not }) {
+      File.mkdir(recordingsDir);
+    };
   }
 
   configureFormat {
