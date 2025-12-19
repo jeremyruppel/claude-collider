@@ -115,6 +115,6 @@ CC {
   }
 
   status {
-    formatter.print;
+    ^formatter.format;
   }
 }

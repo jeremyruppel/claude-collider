@@ -96,10 +96,10 @@ CCFormatter {
     lines = lines.add("");
     lines = lines.add(this.format);
 
-    if(fx.loaded.size == 0 && fx.chains.size == 0) {
-      ("No effects loaded\n\n" ++ this.format).postln;
+    if(fx.loaded.size == 0 && fx.chains.size == 0 && fx.sidechains.size == 0) {
+      ^("No effects loaded\n\n" ++ this.format);
     } {
-      lines.join("\n").postln;
+      ^lines.join("\n");
     };
   }
 

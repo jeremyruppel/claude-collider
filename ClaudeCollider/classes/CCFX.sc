@@ -21,6 +21,13 @@ CCFX {
     chains = Dictionary[];
     routes = Dictionary[];
     defs = this.defineEffects;
+    this.addRoutingSynthDefs;
+  }
+
+  addRoutingSynthDefs {
+    SynthDef(\cc_bus_copy, { |in, out|
+      Out.ar(out, In.ar(in, 2));
+    }).add;
   }
 
   defineEffects {
@@ -236,7 +243,7 @@ CCFX {
       };
       func.valueArray([in] ++ params);
     });
-    ndef.set(\in, inBus);
+    ndef.set(\in, inBus.index);
     ndef.play;
 
     loaded[slotName.asSymbol] = (
@@ -261,7 +268,7 @@ CCFX {
   }
 
   connect { |from, to|
-    var fromInfo, toInfo, routeSlot;
+    var fromInfo, toInfo, routeSlot, routeSynth;
 
     // Validate from slot exists
     fromInfo = loaded[from.asSymbol];
@@ -289,16 +296,14 @@ CCFX {
       ^nil;
     };
 
-    // Create a routing Ndef that reads from `from` and writes to `to`'s input bus
+    // Create a routing Synth that copies from `from`'s bus to `to`'s input bus
     routeSlot = (from ++ "_to_" ++ to).asSymbol;
-    Ndef(routeSlot, {
-      Out.ar(toInfo.inBus, Ndef(from.asSymbol).ar);
-    }).play;
+    routeSynth = Synth(\cc_bus_copy, [\in, fromInfo.ndef.bus.index, \out, toInfo.inBus.index]);
 
     // Store the connection
     connections[from.asSymbol] = (
       to: to.asSymbol,
-      routeNdef: Ndef(routeSlot)
+      routeSynth: routeSynth
     );
 
     "Connected % → %".format(from, to).postln;
@@ -328,7 +333,7 @@ CCFX {
       var trig = In.ar(trigger, 2);
       Compander.ar(sig, trig, thresh, 1, rat.reciprocal, att, rel);
     });
-    Ndef(slotName).set(\in, inBus, \trigger, triggerBus);
+    Ndef(slotName).set(\in, inBus.index, \trigger, triggerBus.index);
     Ndef(slotName).set(\thresh, threshold, \rat, ratio, \att, attack, \rel, release);
     Ndef(slotName).play;
 
@@ -342,7 +347,7 @@ CCFX {
   }
 
   route { |source, target|
-    var targetInfo, targetBus;
+    var targetInfo, targetBus, srcNdef, routeSynth;
 
     // Find target bus
     if(loaded[target.asSymbol].notNil) {
@@ -360,45 +365,125 @@ CCFX {
 
     // Route the source
     if(Pdef.all[source.asSymbol].notNil) {
-      Pdef(source.asSymbol).set(\out, targetBus);
+      Pdef(source.asSymbol).set(\out, targetBus.index);
+      routes[source.asSymbol] = (target: target.asSymbol);
     } {
-      if(Ndef.all[cc.server].at(source.asSymbol).notNil) {
-        Ndef((source ++ "_routed").asSymbol, {
-          Out.ar(targetBus, Ndef(source.asSymbol).ar);
-        }).play;
+      if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server].at(source.asSymbol).notNil }) {
+        srcNdef = Ndef(source.asSymbol);
+        if(srcNdef.bus.notNil) {
+          routeSynth = Synth(\cc_bus_copy, [\in, srcNdef.bus.index, \out, targetBus.index]);
+          routes[source.asSymbol] = (target: target.asSymbol, routeSynth: routeSynth);
+        } {
+          "CCFX: Ndef '%' has no bus".format(source).warn;
+          ^false;
+        };
       } {
         "CCFX: source '%' not found".format(source).warn;
         ^false;
       };
     };
 
-    // Track the route
-    routes[source.asSymbol] = target.asSymbol;
-
     ^true;
   }
 
-  routeTrigger { |source, sidechainName|
+  routeTrigger { |source, sidechainName, passthrough=true|
     var sc = sidechains[sidechainName.asSymbol];
+    var srcSym = source.asSymbol;
+    var routeBus, triggerSynth, srcNdef;
+
     if(sc.isNil) {
       "CCFX: sidechain '%' not found".format(sidechainName).warn;
       ^false;
     };
 
-    if(Pdef.all[source.asSymbol].notNil) {
-      Pdef(source.asSymbol).set(\out, sc.triggerBus);
-    } {
-      if(Ndef.all[cc.server].at(source.asSymbol).notNil) {
-        Ndef((source ++ "_trigger").asSymbol, {
-          Out.ar(sc.triggerBus, Ndef(source.asSymbol).ar);
-        }).play;
+    // Clean up any existing trigger routing for this source
+    this.clearTriggerRoute(sc, srcSym);
+
+    // Route Pdef source
+    if(Pdef.all[srcSym].notNil) {
+      // Always use the same signal path for consistent volume:
+      // Pdef → routeBus → triggerSynth → triggerBus
+      // passthrough just adds _passthrough → main out
+      routeBus = Bus.audio(cc.server, 2);
+      Pdef(srcSym).set(\out, routeBus);
+
+      // Copy to trigger bus using Synth (not Ndef - avoids monitor issues)
+      triggerSynth = Synth(\cc_bus_copy, [\in, routeBus.index, \out, sc.triggerBus.index]);
+
+      // Passthrough to main output (only when requested)
+      if(passthrough) {
+        Ndef((source ++ "_passthrough").asSymbol, { |in|
+          In.ar(in, 2);
+        });
+        Ndef((source ++ "_passthrough").asSymbol).set(\in, routeBus.index);
+        Ndef((source ++ "_passthrough").asSymbol).play(0);
+      };
+
+      // Store for cleanup
+      sc[\triggerRoutes] = sc[\triggerRoutes] ?? Dictionary[];
+      sc[\triggerRoutes][srcSym] = (routeBus: routeBus, triggerSynth: triggerSynth);
+      ^true;
+    };
+
+    // Route Ndef source
+    if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server].at(srcSym).notNil }) {
+      srcNdef = Ndef(srcSym);
+      if(srcNdef.bus.notNil) {
+        // Copy from Ndef's bus to trigger bus
+        triggerSynth = Synth(\cc_bus_copy, [\in, srcNdef.bus.index, \out, sc.triggerBus.index]);
+        sc[\triggerRoutes] = sc[\triggerRoutes] ?? Dictionary[];
+        sc[\triggerRoutes][srcSym] = (triggerSynth: triggerSynth);
+
+        if(passthrough.not) {
+          srcNdef.stop;
+        };
+        ^true;
       } {
-        "CCFX: trigger source '%' not found".format(source).warn;
+        "CCFX: Ndef '%' has no bus (not playing?)".format(source).warn;
         ^false;
       };
     };
 
-    ^true;
+    "CCFX: trigger source '%' not found".format(source).warn;
+    ^false;
+  }
+
+  clearTriggerRoute { |sc, srcSym|
+    var routeInfo;
+
+    // Clear passthrough Ndef if exists
+    Ndef((srcSym ++ "_passthrough").asSymbol).clear;
+
+    // Free stored synth and bus
+    if(sc[\triggerRoutes].notNil) {
+      routeInfo = sc[\triggerRoutes][srcSym];
+      if(routeInfo.notNil) {
+        if(routeInfo.triggerSynth.notNil) { routeInfo.triggerSynth.free };
+        if(routeInfo.routeBus.notNil) { routeInfo.routeBus.free };
+        sc[\triggerRoutes].removeAt(srcSym);
+      };
+    };
+
+    // Reset source output to main
+    if(Pdef.all[srcSym].notNil) {
+      Pdef(srcSym).set(\out, 0);
+    };
+    if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server].at(srcSym).notNil }) {
+      Ndef(srcSym).play;
+    };
+  }
+
+  cleanupTriggerRoutes { |scInfo, restoreOutput=true|
+    if(scInfo[\triggerRoutes].notNil) {
+      scInfo[\triggerRoutes].keysValuesDo { |source, routeInfo|
+        Ndef((source ++ "_passthrough").asSymbol).clear;
+        if(routeInfo.triggerSynth.notNil) { routeInfo.triggerSynth.free };
+        if(routeInfo.routeBus.notNil) { routeInfo.routeBus.free };
+        if(restoreOutput && Pdef.all[source].notNil) {
+          Pdef(source).set(\out, 0);
+        };
+      };
+    };
   }
 
   bypass { |slot, shouldBypass=true|
@@ -422,13 +507,13 @@ CCFX {
       // Remove any connections from this effect
       connInfo = connections[slot.asSymbol];
       if(connInfo.notNil) {
-        connInfo.routeNdef.clear;
+        connInfo.routeSynth.free;
         connections.removeAt(slot.asSymbol);
       };
       // Remove any connections to this effect
       connections.keysValuesDo { |from, conn|
         if(conn.to == slot.asSymbol) {
-          conn.routeNdef.clear;
+          conn.routeSynth.free;
           connections.removeAt(from);
         };
       };
@@ -441,6 +526,7 @@ CCFX {
     // Check if it's a sidechain
     scInfo = sidechains[slot.asSymbol];
     if(scInfo.notNil) {
+      this.cleanupTriggerRoutes(scInfo, restoreOutput: true);
       Ndef(scInfo.slot).clear;
       scInfo.inBus.free;
       scInfo.triggerBus.free;
@@ -454,7 +540,7 @@ CCFX {
   clearAll {
     // Clear connections first
     connections.keysValuesDo { |from, conn|
-      conn.routeNdef.clear;
+      conn.routeSynth.free;
     };
     connections.clear;
     // Clear effects
@@ -465,6 +551,7 @@ CCFX {
     loaded.clear;
     // Clear sidechains
     sidechains.keysValuesDo { |name, info|
+      this.cleanupTriggerRoutes(info, restoreOutput: false);
       Ndef(info.slot).clear;
       info.inBus.free;
       info.triggerBus.free;

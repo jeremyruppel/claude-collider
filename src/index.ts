@@ -374,7 +374,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "fx_route_trigger",
-        description: "Route a source to the trigger input of a sidechain.",
+        description:
+          "Route a source to the trigger input of a sidechain. By default, the source still plays to its original output (passthrough). Set passthrough=false to redirect entirely to the trigger (source becomes inaudible).",
         inputSchema: {
           type: "object",
           properties: {
@@ -385,6 +386,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             sidechain: {
               type: "string",
               description: "Sidechain name",
+            },
+            passthrough: {
+              type: "boolean",
+              description:
+                "If true (default), source still plays to main output. If false, source only goes to trigger.",
             },
           },
           required: ["source", "sidechain"],
@@ -912,16 +918,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "fx_route_trigger": {
-        const { source, sidechain } = args as {
+        const { source, sidechain, passthrough = true } = args as {
           source: string
           sidechain: string
+          passthrough?: boolean
         }
-        await sc.execute(`~cc.fx.routeTrigger(\\${source}, \\${sidechain})`)
+        await sc.execute(
+          `~cc.fx.routeTrigger(\\${source}, \\${sidechain}, ${passthrough})`
+        )
+        const passthroughNote = passthrough
+          ? " (passthrough enabled - source still audible)"
+          : " (passthrough disabled - source redirected to trigger only)"
         return {
           content: [
             {
               type: "text",
-              text: `Routed ${source} as trigger for sidechain ${sidechain}`,
+              text: `Routed ${source} as trigger for sidechain ${sidechain}${passthroughNote}`,
             },
           ],
         }
