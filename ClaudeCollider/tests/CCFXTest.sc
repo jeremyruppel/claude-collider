@@ -29,13 +29,7 @@ CCFXTest : UnitTest {
         params: [\mix, 0.5, \rate, 1.0]
       )
     ]);
-    result = fx.defs.keys.asArray.sort.collect { |name|
-      var entry = fx.defs[name];
-      var params = entry[\params].clump(2).collect { |pair|
-        "% (default: %)".format(pair[0], pair[1]);
-      }.join(", ");
-      "% - %\n  params: %".format(name, entry[\description], params);
-    }.join("\n");
+    result = fx.describe;
 
     this.assertEquals(
       result,
@@ -50,13 +44,7 @@ CCFXTest : UnitTest {
       \zebra -> (description: "Z effect", params: [\mix, 0.5]),
       \alpha -> (description: "A effect", params: [\dry, 1.0])
     ]);
-    result = fx.defs.keys.asArray.sort.collect { |name|
-      var entry = fx.defs[name];
-      var params = entry[\params].clump(2).collect { |pair|
-        "% (default: %)".format(pair[0], pair[1]);
-      }.join(", ");
-      "% - %\n  params: %".format(name, entry[\description], params);
-    }.join("\n");
+    result = fx.describe;
 
     this.assertEquals(
       result,

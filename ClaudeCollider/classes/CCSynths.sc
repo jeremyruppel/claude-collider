@@ -537,6 +537,6 @@ CCSynths {
       var params = synthDef.allControlNames.collect { |c| c.name.asString }.join(", ");
       "% - %\n  params: %".format(name, entry[\description], params);
     };
-    lines.join("\n").postln;
+    ^lines.join("\n");
   }
 }

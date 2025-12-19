@@ -101,20 +101,20 @@ CCSamples {
   }
 
   list {
-    var names = paths.keys.asArray.sort;
-    if(names.isEmpty) { ^"(none)" };
-    ^names.join(", ");
+    if(this.names.isEmpty) { ^"(none)" };
+    ^this.names.sort.join(", ");
   }
 
   describe {
-    this.names.do { |name|
+    var lines = this.names.collect { |name|
       var buf = buffers.at(name);
       if(buf.notNil) {
-        "% (%.2fs, %ch, %Hz)".format(name, buf.duration, buf.numChannels, buf.sampleRate.asInteger).postln;
+        "% (%s, %ch, %Hz)".format(name, buf.duration.round(0.01), buf.numChannels, buf.sampleRate.asInteger);
       } {
-        "% (not loaded)".format(name).postln;
+        "% (not loaded)".format(name);
       };
     };
-    ^nil;
+    if(lines.isEmpty) { ^"(none)" };
+    ^lines.join("\n");
   }
 }

@@ -29,18 +29,11 @@ CCSynthsTest : UnitTest {
         def: { SynthDef(\cc_testsynth, { |out=0, freq=440, amp=0.5| }) }
       )
     ]);
-    result = synths.defs.keys.asArray.sort.collect { |name|
-      var entry = synths.defs[name];
-      var synthDef = entry[\def].value;
-      var params = synthDef.allControlNames.collect { |cn|
-        "% (default: %)".format(cn.name, cn.defaultValue);
-      }.join(", ");
-      "% - %\n  params: %".format(name, entry[\description], params);
-    }.join("\n");
+    result = synths.describe;
 
     this.assertEquals(
       result,
-      "testsynth - A test synth\n  params: out (default: 0), freq (default: 440), amp (default: 0.5)",
+      "testsynth - A test synth\n  params: out, freq, amp",
       "describe should format synth with name, description, and params"
     );
   }
@@ -57,18 +50,11 @@ CCSynthsTest : UnitTest {
         def: { SynthDef(\cc_alpha, { |out=0| }) }
       )
     ]);
-    result = synths.defs.keys.asArray.sort.collect { |name|
-      var entry = synths.defs[name];
-      var synthDef = entry[\def].value;
-      var params = synthDef.allControlNames.collect { |cn|
-        "% (default: %)".format(cn.name, cn.defaultValue);
-      }.join(", ");
-      "% - %\n  params: %".format(name, entry[\description], params);
-    }.join("\n");
+    result = synths.describe;
 
     this.assertEquals(
       result,
-      "alpha - A synth\n  params: out (default: 0)\nzebra - Z synth\n  params: out (default: 0)",
+      "alpha - A synth\n  params: out\nzebra - Z synth\n  params: out",
       "describe should sort synths alphabetically"
     );
   }

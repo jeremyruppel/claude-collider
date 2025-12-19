@@ -556,9 +556,9 @@ CCFX {
     };
 
     if(lines.size == 0) {
-      "No effects loaded".postln;
+      ^"No effects loaded";
     } {
-      lines.join("\n").postln;
+      ^lines.join("\n");
     };
   }
 
@@ -570,6 +570,6 @@ CCFX {
       }.join(", ");
       "% - %\n  params: %".format(name, entry[\description], params);
     };
-    lines.join("\n").postln;
+    ^lines.join("\n");
   }
 }
