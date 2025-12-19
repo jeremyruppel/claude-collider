@@ -54,13 +54,13 @@ Restart Claude Desktop after updating the config.
 
 | Tool               | Description                                                              |
 | ------------------ | ------------------------------------------------------------------------ |
-| `sc_boot`          | Boot ClaudeCollider and the SuperCollider audio server                   |
+| `sc_boot`          | Boot the audio server (options: device, numOutputs)                      |
 | `sc_execute`       | Execute SuperCollider code (play sounds, define synths, create patterns) |
 | `sc_stop`          | Stop all sounds (Cmd+Period equivalent)                                  |
 | `sc_status`        | Get status: tempo, synths, CPU, active patterns                          |
 | `sc_tempo`         | Get or set the tempo in BPM                                              |
 | `sc_clear`         | Stop all sounds and clear patterns, effects, and MIDI mappings           |
-| `sc_reboot`        | Reboot the audio server with optional new device                         |
+| `sc_reboot`        | Reboot the audio server (options: device, numOutputs)                    |
 | `sc_audio_devices` | List available audio input and output devices                            |
 
 ### MIDI Tools

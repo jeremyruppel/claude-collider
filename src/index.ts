@@ -21,6 +21,11 @@ async function formatBootReadme(): Promise<string> {
 
 SuperCollider is ready for sound synthesis and music creation.
 
+Boot options:
+  sc_boot - default device, 2 outputs
+  sc_boot with device: "DeviceName" - specific audio device
+  sc_boot with numOutputs: 8 - multi-channel output
+
 ## Quick Start
 
 Play a synth:
@@ -190,6 +195,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description:
                 "Audio device name (e.g. 'BlackHole 2ch'). Omit for default device.",
             },
+            numOutputs: {
+              type: "number",
+              description:
+                "Number of output channels (default: 2). Use higher values for multi-channel setups.",
+            },
           },
           required: [],
         },
@@ -263,6 +273,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             device: {
               type: "string",
               description: "Audio device name. Omit to keep current device.",
+            },
+            numOutputs: {
+              type: "number",
+              description:
+                "Number of output channels. Omit to keep current setting.",
             },
           },
           required: [],
@@ -716,11 +731,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case "sc_boot": {
-        const { device } = args as { device?: string }
+        const { device, numOutputs } = args as {
+          device?: string
+          numOutputs?: number
+        }
         const deviceArg = device ? `"${device}"` : "nil"
+        const numOutputsArg = numOutputs ?? "nil"
         await sc.boot()
         await sc.execute(
-          `~cc = CC.boot(device: ${deviceArg}, samplesDir: "${sc.getSamplesPath()}", recordingsDir: "${sc.getRecordingsPath()}")`
+          `~cc = CC.boot(device: ${deviceArg}, numOutputs: ${numOutputsArg}, samplesDir: "${sc.getSamplesPath()}", recordingsDir: "${sc.getRecordingsPath()}")`
         )
         await synthdefs.load()
         await effects.load()
@@ -788,14 +807,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "sc_reboot": {
-        const { device } = args as { device?: string }
+        const { device, numOutputs } = args as {
+          device?: string
+          numOutputs?: number
+        }
         const deviceArg = device ? `"${device}"` : "nil"
-        await sc.execute(`~cc.reboot(${deviceArg})`)
+        const numOutputsArg = numOutputs ?? "nil"
+        await sc.execute(`~cc.reboot(${deviceArg}, ${numOutputsArg})`)
+        const parts = []
+        if (device) parts.push(`device: ${device}`)
+        if (numOutputs) parts.push(`outputs: ${numOutputs}`)
         return {
           content: [
             {
               type: "text",
-              text: `Rebooted${device ? ` with device: ${device}` : ""}`,
+              text: `Rebooted${parts.length ? ` with ${parts.join(", ")}` : ""}`,
             },
           ],
         }

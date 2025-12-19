@@ -18,9 +18,9 @@ CC {
     ^super.new.init(server ?? Server.default, samplesDir, recordingsDir);
   }
 
-  *boot { |server, device, onComplete, samplesDir, recordingsDir|
+  *boot { |server, device, numOutputs, onComplete, samplesDir, recordingsDir|
     instance = this.new(server, samplesDir, recordingsDir);
-    instance.boot(device, onComplete);
+    instance.boot(device, numOutputs, onComplete);
     ^instance;
   }
 
@@ -36,8 +36,9 @@ CC {
     isBooted = false;
   }
 
-  boot { |device, onComplete|
+  boot { |device, numOutputs, onComplete|
     this.device(device);
+    this.numOutputs(numOutputs);
 
     server.waitForBoot {
       this.loadSynthDefs;
@@ -47,6 +48,14 @@ CC {
       "*** ClaudeCollider ready ***".postln;
       onComplete.value(this);
     };
+  }
+
+  numOutputs { |num|
+    if(num.notNil) {
+      server.options.numOutputBusChannels = num;
+      "CC: Using % output channels".format(num).postln;
+    };
+    ^server.options.numOutputBusChannels;
   }
 
   device { |name|
@@ -60,10 +69,10 @@ CC {
     ^server.options.device;
   }
 
-  reboot { |device, onComplete|
+  reboot { |device, numOutputs, onComplete|
     this.stop;
     server.quit;
-    this.boot(device, onComplete);
+    this.boot(device, numOutputs, onComplete);
   }
 
   loadSynthDefs {
