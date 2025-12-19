@@ -100,7 +100,12 @@ CCSamples {
     ^paths.size;
   }
 
-  // Describe samples for display
+  list {
+    var names = paths.keys.asArray.sort;
+    if(names.isEmpty) { ^"(none)" };
+    ^names.join(", ");
+  }
+
   describe {
     this.names.do { |name|
       var buf = buffers.at(name);

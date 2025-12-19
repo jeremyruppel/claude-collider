@@ -476,7 +476,9 @@ CCFX {
   }
 
   list {
-    ^defs.keys.asArray.sort;
+    var names = defs.keys.asArray.sort;
+    if(names.isEmpty) { ^"(none)" };
+    ^names.join(", ");
   }
 
   status {

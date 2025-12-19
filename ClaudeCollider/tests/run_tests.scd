@@ -5,7 +5,10 @@
 fork {
   UnitTest.reportPasses = true;
   CCFormatterTest.run;
-  0.1.wait;
+  CCFXTest.run;
+  CCSynthsTest.run;
+  CCSamplesTest.run;
+  1.wait;
   0.exit;
 };
 )

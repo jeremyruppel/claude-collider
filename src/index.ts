@@ -17,6 +17,11 @@ const synthdefs = new SynthDefs(sc)
 const effects = new Effects(sc)
 
 async function formatBootReadme(): Promise<string> {
+  // Fetch lists from SC
+  const synthList = await sc.execute("~cc.synths.list")
+  const fxList = await sc.execute("~cc.fx.list")
+  const sampleList = await sc.execute("~cc.samples.list")
+
   return `# ClaudeCollider
 
 SuperCollider is ready for sound synthesis and music creation.
@@ -47,15 +52,21 @@ Stop all sounds:
 You can create your own synths and effects using sclang:
   SynthDef(\\mySynth, { |out=0, freq=440| Out.ar(out, SinOsc.ar(freq) * 0.2) }).add
 
-## Discovering Synths and Effects
+## Available Synths
 
-Use these tools to see what's available:
-  synth_list - List all built-in synths with descriptions and parameters
-  fx_list - List all built-in effects with descriptions and parameters
+${synthList}
 
-## Samples
+Use synth_inspect tool for full descriptions and parameters.
 
-${await samples.format()}
+## Available Effects
+
+${fxList}
+
+Use fx_inspect tool for full descriptions and parameters.
+
+## Available Samples
+
+${sampleList}
 
 Play a sample once (also loads the buffer):
   ~cc.samples.play("sampleName")
@@ -534,7 +545,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
-        name: "fx_list",
+        name: "fx_inspect",
         description:
           "List all available effects with their descriptions and parameters.",
         inputSchema: {
@@ -609,7 +620,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       // Synth tools
       {
-        name: "synth_list",
+        name: "synth_inspect",
         description:
           "List all available synths with their descriptions and parameters.",
         inputSchema: {
@@ -620,8 +631,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       // Sample tools
       {
-        name: "sample_list",
-        description: "List all loaded samples with duration and channel info.",
+        name: "sample_inspect",
+        description:
+          "List all samples with duration, channels, and sample rate info.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -1059,7 +1071,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
 
-      case "fx_list": {
+      case "fx_inspect": {
         const result = await sc.execute("~cc.fx.describe")
         return {
           content: [{ type: "text", text: result }],
@@ -1157,7 +1169,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Synth tools
-      case "synth_list": {
+      case "synth_inspect": {
         const result = await sc.execute("~cc.synths.describe")
         return {
           content: [{ type: "text", text: result }],
@@ -1165,10 +1177,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Sample tools
-      case "sample_list": {
-        const sampleList = await samples.format()
+      case "sample_inspect": {
+        const result = await sc.execute("~cc.samples.describe")
         return {
-          content: [{ type: "text", text: sampleList }],
+          content: [{ type: "text", text: result }],
         }
       }
 

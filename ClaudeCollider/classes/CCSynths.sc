@@ -525,11 +525,9 @@ CCSynths {
   }
 
   list {
-    ^defs.keys.asArray.sort;
-  }
-
-  info { |name|
-    ^defs[name].notNil;
+    var names = defs.keys.asArray.sort;
+    if(names.isEmpty) { ^"(none)" };
+    ^names.join(", ");
   }
 
   describe {
