@@ -42,13 +42,11 @@ Stop all sounds:
 You can create your own synths and effects using sclang:
   SynthDef(\\mySynth, { |out=0, freq=440| Out.ar(out, SinOsc.ar(freq) * 0.2) }).add
 
-## Available Synths
+## Discovering Synths and Effects
 
-${synthdefs.format()}
-
-## Available Effects
-
-${effects.format()}
+Use these tools to see what's available:
+  synth_list - List all built-in synths with descriptions and parameters
+  fx_list - List all built-in effects with descriptions and parameters
 
 ## Samples
 
@@ -522,7 +520,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "fx_list",
-        description: "List all loaded effects, sidechains, and connections.",
+        description:
+          "List all available effects with their descriptions and parameters.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -591,6 +590,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: ["name", "effects"],
+        },
+      },
+      // Synth tools
+      {
+        name: "synth_list",
+        description:
+          "List all available synths with their descriptions and parameters.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
         },
       },
       // Sample tools
@@ -1024,7 +1034,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "fx_list": {
-        const result = await sc.execute("~cc.fx.status")
+        const result = await sc.execute("~cc.fx.describe")
         return {
           content: [{ type: "text", text: result }],
         }
@@ -1117,6 +1127,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         return {
           content: [{ type: "text", text: results.join("\n") }],
+        }
+      }
+
+      // Synth tools
+      case "synth_list": {
+        const result = await sc.execute("~cc.synths.describe")
+        return {
+          content: [{ type: "text", text: result }],
         }
       }
 
