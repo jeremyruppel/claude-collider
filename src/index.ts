@@ -711,7 +711,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `Rebooted${parts.length ? ` with ${parts.join(", ")}` : ""}`,
+              text: `Rebooted${
+                parts.length ? ` with ${parts.join(", ")}` : ""
+              }`,
             },
           ],
         }

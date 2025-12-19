@@ -10,6 +10,7 @@ export class OutputParser {
   private static readonly END_MARKER = "<<<END<<<"
   private static readonly SERVER_READY = "SERVER_READY"
   private static readonly SCLANG_READY = "Welcome to SuperCollider"
+  private static readonly SCLANG_PROMPT = "sc3> "
 
   private buffer = ""
 
@@ -33,13 +34,18 @@ export class OutputParser {
     const endIndex = this.buffer.indexOf(OutputParser.END_MARKER)
 
     if (endIndex !== -1) {
-      return this.buffer.slice(0, endIndex).trim() || "OK"
+      return (
+        this.buffer
+          .slice(0, endIndex)
+          .trim()
+          .replace(OutputParser.SCLANG_PROMPT, "") || "OK"
+      )
     }
     return null
   }
 
   static wrapCode(code: string): string {
-    return `${code.trim()}; "${OutputParser.END_MARKER}".postln;`
+    return `(${code.trim()}).postln; "${OutputParser.END_MARKER}".postln;`
   }
 
   static bootCommand(): string {
