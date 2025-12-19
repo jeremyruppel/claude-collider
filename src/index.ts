@@ -17,155 +17,33 @@ const synthdefs = new SynthDefs(sc)
 const effects = new Effects(sc)
 
 async function formatBootReadme(): Promise<string> {
-  // Fetch lists from SC
   const synthList = await sc.execute("~cc.synths.list")
   const fxList = await sc.execute("~cc.fx.list")
   const sampleList = await sc.execute("~cc.samples.list")
 
-  return `# ClaudeCollider
+  return `# ClaudeCollider Ready
 
-SuperCollider is ready for sound synthesis and music creation.
+## sc_execute Notes
+- Send code as a single line, semicolons between statements
+- System appends trailing semicolon, don't include one at the end
 
-Boot options:
-  sc_boot - default device, 2 outputs
-  sc_boot with device: "DeviceName" - specific audio device
-  sc_boot with numOutputs: 8 - multi-channel output
+## Quick Reference
+  Synth(\\cc_kick)                    # one-shot synth
+  Pdef(\\beat, Pbind(...)).play       # pattern (use for beats)
+  Ndef(\\pad, { ... }).play           # continuous synth
+  Ppar([Pbind(...), Pbind(...)])     # sync multiple patterns
 
-## Quick Start
+## Gotchas
+- Pbind auto-sets \\freq ~261Hz. For drums: \\freq, 48
+- NEVER call Synth() inside Ndef — infinite spawning
+- Set Pdef.defaultQuant = 4 for bar-aligned changes
 
-Play a synth:
-  Synth(\\cc_kick)
-  Synth(\\cc_lead, [freq: 440, amp: 0.3])
+## Synths: ${synthList}
+## Effects: ${fxList}
+## Samples: ${sampleList}
 
-Create a pattern:
-  Pdef(\\beat, Pbind(\\instrument, \\cc_kick, \\dur, 0.5)).play
-
-Stop all sounds:
-  Use the sc_stop tool
-
-## Using sc_execute
-
-- The sc_execute tool runs SuperCollider code. ALWAYS send code as a single line.
-- Use semicolons to separate statements: { var x = 1; x + 1 }.value
-- The system will append a trailing semicolon, do not include one at the end.
-
-You can create your own synths and effects using sclang:
-  SynthDef(\\mySynth, { |out=0, freq=440| Out.ar(out, SinOsc.ar(freq) * 0.2) }).add
-
-## Available Synths
-
-${synthList}
-
-Use synth_inspect tool for full descriptions and parameters.
-
-## Available Effects
-
-${fxList}
-
-Use fx_inspect tool for full descriptions and parameters.
-
-## Available Samples
-
-${sampleList}
-
-Play a sample once (also loads the buffer):
-  ~cc.samples.play("sampleName")
-
-Use in a pattern (after playing once to load):
-  Pdef(\\beat, Pbind(\\instrument, \\cc_sampler, \\buf, ~cc.samples.at("sampleName"), \\dur, 1)).play
-
-Rescan for new samples (after adding files to the samples directory):
-  Use the sample_reload tool
-
-## Effect Routing
-
-Load an effect:
-  fx_load with name (e.g. "reverb")
-
-Route a pattern through it:
-  fx_route with source and target
-
-Connect effects in series:
-  fx_connect with from and to
-
-Create a chain in one call:
-  fx_chain with name and effects array
-
-## Recording
-
-Record your jam to a WAV file:
-  recording_start - begin recording (auto-generates timestamped filename)
-  recording_stop - stop and save the file
-  recording_status - check if recording
-
-Recordings are saved to the configured recordings directory (default: ~/.claudecollider/recordings/)
-
-## Debugging
-
-Use routing_debug to see the full audio signal flow:
-- Effects with bus indices and current parameter values
-- Chains with slot order and bus numbers
-- Connections between effects
-- Routes from sources to effects
-- Sidechains with trigger info
-
-## GUI Tools
-
-SuperCollider has built-in GUI tools for visualization and debugging:
-- s.meter — Audio level meters for inputs/outputs
-- s.scope — Oscilloscope showing audio waveforms
-- s.freqscope — Frequency spectrum analyzer
-- s.plotTree — Visual tree of running synths and groups
-
-## Tips
-
-- All built-in synths are prefixed with \\cc_ (e.g. \\cc_kick, \\cc_bass)
-- Use sc_tempo to set BPM for patterns
-- Use sc_status to see what's playing or for troubleshooting
-- Use routing_debug to debug audio routing issues
-- Use sc_clear to reset everything
-- NEVER call Synth() or ~cc.synths.play() inside an Ndef — causes infinite synth spawning and timeout
-
-## Architecture Note: SynthDef vs Ndef
-
-Built-in synths use SynthDef (not Ndef) because most are one-shots with doneAction:2 that free themselves.
-
-- **SynthDefs** (cc_kick, cc_snare, etc.): Fire-and-forget. Create with Synth(), auto-free when done.
-- **Ndefs**: Persistent named slots for continuous sounds. Better for drones/pads you want to tweak live.
-
-## Live Coding Conventions
-
-Always use proxy objects for live-updatable sounds:
-- Pdef: Patterns (beats, sequences) — crossfades at next loop point
-- Ndef: Continuous synths (drones, pads, effects) — crossfades over fadeTime
-- Tdef: Tasks (algorithmic sequences) — restarts with new definition
-- Ppar: Combine patterns to start simultaneously (use inside Pdef for synchronized multi-part arrangements)
-
-### Ppar for Synchronized Patterns
-
-Use Ppar when multiple patterns must start at exactly the same time:
-  Pdef(\\song, Ppar([
-    Pbind(\\instrument, \\cc_kick, \\dur, 1, \\freq, 48),
-    Pbind(\\instrument, \\cc_bass, \\dur, 0.5, \\midinote, Pseq([36, 38], inf)),
-    Pbind(\\instrument, \\cc_lead, \\dur, 1, \\midinote, Pseq([60, 62, 64], inf))
-  ])).play
-
-### Drum Patterns and Frequency
-
-Pbind auto-sets \\freq from \\degree (default ~261 Hz), overriding synth defaults.
-
-Fix by explicitly setting freq:
-  Pdef(\\kick, Pbind(\\instrument, \\cc_kick, \\dur, 1, \\freq, 48)).play
-
-### Quantization
-
-Set Pdef.defaultQuant = 4 so changes land on bar boundaries.
-
-### Quick Reference
-
-Start:  Pdef(\\x).play / Ndef(\\x).play
-Stop:   Pdef(\\x).stop / Ndef(\\x).stop
-Tempo:  TempoClock.default.tempo = 120/60`
+Use synth_inspect, fx_inspect, sample_inspect for details.
+Use sc_status for state, routing_debug for signal flow.`
 }
 
 const server = new Server(
