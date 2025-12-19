@@ -33,16 +33,17 @@ Then recompile the class library (Cmd+Shift+L in the IDE).
 
 ### CC
 
-Main facade class. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`.
+Main facade class. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`, `~cc.formatter`.
 
 ```supercollider
-CC.boot(server, device, onComplete)  // Boot and initialize
+CC.boot(server, device, numOutputs, onComplete)  // Boot and initialize
 ~cc.tempo(bpm)                        // Get/set tempo (returns BPM)
 ~cc.device(name)                      // Set audio device (nil for default)
-~cc.reboot(device, onComplete)        // Reboot with optional new device
+~cc.numOutputs(num)                   // Get/set output channels (for multi-channel)
+~cc.reboot(device, numOutputs, onComplete)  // Reboot with optional new device
 ~cc.stop                              // Stop all Pdefs/Ndefs
 ~cc.clear                             // Stop and clear everything
-~cc.status                            // Get current status (booted, tempo, device, synths, cpu, pdefs, ndefs)
+~cc.status                            // Get formatted status string
 ```
 
 ### CCSynths
@@ -251,6 +252,74 @@ Bus and state management.
 ~cc.state.freeBus(\cutoff)         // Free bus
 ~cc.state.clear                    // Free all buses
 ~cc.state.status                   // Get list of buses
+```
+
+### CCFormatter
+
+Status formatting and routing debug visualization.
+
+```supercollider
+~cc.formatter.format               // Get formatted status string
+~cc.formatter.print                // Print status to post window
+~cc.formatter.formatRoutingDebug   // Get detailed routing debug info
+
+// Individual sections
+~cc.formatter.formatServer         // "Server: running | CPU: 5.2% | Synths: 12"
+~cc.formatter.formatTempo          // "Tempo: 120.0 BPM | Device: BlackHole 2ch"
+~cc.formatter.formatSamples        // "Samples: 3/10 loaded"
+~cc.formatter.formatPdefs          // "Pdefs playing: kick, bass"
+~cc.formatter.formatNdefs          // "Ndefs playing: fx_reverb"
+~cc.formatter.playingPdefs         // Array of playing Pdef names
+~cc.formatter.playingNdefs         // Array of playing Ndef names
+```
+
+## Tests
+
+ClaudeCollider includes a test suite using SuperCollider's UnitTest framework.
+
+### Running Tests
+
+From the project root:
+
+```bash
+npm test
+```
+
+Or directly with sclang:
+
+```bash
+sclang ClaudeCollider/tests/run_tests.scd
+```
+
+### Test Files
+
+| File | Description |
+|------|-------------|
+| CCTest.sc | Core CC class tests (initialization, tempo, device, stop/clear) |
+| CCSynthsTest.sc | SynthDef loading and description tests |
+| CCFXTest.sc | Effects system tests (describe, list formatting) |
+| CCSamplesTest.sc | Sample management tests |
+| CCFormatterTest.sc | Status formatter tests |
+
+### Writing Tests
+
+Tests extend `UnitTest` and follow SuperCollider conventions:
+
+```supercollider
+CCMyTest : UnitTest {
+  setUp {
+    // Setup before each test
+  }
+
+  tearDown {
+    // Cleanup after each test
+  }
+
+  test_featureName_expectedBehavior {
+    this.assert(condition, "description");
+    this.assertEquals(actual, expected, "description");
+  }
+}
 ```
 
 ## License

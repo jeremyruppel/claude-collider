@@ -13,6 +13,7 @@ npm install      # Install dependencies
 npm run build    # Compile TypeScript to dist/
 npm start        # Run compiled server
 npm run dev      # Watch mode for development
+npm test         # Run tests
 ```
 
 Debug mode: `DEBUG=claude-collider node dist/index.js` (logs to `/tmp/claude-collider.log`)
@@ -29,18 +30,24 @@ The codebase has two main components:
 - **parser.ts** - Parses SuperCollider output, detects execution results using `<<<END<<<` delimiter
 - **tokenizer.ts** - Transforms multi-line SC code to single-line format (required by sclang stdin)
 - **config.ts** - Configuration with environment variable overrides and auto-detection of sclang path
+- **types.ts** - TypeScript types and enums (ServerState, PendingOperation)
+- **debug.ts** - Debug logging utility, writes to `/tmp/claude-collider.log` when DEBUG=claude-collider
+- **effects.ts** - Effects class that loads effect descriptions dynamically from SuperCollider
+- **synthdefs.ts** - SynthDefs class that loads synth descriptions dynamically from SuperCollider
+- **samples.ts** - Samples class wrapping sample playback, loading, and freeing operations
 
 ### 2. SuperCollider Quark (`/ClaudeCollider`)
 
 The SC backend providing live coding toolkit classes:
 
-- **CC** - Main facade, access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`
-- **CCSynths** - Pre-built SynthDefs (kick, snare, bass, lead, pad, etc.) with `cc_` prefix
-- **CCFX** - Ndef-based effects system with routing and chaining
-- **CCMIDI** - MIDI device management and mapping
-- **CCSamples** - Sample management with lazy loading
-- **CCRecorder** - Audio recording to WAV files
-- **CCState** - Bus and state management
+- **CC** - Main facade class, entry point stored in `~cc`. Manages server boot, tempo, stop/clear operations. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`, `~cc.formatter`
+- **CCSynths** - SynthDef management with 27+ pre-built instruments organized by category: drums (kick, snare, hihat, clap, openhat, tom, rim, shaker, cowbell), bass (bass, acid, sub, reese, fmbass), leads (lead), melodic (pluck, bell, keys, strings), pads (pad), textural (noise, drone, riser), utility (click, sine, sampler, grains). All synths use `cc_` prefix
+- **CCFX** - Ndef-based effects system with 17+ effects organized by type: filters (lpf, hpf, bpf), time-based (reverb, delay, pingpong), modulation (chorus, flanger, phaser, tremolo), distortion (distortion, bitcrush, wavefold), dynamics (compressor, limiter, gate), stereo (widener, autopan). Supports effect routing, chaining, and sidechaining
+- **CCMIDI** - MIDI device management with polyphonic/monophonic note mapping, CC-to-bus mapping with configurable ranges and curves, event logging, and MIDI learn
+- **CCSamples** - Sample management with lazy loading from `~/.claudecollider/samples`. Supports WAV/AIFF, playback with rate control, and directory rescanning
+- **CCRecorder** - Audio recording to WAV files in `~/.claudecollider/recordings` with auto-generated timestamped filenames
+- **CCState** - Bus and session state management, creates and tracks control/audio buses in the current environment
+- **CCFormatter** - Status formatting for console output, generates server status, tempo, sample counts, playing Pdefs/Ndefs, and detailed routing debug visualization
 
 ## Key Design Patterns
 
@@ -52,10 +59,10 @@ The SC backend providing live coding toolkit classes:
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SCLANG_PATH` | Auto-detected | Path to sclang executable |
-| `SC_BOOT_TIMEOUT` | 10000 | Boot timeout in ms |
-| `SC_EXEC_TIMEOUT` | 2000 | Execution timeout in ms |
-| `CC_SAMPLES_PATH` | `~/.claudecollider/samples` | Directory for audio samples |
+| Variable             | Default                        | Description                  |
+| -------------------- | ------------------------------ | ---------------------------- |
+| `SCLANG_PATH`        | Auto-detected                  | Path to sclang executable    |
+| `SC_BOOT_TIMEOUT`    | 10000                          | Boot timeout in ms           |
+| `SC_EXEC_TIMEOUT`    | 2000                           | Execution timeout in ms      |
+| `CC_SAMPLES_PATH`    | `~/.claudecollider/samples`    | Directory for audio samples  |
 | `CC_RECORDINGS_PATH` | `~/.claudecollider/recordings` | Directory for recorded audio |

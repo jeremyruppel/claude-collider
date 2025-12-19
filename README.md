@@ -76,15 +76,15 @@ Restart Claude Desktop after updating the config.
 
 ### Synth Tools
 
-| Tool         | Description                                                      |
-| ------------ | ---------------------------------------------------------------- |
-| `synth_list` | List all available synths with their descriptions and parameters |
+| Tool            | Description                                                      |
+| --------------- | ---------------------------------------------------------------- |
+| `synth_inspect` | List all available synths with their descriptions and parameters |
 
 ### Effects Tools
 
 | Tool               | Description                                                       |
 | ------------------ | ----------------------------------------------------------------- |
-| `fx_list`          | List all available effects with their descriptions and parameters |
+| `fx_inspect`       | List all available effects with their descriptions and parameters |
 | `fx_load`          | Load a pre-built effect (returns input bus for routing)           |
 | `fx_set`           | Set parameters on a loaded effect                                 |
 | `fx_route`         | Route a sound source (Pdef/Ndef) to an effect                     |
@@ -100,12 +100,12 @@ Restart Claude Desktop after updating the config.
 
 Place WAV or AIFF files in your samples directory (default: `~/.claudecollider/samples/`). Samples are discovered on boot and lazy loaded on first use.
 
-| Tool            | Description                                           |
-| --------------- | ----------------------------------------------------- |
-| `sample_list`   | List available samples (shows loaded/unloaded status) |
-| `sample_play`   | Play a sample once (loads buffer if needed)           |
-| `sample_free`   | Free a sample buffer from memory                      |
-| `sample_reload` | Rescan samples directory for new files                |
+| Tool             | Description                                           |
+| ---------------- | ----------------------------------------------------- |
+| `sample_inspect` | List available samples (shows loaded/unloaded status) |
+| `sample_play`    | Play a sample once (loads buffer if needed)           |
+| `sample_free`    | Free a sample buffer from memory                      |
+| `sample_reload`  | Rescan samples directory for new files                |
 
 ### Recording Tools
 
