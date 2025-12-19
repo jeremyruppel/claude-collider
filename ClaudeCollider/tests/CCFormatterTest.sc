@@ -71,8 +71,9 @@ CCFormatterTest : UnitTest {
     var result;
     mockCC.server.avgCPU = 12.789;
     result = formatter.formatServer;
-    this.assert(
-      result.contains("12.8%"),
+    this.assertEquals(
+      result,
+      "Server: running | CPU: 12.8% | Synths: 10",
       "formatServer should round CPU to 1 decimal place"
     );
   }
@@ -103,8 +104,9 @@ CCFormatterTest : UnitTest {
     var result;
     mockCC.tempo = 128.567;
     result = formatter.formatTempo;
-    this.assert(
-      result.contains("128.6 BPM"),
+    this.assertEquals(
+      result,
+      "Tempo: 128.6 BPM | Device: Test Device",
       "formatTempo should round BPM to 1 decimal place"
     );
   }
@@ -158,13 +160,14 @@ CCFormatterTest : UnitTest {
 
   test_format_combinesAll {
     var result = formatter.format;
-    var lines = result.split($\n);
-    this.assertEquals(lines.size, 5, "format should have 5 lines");
-    this.assert(lines[0].contains("Server:"), "Line 1 should be server info");
-    this.assert(lines[1].contains("Tempo:"), "Line 2 should be tempo info");
-    this.assert(lines[2].contains("Samples:"), "Line 3 should be samples info");
-    this.assert(lines[3].contains("Pdefs"), "Line 4 should be Pdefs info");
-    this.assert(lines[4].contains("Ndefs"), "Line 5 should be Ndefs info");
+    var expected = [
+      "Server: running | CPU: 5.5% | Synths: 10",
+      "Tempo: 120.0 BPM | Device: Test Device",
+      "Samples: 0/0 loaded",
+      "Pdefs playing: none",
+      "Ndefs playing: none"
+    ].join("\n");
+    this.assertEquals(result, expected, "format should combine all sections");
   }
 
   // ========== playingPdefs tests ==========
@@ -269,5 +272,194 @@ CCFormatterTest : UnitTest {
     );
     var result = formatter.formatEffectParams(info);
     this.assertEquals(result, "mix=0.5, room=0.8", "formatEffectParams should format params with current values");
+  }
+
+  test_formatEffectParams_usesDefaultWhenNil {
+    var mockNdef = (get: { |self, key| nil });
+    var info = (
+      params: [\mix, 0.5, \room, 0.8],
+      ndef: mockNdef
+    );
+    var result = formatter.formatEffectParams(info);
+    this.assertEquals(result, "mix=0.5, room=0.8", "formatEffectParams should use default values when get returns nil");
+  }
+
+  // ========== collectChainInputBuses tests ==========
+
+  test_collectChainInputBuses_empty {
+    var result = formatter.collectChainInputBuses;
+    this.assertEquals(result, Dictionary[], "collectChainInputBuses should return empty dict when no chains");
+  }
+
+  test_collectChainInputBuses_withChain {
+    var result;
+    var mockInBus = (index: 16);
+    mockCC.fx.chains = Dictionary[\myChain -> [\fx_first, \fx_second]];
+    mockCC.fx.loaded = Dictionary[\fx_first -> (inBus: mockInBus)];
+    result = formatter.collectChainInputBuses;
+    this.assertEquals(result[\myChain], 16, "collectChainInputBuses should map chain name to first slot's inBus index");
+  }
+
+  // ========== getChainSlotOutBus tests ==========
+
+  test_getChainSlotOutBus_midSlot {
+    var mockInBus = (index: 20);
+    mockCC.fx.loaded = Dictionary[\fx_b -> (inBus: mockInBus)];
+    this.assertEquals(
+      formatter.getChainSlotOutBus([\fx_a, \fx_b, \fx_c], 0),
+      20,
+      "Mid slot should output to next slot's inBus"
+    );
+  }
+
+  test_getChainSlotOutBus_nextSlotNotLoaded {
+    mockCC.fx.loaded = Dictionary[];
+    this.assertEquals(
+      formatter.getChainSlotOutBus([\fx_a, \fx_b], 0),
+      0,
+      "Should return 0 when next slot is not loaded"
+    );
+  }
+
+  // ========== getExpectedBus tests ==========
+
+  test_getExpectedBus_fromLoadedEffect {
+    var mockInBus = (index: 12);
+    mockCC.fx.loaded = Dictionary[\fx_reverb -> (inBus: mockInBus)];
+    this.assertEquals(
+      formatter.getExpectedBus(\fx_reverb, Dictionary[]),
+      12,
+      "getExpectedBus should return inBus index from loaded effect"
+    );
+  }
+
+  test_getExpectedBus_fromChainInputBuses {
+    mockCC.fx.loaded = Dictionary[];
+    this.assertEquals(
+      formatter.getExpectedBus(\myChain, Dictionary[\myChain -> 24]),
+      24,
+      "getExpectedBus should fall back to chainInputBuses"
+    );
+  }
+
+  test_getExpectedBus_notFound {
+    mockCC.fx.loaded = Dictionary[];
+    this.assertEquals(
+      formatter.getExpectedBus(\unknown, Dictionary[]),
+      nil,
+      "getExpectedBus should return nil when target not found"
+    );
+  }
+
+  // ========== formatSourceRoute tests ==========
+
+  test_formatSourceRoute_noActualOut {
+    var result;
+    Pdef(\testPdef1).clear;
+    mockCC.fx.loaded = Dictionary[];
+    result = formatter.formatSourceRoute(\testPdef1, \fx_reverb, Dictionary[]);
+    this.assertEquals(result[\line], "  testPdef1 → fx_reverb", "formatSourceRoute should format basic route without bus info");
+    this.assertEquals(result[\warning], nil, "formatSourceRoute should have no warning when no bus info");
+  }
+
+  test_formatSourceRoute_matchingBus {
+    var result;
+    var mockInBus = (index: 4);
+    Pdef(\testPdef2, Pbind(\out, 4, \dur, 1));
+    mockCC.fx.loaded = Dictionary[\fx_reverb -> (inBus: mockInBus)];
+    result = formatter.formatSourceRoute(\testPdef2, \fx_reverb, Dictionary[]);
+    this.assertEquals(result[\line], "  testPdef2 → fx_reverb (out: 4) ✓", "formatSourceRoute should show checkmark for matching bus");
+    this.assertEquals(result[\warning], nil, "formatSourceRoute should have no warning when buses match");
+  }
+
+  test_formatSourceRoute_mismatchedBus {
+    var result;
+    var mockInBus = (index: 8);
+    Pdef(\testPdef3, Pbind(\out, 4, \dur, 1));
+    mockCC.fx.loaded = Dictionary[\fx_reverb -> (inBus: mockInBus)];
+    result = formatter.formatSourceRoute(\testPdef3, \fx_reverb, Dictionary[]);
+    this.assertEquals(result[\line], "  testPdef3 → fx_reverb (out: 4) ✗ MISMATCH", "formatSourceRoute should show MISMATCH for wrong bus");
+    this.assertEquals(result[\warning], "⚠ testPdef3: sending to bus 4, but fx_reverb expects bus 8", "formatSourceRoute should return warning for mismatch");
+  }
+
+  // ========== appendDebugWarnings tests ==========
+
+  test_appendDebugWarnings_empty {
+    var result = formatter.appendDebugWarnings(["existing line"], []);
+    this.assertEquals(result, ["existing line"], "appendDebugWarnings should return unchanged lines when no warnings");
+  }
+
+  test_appendDebugWarnings_withWarnings {
+    var result = formatter.appendDebugWarnings(["existing"], ["warning 1", "warning 2"]);
+    var expected = ["existing", "", "Warnings:", "  warning 1", "  warning 2"];
+    this.assertEquals(result, expected, "appendDebugWarnings should format warnings section");
+  }
+
+  // ========== appendDebugConnections tests ==========
+
+  test_appendDebugConnections_empty {
+    mockCC.fx.connections = Dictionary[];
+    this.assertEquals(
+      formatter.appendDebugConnections(["line"]),
+      ["line"],
+      "appendDebugConnections should return unchanged lines when no connections"
+    );
+  }
+
+  test_appendDebugConnections_withNonChainConnection {
+    var result;
+    mockCC.fx.connections = Dictionary[\fx_dist -> (to: \fx_reverb)];
+    mockCC.fx.chains = Dictionary[];
+    result = formatter.appendDebugConnections(["existing", "lines"]);
+    this.assertEquals(
+      result,
+      ["existing", "lines", "", "Connections:", "  fx_dist → fx_reverb"],
+      "appendDebugConnections should format non-chain connections"
+    );
+  }
+
+  test_appendDebugConnections_filtersChainConnections {
+    var result;
+    mockCC.fx.connections = Dictionary[\fx_a -> (to: \fx_b)];
+    mockCC.fx.chains = Dictionary[\myChain -> [\fx_a, \fx_b]];
+    result = formatter.appendDebugConnections(["line"]);
+    this.assertEquals(result, ["line"], "appendDebugConnections should filter out chain connections");
+  }
+
+  // ========== appendDebugSources tests ==========
+
+  test_appendDebugSources_empty {
+    var warnings = [];
+    mockCC.fx.routes = Dictionary[];
+    this.assertEquals(
+      formatter.appendDebugSources(["line"], Dictionary[], warnings),
+      ["line"],
+      "appendDebugSources should return unchanged lines when no routes"
+    );
+  }
+
+  test_appendDebugSources_withRoutes {
+    var warnings = [];
+    var result;
+    Pdef(\testPdef1).clear;
+    mockCC.fx.routes = Dictionary[\testPdef1 -> \fx_reverb];
+    mockCC.fx.loaded = Dictionary[];
+    result = formatter.appendDebugSources(["existing"], Dictionary[], warnings);
+    this.assertEquals(
+      result,
+      ["existing", "", "Sources:", "  testPdef1 → fx_reverb"],
+      "appendDebugSources should format source routes"
+    );
+  }
+
+  // ========== appendDebugSidechains tests ==========
+
+  test_appendDebugSidechains_empty {
+    mockCC.fx.sidechains = Dictionary[];
+    this.assertEquals(
+      formatter.appendDebugSidechains(["line"]),
+      ["line"],
+      "appendDebugSidechains should return unchanged lines when no sidechains"
+    );
   }
 }
