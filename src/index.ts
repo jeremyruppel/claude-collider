@@ -33,6 +33,12 @@ async function formatBootReadme(): Promise<string> {
   Ndef(\\pad, { ... }).play           # continuous synth
   Ppar([Pbind(...), Pbind(...)])     # sync multiple patterns
 
+## Master Output
+All audio routes through a master Ndef with limiter protection.
+- Default: outputs 1-2
+- Change output: ~cc.fx.setMasterOutput(6)  # outputs 7-8
+- Synths/Pdefs automatically route through master (no config needed)
+
 ## Gotchas
 - Pbind auto-sets \\freq ~261Hz. For drums: \\freq, 48
 - NEVER call Synth() inside Ndef — infinite spawning
@@ -637,6 +643,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await sc.execute(
           `~cc = CC.boot(device: ${deviceArg}, numOutputs: ${numOutputsArg}, samplesDir: "${sc.getSamplesPath()}", recordingsDir: "${sc.getRecordingsPath()}")`
         )
+        await sc.waitForCCReady()
         await synthdefs.load()
         await effects.load()
         await samples.load()
@@ -710,6 +717,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const deviceArg = device ? `"${device}"` : "nil"
         const numOutputsArg = numOutputs ?? "nil"
         await sc.execute(`~cc.reboot(${deviceArg}, ${numOutputsArg})`)
+        await sc.waitForCCReady()
         const parts = []
         if (device) parts.push(`device: ${device}`)
         if (numOutputs) parts.push(`outputs: ${numOutputs}`)

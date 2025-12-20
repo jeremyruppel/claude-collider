@@ -43,6 +43,7 @@ CC {
     server.waitForBoot {
       this.loadSynthDefs;
       this.loadSamples;
+      fx.playMaster;
       Pdef.defaultQuant = 4;
       isBooted = true;
       "*** ClaudeCollider ready ***".postln;
@@ -99,14 +100,22 @@ CC {
 
   stop {
     Pdef.all.do(_.stop);
-    Ndef.all.do(_.stop);
+    if(Ndef.all[server].notNil) {
+      Ndef.all[server].keysValuesDo { |key, ndef|
+        if(key != \master) { ndef.stop };
+      };
+    };
   }
 
   clear {
     server.freeAll;
     this.stop;
     Pdef.all.do(_.clear);
-    Ndef.all.do(_.clear);
+    if(Ndef.all[server].notNil) {
+      Ndef.all[server].keysValuesDo { |key, ndef|
+        if(key != \master) { ndef.clear };
+      };
+    };
     fx.clearAll;
     midi.clearAll;
     samples.freeAll;

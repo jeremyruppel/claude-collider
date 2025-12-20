@@ -30,6 +30,7 @@ CCFormatter {
     var lines = [
       this.formatServer,
       this.formatTempo,
+      this.formatMaster,
       this.formatSamples,
       this.formatPdefs,
       this.formatNdefs
@@ -50,9 +51,20 @@ CCFormatter {
   }
 
   formatTempo {
-    ^"Tempo: % BPM | Device: %".format(
+    ^"Tempo: % BPM | Device: % (% out)".format(
       cc.tempo.round(0.1),
-      cc.server.options.device ?? "default"
+      cc.server.options.device ?? "default",
+      cc.server.options.numOutputBusChannels
+    );
+  }
+
+  formatMaster {
+    var outBus = cc.fx.masterOutBus ?? 0;
+    var playing = cc.fx.masterPlaying ?? false;
+    var outChannels = "%-%".format(outBus + 1, outBus + 2);
+    ^"Master: outputs % (limiter %)".format(
+      outChannels,
+      if(playing) { "on" } { "off" }
     );
   }
 
@@ -85,22 +97,20 @@ CCFormatter {
     var chainInputBuses = this.collectChainInputBuses;
 
     // Build sections
+    lines = this.appendDebugPlayingSources(lines);
     lines = this.appendDebugEffects(lines, chainSlots);
     lines = this.appendDebugChains(lines);
     lines = this.appendDebugConnections(lines);
     lines = this.appendDebugSources(lines, chainInputBuses, warnings);
     lines = this.appendDebugSidechains(lines);
+    lines = this.appendDebugMaster(lines);
     lines = this.appendDebugWarnings(lines, warnings);
 
     // Add status info at the end
     lines = lines.add("");
     lines = lines.add(this.format);
 
-    if(fx.loaded.size == 0 && fx.chains.size == 0 && fx.sidechains.size == 0) {
-      ^("No effects loaded\n\n" ++ this.format);
-    } {
-      ^lines.join("\n");
-    };
+    ^lines.join("\n");
   }
 
   collectChainSlots {
@@ -292,6 +302,39 @@ CCFormatter {
       var ndef = Ndef(info.slot);
       var status = if(ndef.isPlaying) { "✓ playing" } { "○ stopped" };
       lines = lines.add("  % (in: %, trig: %) %".format(name, info.inBus.index, info.triggerBus.index, status));
+    };
+    ^lines;
+  }
+
+  appendDebugPlayingSources { |lines|
+    var playingPdefs = this.playingPdefs;
+    var playingNdefs = this.playingNdefs.reject { |key| key == \master };
+
+    if(playingPdefs.size == 0 && playingNdefs.size == 0) { ^lines };
+
+    lines = lines.add("Playing:");
+    playingPdefs.do { |name|
+      var pdef = Pdef(name);
+      var outBus = this.getPdefOutBus(pdef) ?? 0;
+      lines = lines.add("  % (Pdef) → bus %".format(name, outBus));
+    };
+    playingNdefs.do { |name|
+      var ndef = Ndef(name);
+      var outBus = ndef.bus !? _.index ?? 0;
+      lines = lines.add("  % (Ndef) → bus %".format(name, outBus));
+    };
+    ^lines;
+  }
+
+  appendDebugMaster { |lines|
+    var outBus = cc.fx.masterOutBus ?? 0;
+    var playing = cc.fx.masterPlaying ?? false;
+
+    if(lines.size > 2) { lines = lines.add("") };
+    lines = lines.add("Master Output:");
+    lines = lines.add("  bus 0 → limiter → outputs %-%".format(outBus + 1, outBus + 2));
+    if(playing.not) {
+      lines = lines.add("  (master stopped)");
     };
     ^lines;
   }

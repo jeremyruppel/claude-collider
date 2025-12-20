@@ -9,7 +9,6 @@ export class SuperCollider extends EventEmitter {
   private readonly config: SclangConfig
   private _process: SclangProcess | null = null
   private state: ServerState = ServerState.Stopped
-  private bootCommandSent = false
 
   constructor() {
     super()
@@ -39,7 +38,6 @@ export class SuperCollider extends EventEmitter {
     }
 
     this.state = ServerState.Booting
-    this.bootCommandSent = false
     debug("State set to Booting")
 
     return new Promise<string>((resolve, reject) => {
@@ -52,18 +50,10 @@ export class SuperCollider extends EventEmitter {
       this.process = new SclangProcess(this.config)
 
       this.process.once("sclang-ready", () => {
-        if (!this.bootCommandSent) {
-          debug("sclang ready, sending boot command")
-          this.bootCommandSent = true
-          this.process?.send(OutputParser.bootCommand())
-        }
-      })
-
-      this.process.once("server-ready", () => {
-        debug("Server ready")
+        debug("sclang ready")
         clearTimeout(timeout)
         this.state = ServerState.Running
-        resolve("SuperCollider server booted successfully")
+        resolve("sclang started successfully")
       })
 
       this.process.once("error", (err) => {
@@ -84,6 +74,7 @@ export class SuperCollider extends EventEmitter {
 
       this.process.on("stdout", (data) => this.emit("stdout", data))
       this.process.on("stderr", (data) => this.emit("stderr", data))
+      this.process.on("cc-ready", () => this.emit("cc-ready"))
 
       this.process.spawn()
     })
@@ -137,7 +128,6 @@ export class SuperCollider extends EventEmitter {
       this.process = null
     }
     this.state = ServerState.Stopped
-    this.bootCommandSent = false
   }
 
   async restart(): Promise<string> {
@@ -151,6 +141,22 @@ export class SuperCollider extends EventEmitter {
 
   isRunning(): boolean {
     return this.state === ServerState.Running
+  }
+
+  waitForCCReady(timeoutMs: number = 10000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.removeListener("cc-ready", onReady)
+        reject(new Error("Timed out waiting for ClaudeCollider ready"))
+      }, timeoutMs)
+
+      const onReady = () => {
+        clearTimeout(timeout)
+        resolve()
+      }
+
+      this.once("cc-ready", onReady)
+    })
   }
 
   getState(): ServerState {

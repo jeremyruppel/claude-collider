@@ -31,7 +31,9 @@ CCFormatterTest : UnitTest {
         chains: Dictionary[],
         connections: Dictionary[],
         routes: Dictionary[],
-        sidechains: Dictionary[]
+        sidechains: Dictionary[],
+        masterOutBus: 0,
+        masterPlaying: false
       )
     );
   }
@@ -41,7 +43,7 @@ CCFormatterTest : UnitTest {
       serverRunning: true,
       avgCPU: 5.5,
       numSynths: 10,
-      options: (device: "Test Device")
+      options: (device: "Test Device", numOutputBusChannels: 2)
     );
   }
 
@@ -84,7 +86,7 @@ CCFormatterTest : UnitTest {
     var result = formatter.formatTempo;
     this.assertEquals(
       result,
-      "Tempo: 120.0 BPM | Device: Test Device",
+      "Tempo: 120.0 BPM | Device: Test Device (2 out)",
       "formatTempo should format tempo and device"
     );
   }
@@ -95,7 +97,7 @@ CCFormatterTest : UnitTest {
     result = formatter.formatTempo;
     this.assertEquals(
       result,
-      "Tempo: 120.0 BPM | Device: default",
+      "Tempo: 120.0 BPM | Device: default (2 out)",
       "formatTempo should show 'default' when device is nil"
     );
   }
@@ -106,7 +108,7 @@ CCFormatterTest : UnitTest {
     result = formatter.formatTempo;
     this.assertEquals(
       result,
-      "Tempo: 128.6 BPM | Device: Test Device",
+      "Tempo: 128.6 BPM | Device: Test Device (2 out)",
       "formatTempo should round BPM to 1 decimal place"
     );
   }
@@ -162,7 +164,8 @@ CCFormatterTest : UnitTest {
     var result = formatter.format;
     var expected = [
       "Server: running | CPU: 5.5% | Synths: 10",
-      "Tempo: 120.0 BPM | Device: Test Device",
+      "Tempo: 120.0 BPM | Device: Test Device (2 out)",
+      "Master: outputs 1-2 (limiter off)",
       "Samples: 0/0 loaded",
       "Pdefs playing: none",
       "Ndefs playing: none"

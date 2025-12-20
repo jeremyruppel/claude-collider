@@ -8,6 +8,8 @@ CCFX {
   var <connections; // from -> to (effect-to-effect connections)
   var <chains;      // chainName -> [slot1, slot2, ...]
   var <routes;      // source -> target
+  var <masterOutBus;   // Master output bus index (e.g., 6 for outputs 7-8)
+  var <masterPlaying;  // Is master Ndef running
 
   *new { |cc|
     ^super.new.init(cc);
@@ -20,6 +22,8 @@ CCFX {
     connections = Dictionary[];
     chains = Dictionary[];
     routes = Dictionary[];
+    masterOutBus = 0;
+    masterPlaying = false;
     defs = this.defineEffects;
     this.addRoutingSynthDefs;
   }
@@ -499,6 +503,32 @@ CCFX {
     ^false;
   }
 
+  // ========== MASTER OUTPUT ==========
+
+  playMaster { |out=0|
+    masterOutBus = out;
+    Ndef(\master, {
+      var sig = InFeedback.ar(0, 2);
+      sig = Limiter.ar(sig, 0.95);
+      ReplaceOut.ar(0, Silent.ar(2));
+      Out.ar(\out.kr(0), sig);
+    }).play;
+    Ndef(\master).set(\out, masterOutBus);
+    masterPlaying = true;
+  }
+
+  setMasterOutput { |out|
+    masterOutBus = out;
+    if(masterPlaying) {
+      Ndef(\master).set(\out, out);
+    };
+  }
+
+  stopMaster {
+    Ndef(\master).stop;
+    masterPlaying = false;
+  }
+
   remove { |slot|
     var info, scInfo, connInfo;
 
@@ -538,6 +568,7 @@ CCFX {
   }
 
   clearAll {
+    var savedOutBus = masterOutBus;
     // Clear connections first
     connections.keysValuesDo { |from, conn|
       conn.routeSynth.free;
@@ -560,6 +591,10 @@ CCFX {
     // Clear chains and routes
     chains.clear;
     routes.clear;
+    // Restart master if it was playing
+    if(masterPlaying) {
+      this.playMaster(savedOutBus);
+    };
   }
 
   list {

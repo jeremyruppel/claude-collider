@@ -10,6 +10,7 @@ export class OutputParser {
   private static readonly END_MARKER = "<<<END<<<"
   private static readonly SERVER_READY = "SERVER_READY"
   private static readonly SCLANG_READY = "Welcome to SuperCollider"
+  private static readonly CC_READY = "*** ClaudeCollider ready ***"
   private static readonly SCLANG_PROMPT = "sc3> "
 
   private buffer = ""
@@ -28,6 +29,10 @@ export class OutputParser {
 
   hasServerReady(): boolean {
     return this.buffer.includes(OutputParser.SERVER_READY)
+  }
+
+  hasCCReady(): boolean {
+    return this.buffer.includes(OutputParser.CC_READY)
   }
 
   extractResult(): string | null {

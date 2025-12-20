@@ -109,6 +109,10 @@ export class SclangProcess extends EventEmitter {
       this.emit("server-ready")
     }
 
+    if (this.parser.hasCCReady()) {
+      this.emit("cc-ready")
+    }
+
     const result = this.parser.extractResult()
     if (result !== null) {
       const error = this.parser.formatError()
