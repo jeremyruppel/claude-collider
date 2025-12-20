@@ -33,11 +33,12 @@ async function formatBootReadme(): Promise<string> {
   Ndef(\\pad, { ... }).play           # continuous synth
   Ppar([Pbind(...), Pbind(...)])     # sync multiple patterns
 
-## Master Output
-All audio routes through a master Ndef with limiter protection.
-- Default: outputs 1-2
-- Change output: ~cc.fx.setMasterOutput(6)  # outputs 7-8
-- Synths/Pdefs automatically route through master (no config needed)
+## Output Routing
+All audio routes through output Ndefs with limiter protection.
+- Default: outputs 1-2 (main output)
+- Route to other outputs: output_route (for multi-output setups)
+- Example: output_route("kick", 3) routes kick to output 3 (mono)
+- Example: output_route("drums", [7, 8]) routes drums to stereo pair 7-8
 
 ## Gotchas
 - Pbind auto-sets \\freq ~261Hz. For drums: \\freq, 48
@@ -287,6 +288,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: "object",
           properties: {},
+          required: [],
+        },
+      },
+      {
+        name: "midi_thru",
+        description:
+          "Route MIDI input to MIDI output. Requires midi_connect with 'out' first.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            outputChannel: {
+              type: "number",
+              description:
+                "MIDI output channel 1-16. Omit to pass through original channel.",
+            },
+            inputChannel: {
+              type: "number",
+              description:
+                "MIDI input channel 1-16 to listen on. Omit for all channels.",
+            },
+          },
           required: [],
         },
       },
@@ -611,6 +633,55 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: [],
         },
       },
+      // Output routing tools
+      {
+        name: "output_route",
+        description:
+          "Route a source (Pdef or Ndef) to specific hardware outputs. Use for multi-output setups.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            source: {
+              type: "string",
+              description: "Pdef or Ndef name to route",
+            },
+            outputs: {
+              oneOf: [
+                { type: "number" },
+                { type: "array", items: { type: "number" } },
+              ],
+              description:
+                "Hardware outputs: single number for mono (e.g., 3), or array for stereo pair (e.g., [3, 4]). 1-indexed.",
+            },
+          },
+          required: ["source", "outputs"],
+        },
+      },
+      {
+        name: "output_unroute",
+        description:
+          "Remove output routing for a source, returning it to the main outputs (1-2).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            source: {
+              type: "string",
+              description: "Pdef or Ndef name to unroute",
+            },
+          },
+          required: ["source"],
+        },
+      },
+      {
+        name: "output_status",
+        description:
+          "Show all active output routings and their destinations.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
       // Debug tools
       {
         name: "routing_debug",
@@ -847,6 +918,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await sc.execute("~cc.midi.clearMappings")
         return {
           content: [{ type: "text", text: "Cleared all MIDI mappings" }],
+        }
+      }
+
+      case "midi_thru": {
+        const { outputChannel, inputChannel } = args as {
+          outputChannel?: number
+          inputChannel?: number
+        }
+        // Convert 1-indexed to 0-indexed for SC
+        const outChanArg =
+          outputChannel !== undefined ? outputChannel - 1 : "nil"
+        const inChanArg =
+          inputChannel !== undefined ? inputChannel - 1 : "nil"
+        await sc.execute(`~cc.midi.thru(${inChanArg}, ${outChanArg})`)
+        const chanInfo =
+          outputChannel !== undefined
+            ? `channel ${outputChannel}`
+            : "original channel"
+        return {
+          content: [{ type: "text", text: `MIDI thru enabled → ${chanInfo}` }],
         }
       }
 
@@ -1149,6 +1240,41 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await sc.execute("~cc.recorder.status")
         return {
           content: [{ type: "text", text: result }],
+        }
+      }
+
+      // Output routing tools
+      case "output_route": {
+        const { source, outputs } = args as {
+          source: string
+          outputs: number | number[]
+        }
+        const outputsArg = Array.isArray(outputs)
+          ? `[${outputs.join(", ")}]`
+          : outputs
+        await sc.execute(`~cc.fx.routeToOutput(\\${source}, ${outputsArg})`)
+        const outputStr = Array.isArray(outputs)
+          ? `outputs ${outputs.join("-")}`
+          : `output ${outputs}`
+        return {
+          content: [{ type: "text", text: `Routed ${source} to ${outputStr}` }],
+        }
+      }
+
+      case "output_unroute": {
+        const { source } = args as { source: string }
+        await sc.execute(`~cc.fx.unrouteFromOutput(\\${source})`)
+        return {
+          content: [
+            { type: "text", text: `Unrouted ${source}, now using main outputs` },
+          ],
+        }
+      }
+
+      case "output_status": {
+        const result = await sc.execute("~cc.fx.outputStatus")
+        return {
+          content: [{ type: "text", text: `Output Routing:\n${result}` }],
         }
       }
 

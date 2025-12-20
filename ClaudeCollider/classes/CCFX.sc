@@ -7,9 +7,9 @@ CCFX {
   var <sidechains;  // name -> (inBus, triggerBus)
   var <connections; // from -> to (effect-to-effect connections)
   var <chains;      // chainName -> [slot1, slot2, ...]
-  var <routes;      // source -> target
-  var <masterOutBus;   // Master output bus index (e.g., 6 for outputs 7-8)
-  var <masterPlaying;  // Is master Ndef running
+  var <routes;        // source -> target
+  var <outputs;       // outputKey -> (ndef, inBus, channels, hwOut)
+  var <outputRoutes;  // source -> outputKey
 
   *new { |cc|
     ^super.new.init(cc);
@@ -22,8 +22,8 @@ CCFX {
     connections = Dictionary[];
     chains = Dictionary[];
     routes = Dictionary[];
-    masterOutBus = 0;
-    masterPlaying = false;
+    outputs = Dictionary[];
+    outputRoutes = Dictionary[];
     defs = this.defineEffects;
     this.addRoutingSynthDefs;
   }
@@ -503,30 +503,214 @@ CCFX {
     ^false;
   }
 
-  // ========== MASTER OUTPUT ==========
+  // ========== OUTPUT MANAGEMENT ==========
 
-  playMaster { |out=0|
-    masterOutBus = out;
-    Ndef(\master, {
+  // Create or get an output Ndef for specific hardware channels
+  // channels: integer for mono (e.g., 3), array for stereo (e.g., [3,4])
+  createOutput { |channels|
+    var key, numChannels, hwOut, inBus, ndef;
+
+    // Determine key and parameters
+    if(channels.isArray) {
+      key = ("out_" ++ channels[0] ++ "_" ++ channels[1]).asSymbol;
+      numChannels = 2;
+      hwOut = channels[0] - 1;  // 1-indexed to 0-indexed
+    } {
+      key = ("out_" ++ channels).asSymbol;
+      numChannels = 1;
+      hwOut = channels - 1;
+    };
+
+    // Return existing if already created
+    if(outputs[key].notNil) { ^outputs[key] };
+
+    // Create private input bus for this output
+    inBus = Bus.audio(cc.server, numChannels);
+
+    // Create Ndef with limiter
+    ndef = Ndef(key, {
+      var sig = InFeedback.ar(\in.kr(0), numChannels);
+      sig = Limiter.ar(sig, 0.95);
+      Out.ar(\hwOut.kr(hwOut), sig);
+    });
+    ndef.set(\in, inBus.index, \hwOut, hwOut);
+    ndef.play;
+
+    outputs[key] = (
+      ndef: ndef,
+      inBus: inBus,
+      channels: channels,
+      hwOut: hwOut,
+      routeSynths: Dictionary[]
+    );
+
+    ^outputs[key];
+  }
+
+  // Play main output that captures bus 0 (default for all synths)
+  playMainOutput {
+    Ndef(\out_main, {
       var sig = InFeedback.ar(0, 2);
       sig = Limiter.ar(sig, 0.95);
       ReplaceOut.ar(0, Silent.ar(2));
       Out.ar(\out.kr(0), sig);
     }).play;
-    Ndef(\master).set(\out, masterOutBus);
-    masterPlaying = true;
+
+    outputs[\out_main] = (
+      ndef: Ndef(\out_main),
+      inBus: nil,  // Uses bus 0 directly
+      channels: [1, 2],
+      hwOut: 0,
+      routeSynths: Dictionary[]
+    );
   }
 
-  setMasterOutput { |out|
-    masterOutBus = out;
-    if(masterPlaying) {
-      Ndef(\master).set(\out, out);
+  // Change main output destination
+  setMainOutput { |out|
+    if(outputs[\out_main].notNil) {
+      outputs[\out_main].hwOut = out;
+      Ndef(\out_main).set(\out, out);
     };
   }
 
-  stopMaster {
-    Ndef(\master).stop;
-    masterPlaying = false;
+  // Stop main output
+  stopMainOutput {
+    if(outputs[\out_main].notNil) {
+      outputs[\out_main].ndef.stop;
+    };
+  }
+
+  // Check if main output is playing
+  isMainOutputPlaying {
+    ^(outputs[\out_main].notNil and: { outputs[\out_main].ndef.isPlaying });
+  }
+
+  // Route a source (Pdef/Ndef name) to specific output channels
+  routeToOutput { |source, channels|
+    var output, srcSym, isMainOutput;
+    srcSym = source.asSymbol;
+
+    // Check if routing to main output (1-2 or [1, 2])
+    isMainOutput = channels.isArray.if(
+      { (channels[0] == 1) && (channels[1] == 2) },
+      { channels == 1 }
+    );
+
+    // For main output, use bus 0 directly (no separate output Ndef needed)
+    if(isMainOutput) {
+      output = outputs[\out_main];
+      // Check if source is a Pdef
+      if(Pdef.all[srcSym].notNil) {
+        Pdef(srcSym).set(\out, 0);
+        outputRoutes[srcSym] = output;
+        ^true;
+      };
+      // Check if source is an Ndef
+      if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server][srcSym].notNil }) {
+        var srcNdef = Ndef(srcSym);
+        srcNdef.set(\out, 0);
+        outputRoutes[srcSym] = output;
+        ^true;
+      };
+      ^false;
+    };
+
+    // For other outputs, create dedicated output Ndef
+    output = this.createOutput(channels);
+
+    // Check if source is a Pdef
+    if(Pdef.all[srcSym].notNil) {
+      Pdef(srcSym).set(\out, output.inBus.index);
+      outputRoutes[srcSym] = output;
+      ^true;
+    };
+
+    // Check if source is an Ndef
+    if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server][srcSym].notNil }) {
+      var srcNdef = Ndef(srcSym);
+      var routeSynth;
+      // Free existing route synth if any
+      if(output.routeSynths[srcSym].notNil) {
+        output.routeSynths[srcSym].free;
+      };
+      // Create routing synth
+      routeSynth = Synth(\cc_bus_copy, [\in, srcNdef.bus.index, \out, output.inBus.index]);
+      output.routeSynths[srcSym] = routeSynth;
+      outputRoutes[srcSym] = output;
+      ^true;
+    };
+
+    ^false;
+  }
+
+  // Remove source routing, return to main output
+  unrouteFromOutput { |source|
+    var srcSym = source.asSymbol;
+    var output = outputRoutes[srcSym];
+
+    if(output.notNil) {
+      // Clean up routing synth if exists
+      if(output.routeSynths[srcSym].notNil) {
+        output.routeSynths[srcSym].free;
+        output.routeSynths.removeAt(srcSym);
+      };
+      // Reset Pdef to main output bus
+      if(Pdef.all[srcSym].notNil) {
+        Pdef(srcSym).set(\out, 0);
+      };
+      outputRoutes.removeAt(srcSym);
+      ^true;
+    };
+    ^false;
+  }
+
+  // Get status of all outputs
+  outputStatus {
+    var lines = [];
+    outputs.keysValuesDo { |key, info|
+      var channels = info.channels;
+      var status = if(info.ndef.isPlaying) { "active" } { "stopped" };
+      var channelStr = if(channels.isArray) {
+        "%-%" .format(channels[0], channels[1]);
+      } {
+        channels.asString;
+      };
+      lines = lines.add("  % -> hw % (%)".format(key, channelStr, status));
+    };
+    if(lines.isEmpty) { ^"  (none)" };
+    ^lines.join("\n");
+  }
+
+  // Remove an output (when no longer needed)
+  removeOutput { |channels|
+    var key = if(channels.isArray) {
+      ("out_" ++ channels[0] ++ "_" ++ channels[1]).asSymbol;
+    } {
+      ("out_" ++ channels).asSymbol;
+    };
+    var output = outputs[key];
+
+    if(output.notNil) {
+      // Clean up all routing synths
+      output.routeSynths.do(_.free);
+      // Free resources
+      output.ndef.clear;
+      if(output.inBus.notNil) { output.inBus.free };
+      outputs.removeAt(key);
+      ^true;
+    };
+    ^false;
+  }
+
+  // Clear all outputs
+  clearOutputs {
+    outputs.keysValuesDo { |key, output|
+      output.routeSynths.do(_.free);
+      output.ndef.clear;
+      if(output.inBus.notNil) { output.inBus.free };
+    };
+    outputs.clear;
+    outputRoutes.clear;
   }
 
   remove { |slot|
@@ -568,7 +752,10 @@ CCFX {
   }
 
   clearAll {
-    var savedOutBus = masterOutBus;
+    var mainOutput = outputs[\out_main];
+    var mainWasPlaying = mainOutput.notNil and: { mainOutput.ndef.isPlaying };
+    var mainHwOut = mainOutput !? { mainOutput.hwOut } ?? 0;
+
     // Clear connections first
     connections.keysValuesDo { |from, conn|
       conn.routeSynth.free;
@@ -591,9 +778,12 @@ CCFX {
     // Clear chains and routes
     chains.clear;
     routes.clear;
-    // Restart master if it was playing
-    if(masterPlaying) {
-      this.playMaster(savedOutBus);
+    // Clear all outputs
+    this.clearOutputs;
+    // Restart main output if it was playing
+    if(mainWasPlaying) {
+      this.playMainOutput;
+      this.setMainOutput(mainHwOut);
     };
   }
 

@@ -32,8 +32,8 @@ CCFormatterTest : UnitTest {
         connections: Dictionary[],
         routes: Dictionary[],
         sidechains: Dictionary[],
-        masterOutBus: 0,
-        masterPlaying: false
+        outputs: Dictionary[],
+        outputRoutes: Dictionary[]
       )
     );
   }
@@ -165,12 +165,24 @@ CCFormatterTest : UnitTest {
     var expected = [
       "Server: running | CPU: 5.5% | Synths: 10",
       "Tempo: 120.0 BPM | Device: Test Device (2 out)",
-      "Master: outputs 1-2 (limiter off)",
+      "Outputs: none",
       "Samples: 0/0 loaded",
       "Pdefs playing: none",
       "Ndefs playing: none"
     ].join("\n");
     this.assertEquals(result, expected, "format should combine all sections");
+  }
+
+  test_format_withMainOutput {
+    var result;
+    var mockNdef = (isPlaying: true);
+    var expected;
+    mockCC.fx.outputs = Dictionary[
+      \out_main -> (ndef: mockNdef, hwOut: 0, channels: [1, 2])
+    ];
+    result = formatter.formatOutputs;
+    expected = "Outputs: main 1-2 (limiter on)";
+    this.assertEquals(result, expected, "formatOutputs should show main output when configured");
   }
 
   // ========== playingPdefs tests ==========

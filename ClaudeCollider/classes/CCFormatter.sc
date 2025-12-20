@@ -30,7 +30,7 @@ CCFormatter {
     var lines = [
       this.formatServer,
       this.formatTempo,
-      this.formatMaster,
+      this.formatOutputs,
       this.formatSamples,
       this.formatPdefs,
       this.formatNdefs
@@ -58,14 +58,26 @@ CCFormatter {
     );
   }
 
-  formatMaster {
-    var outBus = cc.fx.masterOutBus ?? 0;
-    var playing = cc.fx.masterPlaying ?? false;
-    var outChannels = "%-%".format(outBus + 1, outBus + 2);
-    ^"Master: outputs % (limiter %)".format(
-      outChannels,
-      if(playing) { "on" } { "off" }
-    );
+  formatOutputs {
+    var outputs = cc.fx.outputs;
+    var mainOutput = outputs[\out_main];
+    var otherOutputs;
+
+    if(mainOutput.isNil) {
+      ^"Outputs: none";
+    };
+
+    otherOutputs = outputs.keys.reject { |k| k == \out_main };
+    if(otherOutputs.isEmpty) {
+      var hwOut = mainOutput.hwOut ?? 0;
+      var playing = mainOutput.ndef.isPlaying;
+      ^"Outputs: main %-% (limiter %)".format(
+        hwOut + 1, hwOut + 2,
+        if(playing) { "on" } { "off" }
+      );
+    } {
+      ^"Outputs: % active".format(outputs.size);
+    };
   }
 
   formatSamples {
@@ -103,7 +115,7 @@ CCFormatter {
     lines = this.appendDebugConnections(lines);
     lines = this.appendDebugSources(lines, chainInputBuses, warnings);
     lines = this.appendDebugSidechains(lines);
-    lines = this.appendDebugMaster(lines);
+    lines = this.appendDebugOutputs(lines);
     lines = this.appendDebugWarnings(lines, warnings);
 
     // Add status info at the end
@@ -268,7 +280,16 @@ CCFormatter {
 
   getPdefOutBus { |pdef|
     var out, source;
-    if(pdef.isNil || pdef.source.isNil) { ^nil };
+    if(pdef.isNil) { ^nil };
+    // Check pdef.envir first (where Pdef.set stores values)
+    if(pdef.envir.notNil) {
+      out = pdef.envir[\out];
+      if(out.notNil) {
+        if(out.isKindOf(Bus)) { ^out.index };
+        ^out;
+      };
+    };
+    if(pdef.source.isNil) { ^nil };
     source = pdef.source;
     // Handle Pbind and similar patterns that store pairs
     if(source.respondsTo(\patternpairs)) {
@@ -308,7 +329,7 @@ CCFormatter {
 
   appendDebugPlayingSources { |lines|
     var playingPdefs = this.playingPdefs;
-    var playingNdefs = this.playingNdefs.reject { |key| key == \master };
+    var playingNdefs = this.playingNdefs.reject { |key| key.asString.beginsWith("out_") };
 
     if(playingPdefs.size == 0 && playingNdefs.size == 0) { ^lines };
 
@@ -326,15 +347,34 @@ CCFormatter {
     ^lines;
   }
 
-  appendDebugMaster { |lines|
-    var outBus = cc.fx.masterOutBus ?? 0;
-    var playing = cc.fx.masterPlaying ?? false;
+  appendDebugOutputs { |lines|
+    var outputs = cc.fx.outputs;
+    var outputRoutes = cc.fx.outputRoutes;
 
     if(lines.size > 2) { lines = lines.add("") };
-    lines = lines.add("Master Output:");
-    lines = lines.add("  bus 0 → limiter → outputs %-%".format(outBus + 1, outBus + 2));
-    if(playing.not) {
-      lines = lines.add("  (master stopped)");
+    lines = lines.add("Hardware Outputs:");
+
+    if(outputs.size == 0) {
+      lines = lines.add("  (none configured)");
+      ^lines;
+    };
+
+    outputs.keysValuesDo { |key, info|
+      var channels = info.channels;
+      var playing = info.ndef.isPlaying;
+      var status = if(playing) { "active" } { "stopped" };
+      var channelStr = if(channels.isArray) {
+        "%-%" .format(channels[0], channels[1]);
+      } {
+        channels.asString;
+      };
+      var inBusStr = info.inBus !? { "bus " ++ info.inBus.index } ?? "bus 0";
+      var sources = outputRoutes.select { |o| o == info }.keys.asArray;
+      var sourceStr = if(sources.isEmpty) { "" } { " <- " ++ sources.join(", ") };
+
+      lines = lines.add("  % → limiter → hw % (%)%".format(
+        inBusStr, channelStr, status, sourceStr
+      ));
     };
     ^lines;
   }

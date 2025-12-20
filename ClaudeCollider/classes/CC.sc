@@ -43,7 +43,7 @@ CC {
     server.waitForBoot {
       this.loadSynthDefs;
       this.loadSamples;
-      fx.playMaster;
+      fx.playMainOutput;
       Pdef.defaultQuant = 4;
       isBooted = true;
       "*** ClaudeCollider ready ***".postln;
@@ -102,7 +102,7 @@ CC {
     Pdef.all.do(_.stop);
     if(Ndef.all[server].notNil) {
       Ndef.all[server].keysValuesDo { |key, ndef|
-        if(key != \master) { ndef.stop };
+        if(key.asString.beginsWith("out_").not) { ndef.stop };
       };
     };
   }
@@ -113,7 +113,7 @@ CC {
     Pdef.all.do(_.clear);
     if(Ndef.all[server].notNil) {
       Ndef.all[server].keysValuesDo { |key, ndef|
-        if(key != \master) { ndef.clear };
+        if(key.asString.beginsWith("out_").not) { ndef.clear };
       };
     };
     fx.clearAll;

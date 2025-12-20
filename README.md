@@ -96,6 +96,16 @@ Restart Claude Desktop after updating the config.
 | `fx_remove`        | Remove an effect and free its resources                           |
 | `routing_debug`    | Debug audio routing: signal flow, buses, effect params, sources   |
 
+### Output Routing Tools
+
+Route audio to specific hardware outputs for multi-output setups.
+
+| Tool             | Description                                                       |
+| ---------------- | ----------------------------------------------------------------- |
+| `output_route`   | Route a source (Pdef/Ndef) to specific hardware outputs           |
+| `output_unroute` | Remove output routing, return source to main outputs (1-2)        |
+| `output_status`  | Show all active output routings and their destinations            |
+
 ### Sample Tools
 
 Place WAV or AIFF files in your samples directory (default: `~/.claudecollider/samples/`). Samples are discovered on boot and lazy loaded on first use.

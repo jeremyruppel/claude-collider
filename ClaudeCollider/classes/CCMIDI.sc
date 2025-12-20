@@ -84,9 +84,9 @@ CCMIDI {
       inputs = inputs.add(endpoint);
       "CCMIDI: connected input '%'".format(endpoint.device).postln;
     } {
-      output = MIDIOut(0);
-      output.connect(endpoint.uid);
-      "CCMIDI: connected output '%'".format(endpoint.device).postln;
+      var deviceIndex = MIDIClient.destinations.indexOf(endpoint);
+      output = MIDIOut(deviceIndex, endpoint.uid);
+      "CCMIDI: connected output '%' (port %)".format(endpoint.device, deviceIndex).postln;
     };
 
     ^true;
@@ -247,6 +247,28 @@ CCMIDI {
       \cc, { output.control(channel, args[0], args[1]) },
       \program, { output.program(channel, args[0]) }
     );
+
+    ^true;
+  }
+
+  thru { |inputChannel, outputChannel|
+    var defName = ("cc_thru_" ++ defCounter).asSymbol;
+    defCounter = defCounter + 1;
+
+    if(output.isNil) {
+      "CCMIDI: no MIDI output connected".warn;
+      ^false;
+    };
+
+    MIDIdef.noteOn((defName ++ "_on").asSymbol, { |vel, note, chan|
+      var outChan = outputChannel ?? chan;
+      output.noteOn(outChan, note, vel);
+    }, chan: inputChannel);
+
+    MIDIdef.noteOff((defName ++ "_off").asSymbol, { |vel, note, chan|
+      var outChan = outputChannel ?? chan;
+      output.noteOff(outChan, note, vel);
+    }, chan: inputChannel);
 
     ^true;
   }
