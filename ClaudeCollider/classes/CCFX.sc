@@ -148,11 +148,12 @@ CCFX {
 
       bitcrush: (
         description: "Bit crusher with sample rate reduction",
-        params: [\bits, 8, \rate, 44100, \mix, 1],
-        func: { |in, bits=8, rate=44100, mix=1|
+        params: [\bits, 4, \rate, 8000, \mix, 1],
+        func: { |in, bits=4, rate=8000, mix=1|
           var sig = In.ar(in, 2);
-          var crushed = sig.round(2.pow(1 - bits));
-          var wet = Latch.ar(crushed, Impulse.ar(rate));
+          var step = 2.pow(bits.neg.max(-8));  // bits: 1=harsh, 8=subtle
+          var crushed = sig.round(step);
+          var wet = Latch.ar(crushed, Impulse.ar(rate.clip(500, 44100)));
           (sig * (1 - mix)) + (wet * mix);
         }
       ),
@@ -239,6 +240,9 @@ CCFX {
     func = def[\func];
     paramPairs = def[\params].clump(2);
 
+    // Ensure main output is ready so we can route to mainBus
+    outputs.playMain;
+
     ndef = Ndef(slotName.asSymbol, { |in|
       var params = paramPairs.collect { |pair|
         NamedControl.kr(pair[0], pair[1]);
@@ -246,7 +250,7 @@ CCFX {
       func.valueArray([in] ++ params);
     });
     ndef.set(\in, inBus.index);
-    ndef.play;
+    ndef.play(out: outputs.mainBus.index);
 
     loaded[slotName.asSymbol] = (
       name: name,
@@ -272,7 +276,11 @@ CCFX {
   bypass { |slot, shouldBypass=true|
     var info = loaded[slot.asSymbol];
     if(info.notNil) {
-      if(shouldBypass) { info.ndef.stop } { info.ndef.play };
+      if(shouldBypass) {
+        info.ndef.stop;
+      } {
+        info.ndef.play(out: outputs.mainBus.index);
+      };
       ^true;
     };
     ^false;

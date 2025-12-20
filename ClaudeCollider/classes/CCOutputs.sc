@@ -4,6 +4,7 @@ CCOutputs {
   var <cc;
   var <outputs;  // Dictionary: key -> CCOutput
   var <routes;   // Dictionary: source -> CCOutput
+  var <mainBus;  // Dedicated bus for main mix (not hardware bus 0)
 
   *new { |cc|
     ^super.new.init(cc);
@@ -13,6 +14,7 @@ CCOutputs {
     cc = argCC;
     outputs = Dictionary[];
     routes = Dictionary[];
+    mainBus = nil;  // Created lazily when main output starts
   }
 
   // ========== Output Creation ==========
@@ -53,15 +55,18 @@ CCOutputs {
 
     if(outputs[\out_main].notNil) { ^outputs[\out_main] };
 
+    // Create dedicated main bus (separate from hardware bus 0)
+    mainBus = Bus.audio(cc.server, 2);
+
     ndef = Ndef(\out_main, {
-      var sig = InFeedback.ar(0, 2);
+      var sig = InFeedback.ar(\in.kr(0), 2);
       sig = Limiter.ar(sig, 0.95);
-      ReplaceOut.ar(0, Silent.ar(2));
       Out.ar(\out.kr(0), sig);
     });
+    ndef.set(\in, mainBus.index, \out, 0);
     ndef.play;
 
-    output = CCOutput(cc, \out_main, ndef, nil, [1, 2], 0);
+    output = CCOutput(cc, \out_main, ndef, mainBus, [1, 2], 0);
     outputs[\out_main] = output;
 
     ^output;
@@ -177,6 +182,7 @@ CCOutputs {
     outputs.do(_.free);
     outputs.clear;
     routes.clear;
+    if(mainBus.notNil) { mainBus.free; mainBus = nil };
   }
 
   // ========== Status ==========
