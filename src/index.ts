@@ -55,7 +55,6 @@ All audio routes through output Ndefs with limiter protection.
 ## Gotchas
 - Pbind auto-sets \\freq ~261Hz. For drums: \\freq, 48
 - NEVER call Synth() inside Ndef — infinite spawning
-- Set Pdef.defaultQuant = 4 for bar-aligned changes
 
 ## Synths: ${synthList}
 ## Effects: ${fxList}
