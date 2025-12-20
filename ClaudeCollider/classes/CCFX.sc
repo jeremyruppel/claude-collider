@@ -355,7 +355,8 @@ CCFX {
 
   clearAll {
     var mainWasPlaying = outputs.isMainPlaying;
-    var mainHwOut = outputs.main !? { _.hwOut } ?? 0;
+    var main = outputs.main;
+    var mainHwOut = if(main.notNil and: { main.respondsTo(\hwOut) }) { main.hwOut } { 0 };
 
     router.clear;
     sidechains.clear;

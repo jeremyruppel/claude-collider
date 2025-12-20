@@ -69,7 +69,7 @@ CCFormatter {
 
     otherOutputs = outputs.outputs.keys.reject { |k| k == \out_main };
     if(otherOutputs.isEmpty) {
-      var hwOut = mainOutput.hwOut ?? 0;
+      var hwOut = if(mainOutput.respondsTo(\hwOut)) { mainOutput.hwOut ?? 0 } { 0 };
       var playing = mainOutput.isPlaying;
       ^"Outputs: main %-% (limiter %)".format(
         hwOut + 1, hwOut + 2,
