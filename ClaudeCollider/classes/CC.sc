@@ -126,4 +126,9 @@ CC {
   status {
     ^formatter.format;
   }
+
+  // Convenience accessors for subsystems
+  outputs { ^fx.outputs }
+  router { ^fx.router }
+  sidechains { ^fx.sidechains }
 }

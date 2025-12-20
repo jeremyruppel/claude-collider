@@ -40,6 +40,18 @@ All audio routes through output Ndefs with limiter protection.
 - Example: output_route("kick", 3) routes kick to output 3 (mono)
 - Example: output_route("drums", [7, 8]) routes drums to stereo pair 7-8
 
+## Effects & Routing
+- fx_load: Load effects (reverb, delay, distortion, etc.)
+- fx_route: Route sources to effects
+- fx_connect: Chain effects together (effect -> effect)
+- fx_chain: Create named effect chains
+- fx_sidechain: Create sidechain compressors for ducking
+
+## Subsystems (via sc_execute)
+~cc.outputs    # CCOutputs - hardware output routing
+~cc.router     # CCRouter - effect connections and chains
+~cc.sidechains # CCSidechain - sidechain compressors
+
 ## Gotchas
 - Pbind auto-sets \\freq ~261Hz. For drums: \\freq, 48
 - NEVER call Synth() inside Ndef — infinite spawning

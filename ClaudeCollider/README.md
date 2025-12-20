@@ -33,7 +33,7 @@ Then recompile the class library (Cmd+Shift+L in the IDE).
 
 ### CC
 
-Main facade class. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`, `~cc.formatter`.
+Main facade class. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`, `~cc.formatter`, `~cc.outputs`, `~cc.router`, `~cc.sidechains`.
 
 ```supercollider
 CC.boot(server, device, numOutputs, onComplete)  // Boot and initialize
@@ -44,6 +44,11 @@ CC.boot(server, device, numOutputs, onComplete)  // Boot and initialize
 ~cc.stop                              // Stop all Pdefs/Ndefs
 ~cc.clear                             // Stop and clear everything
 ~cc.status                            // Get formatted status string
+
+// Convenience accessors
+~cc.outputs                           // CCOutputs instance (via fx.outputs)
+~cc.router                            // CCRouter instance (via fx.router)
+~cc.sidechains                        // CCSidechain instance (via fx.sidechains)
 ```
 
 ### CCSynths
@@ -183,6 +188,99 @@ Ndef-based effects system with routing and chaining.
 | Dynamics   | compressor, limiter, gate        |
 | Stereo     | widener, autopan                 |
 
+### CCOutputs
+
+Manages hardware output routing with per-output limiters. Sources can be routed to specific outputs or stereo pairs.
+
+```supercollider
+// Access via ~cc.outputs or ~cc.fx.outputs
+
+// Route sources to specific hardware outputs
+~cc.fx.routeToOutput(\drums, [7, 8])    // Route drums to stereo outputs 7-8
+~cc.fx.routeToOutput(\kick, 1)          // Route kick to mono output 1
+~cc.fx.routeToOutput(\bass, [1, 2])     // Route to main (1-2)
+
+// Unroute sources
+~cc.fx.unrouteFromOutput(\drums)
+
+// Main output control (outputs 1-2 with limiter)
+~cc.fx.playMainOutput                   // Start main output
+~cc.fx.stopMainOutput                   // Stop main output
+~cc.fx.setMainOutput(2)                 // Move main to outputs 3-4 (0-indexed: 2)
+~cc.fx.isMainOutputPlaying              // Check if main output is active
+
+// Status
+~cc.fx.outputStatus                     // Get output routing status
+```
+
+### CCOutput
+
+Represents a single hardware output destination (mono or stereo pair). Each output includes a limiter for protection.
+
+```supercollider
+// Usually accessed via CCOutputs, not directly
+var output = ~cc.outputs.at(\out_3_4)
+
+output.isMain                           // true if this is the main output
+output.isPlaying                        // true if output Ndef is playing
+output.channels                         // 3 or [3, 4] (1-indexed)
+output.hwOut                            // Hardware output index (0-indexed)
+output.inputBusIndex                    // Bus index for routing audio to this output
+output.sources                          // Array of routed source names
+
+output.route(\myPattern)                // Route a source to this output
+output.unroute(\myPattern)              // Remove source from this output
+output.setHwOut(4)                      // Change hardware output destination
+output.statusString                     // "out_3_4 -> hw 3-4 (active)"
+```
+
+### CCRouter
+
+Manages effect-to-effect connections, effect chains, and source-to-effect routing.
+
+```supercollider
+// Access via ~cc.router or ~cc.fx.router
+
+// Effect connections (effect → effect)
+~cc.fx.connect(\fx_dist, \fx_reverb)    // Connect distortion output to reverb input
+
+// Effect chains (named groups)
+~cc.fx.registerChain(\drums, [\fx_comp, \fx_reverb])
+
+// Source routing (pattern/Ndef → effect)
+~cc.fx.route(\kickPattern, \fx_comp)
+
+// Status
+~cc.router.connections                  // Dictionary of effect connections
+~cc.router.chains                       // Dictionary of named chains
+~cc.router.routes                       // Dictionary of source routes
+~cc.router.status                       // Formatted status string
+```
+
+### CCSidechain
+
+Manages sidechain compressors for ducking effects.
+
+```supercollider
+// Access via ~cc.sidechains or ~cc.fx.sidechains
+
+// Create sidechain compressor
+~cc.fx.sidechain(\bassDuck, threshold: 0.1, ratio: 4, attack: 0.01, release: 0.1)
+
+// Route audio through sidechain
+~cc.fx.route(\bassPattern, \bassDuck)
+
+// Route trigger source (the signal that triggers compression)
+~cc.fx.routeTrigger(\kickPattern, \bassDuck)
+~cc.fx.routeTrigger(\kickPattern, \bassDuck, passthrough: false)  // Mute trigger
+
+// Status
+~cc.sidechains.size                     // Number of sidechains
+~cc.sidechains.keys                     // Array of sidechain names
+~cc.sidechains.at(\bassDuck)            // Get sidechain info
+~cc.sidechains.status                   // Formatted status string
+```
+
 ### CCMIDI
 
 MIDI device management and mapping.
@@ -300,6 +398,10 @@ sclang ClaudeCollider/tests/run_tests.scd
 | CCFXTest.sc | Effects system tests (describe, list formatting) |
 | CCSamplesTest.sc | Sample management tests |
 | CCFormatterTest.sc | Status formatter tests |
+| CCOutputTest.sc | Single output destination tests |
+| CCOutputsTest.sc | Output collection manager tests |
+| CCRouterTest.sc | Effect routing and chain tests |
+| CCSidechainTest.sc | Sidechain compressor tests |
 
 ### Writing Tests
 

@@ -60,23 +60,23 @@ CCFormatter {
 
   formatOutputs {
     var outputs = cc.fx.outputs;
-    var mainOutput = outputs[\out_main];
+    var mainOutput = outputs.main;
     var otherOutputs;
 
     if(mainOutput.isNil) {
       ^"Outputs: none";
     };
 
-    otherOutputs = outputs.keys.reject { |k| k == \out_main };
+    otherOutputs = outputs.outputs.keys.reject { |k| k == \out_main };
     if(otherOutputs.isEmpty) {
       var hwOut = mainOutput.hwOut ?? 0;
-      var playing = mainOutput.ndef.isPlaying;
+      var playing = mainOutput.isPlaying;
       ^"Outputs: main %-% (limiter %)".format(
         hwOut + 1, hwOut + 2,
         if(playing) { "on" } { "off" }
       );
     } {
-      ^"Outputs: % active".format(outputs.size);
+      ^"Outputs: % active".format(outputs.outputs.size);
     };
   }
 
@@ -127,13 +127,13 @@ CCFormatter {
 
   collectChainSlots {
     var chainSlots = Set[];
-    cc.fx.chains.do { |slots| slots.do { |s| chainSlots.add(s.asSymbol) } };
+    cc.fx.router.chains.do { |slots| slots.do { |s| chainSlots.add(s.asSymbol) } };
     ^chainSlots;
   }
 
   collectChainInputBuses {
     var chainInputBuses = Dictionary[];
-    cc.fx.chains.keysValuesDo { |name, slots|
+    cc.fx.router.chains.keysValuesDo { |name, slots|
       var firstSlot = slots[0];
       var info = cc.fx.loaded[firstSlot.asSymbol];
       if(info.notNil) {
@@ -162,12 +162,12 @@ CCFormatter {
   }
 
   appendDebugChains { |lines|
-    var fx = cc.fx;
+    var router = cc.fx.router;
 
-    if(fx.chains.size > 0) {
+    if(router.chains.size > 0) {
       if(lines.size > 2) { lines = lines.add("") };
       lines = lines.add("Chains:");
-      fx.chains.keysValuesDo { |name, slots|
+      router.chains.keysValuesDo { |name, slots|
         lines = lines.add("  %:".format(name));
         lines = this.appendChainSlots(lines, slots);
         lines = lines.add("    → main out");
@@ -203,12 +203,12 @@ CCFormatter {
   }
 
   appendDebugConnections { |lines|
-    var fx = cc.fx;
+    var router = cc.fx.router;
     var nonChainConnections;
 
-    if(fx.connections.size == 0) { ^lines };
+    if(router.connections.size == 0) { ^lines };
 
-    nonChainConnections = fx.connections.select { |conn, from|
+    nonChainConnections = router.connections.select { |conn, from|
       this.isChainConnection(from, conn.to).not;
     };
 
@@ -223,7 +223,7 @@ CCFormatter {
   }
 
   isChainConnection { |from, to|
-    cc.fx.chains.do { |slots|
+    cc.fx.router.chains.do { |slots|
       slots.do { |slot, i|
         if((i < (slots.size - 1)) && (from == slot.asSymbol) && (to == slots[i + 1].asSymbol)) {
           ^true;
@@ -234,15 +234,15 @@ CCFormatter {
   }
 
   appendDebugSources { |lines, chainInputBuses, warnings|
-    var fx = cc.fx;
+    var router = cc.fx.router;
 
-    if(fx.routes.size == 0) { ^lines };
+    if(router.routes.size == 0) { ^lines };
 
     if(lines.size > 2) { lines = lines.add("") };
     lines = lines.add("Sources:");
 
-    fx.routes.keysValuesDo { |source, target|
-      var result = this.formatSourceRoute(source, target, chainInputBuses);
+    router.routes.keysValuesDo { |source, info|
+      var result = this.formatSourceRoute(source, info.target, chainInputBuses);
       lines = lines.add(result[\line]);
       if(result[\warning].notNil) {
         warnings.add(result[\warning]);
@@ -312,14 +312,15 @@ CCFormatter {
   }
 
   appendDebugSidechains { |lines|
-    var fx = cc.fx;
+    var scManager = cc.fx.sidechains;
 
-    if(fx.sidechains.size == 0) { ^lines };
+    if(scManager.sidechains.size == 0) { ^lines };
 
     if(lines.size > 2) { lines = lines.add("") };
     lines = lines.add("Sidechains:");
 
-    fx.sidechains.keysValuesDo { |name, info|
+    // Access internal dictionary directly to avoid method shadowing in mocks
+    scManager.sidechains.keysValuesDo { |name, info|
       var ndef = Ndef(info.slot);
       var status = if(ndef.isPlaying) { "✓ playing" } { "○ stopped" };
       lines = lines.add("  % (in: %, trig: %) %".format(name, info.inBus.index, info.triggerBus.index, status));
@@ -349,27 +350,26 @@ CCFormatter {
 
   appendDebugOutputs { |lines|
     var outputs = cc.fx.outputs;
-    var outputRoutes = cc.fx.outputRoutes;
 
     if(lines.size > 2) { lines = lines.add("") };
     lines = lines.add("Hardware Outputs:");
 
-    if(outputs.size == 0) {
+    if(outputs.outputs.size == 0) {
       lines = lines.add("  (none configured)");
       ^lines;
     };
 
-    outputs.keysValuesDo { |key, info|
-      var channels = info.channels;
-      var playing = info.ndef.isPlaying;
+    outputs.outputs.keysValuesDo { |key, output|
+      var channels = output.channels;
+      var playing = output.isPlaying;
       var status = if(playing) { "active" } { "stopped" };
       var channelStr = if(channels.isArray) {
         "%-%" .format(channels[0], channels[1]);
       } {
         channels.asString;
       };
-      var inBusStr = info.inBus !? { "bus " ++ info.inBus.index } ?? "bus 0";
-      var sources = outputRoutes.select { |o| o == info }.keys.asArray;
+      var inBusStr = "bus " ++ output.inputBusIndex;
+      var sources = output.routeSynths.keys.asArray;
       var sourceStr = if(sources.isEmpty) { "" } { " <- " ++ sources.join(", ") };
 
       lines = lines.add("  % → limiter → hw % (%)%".format(

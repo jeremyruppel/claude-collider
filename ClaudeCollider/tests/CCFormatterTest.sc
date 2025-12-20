@@ -28,13 +28,32 @@ CCFormatterTest : UnitTest {
       ),
       fx: (
         loaded: Dictionary[],
-        chains: Dictionary[],
-        connections: Dictionary[],
-        routes: Dictionary[],
-        sidechains: Dictionary[],
-        outputs: Dictionary[],
-        outputRoutes: Dictionary[]
+        router: this.createMockRouter,
+        sidechains: this.createMockSidechains,
+        outputs: this.createMockOutputs
       )
+    );
+  }
+
+  createMockRouter {
+    ^(
+      chains: Dictionary[],
+      connections: Dictionary[],
+      routes: Dictionary[]
+    );
+  }
+
+  createMockSidechains {
+    ^(
+      size: 0,
+      sidechains: Dictionary[]
+    );
+  }
+
+  createMockOutputs {
+    ^(
+      main: nil,
+      outputs: Dictionary[]
     );
   }
 
@@ -175,13 +194,18 @@ CCFormatterTest : UnitTest {
 
   test_format_withMainOutput {
     var result;
-    var mockNdef = (isPlaying: true);
+    var mockOutput = (
+      hwOut: 0,
+      channels: [1, 2],
+      isPlaying: false
+    );
     var expected;
-    mockCC.fx.outputs = Dictionary[
-      \out_main -> (ndef: mockNdef, hwOut: 0, channels: [1, 2])
-    ];
+    mockCC.fx.outputs = (
+      main: mockOutput,
+      outputs: Dictionary[\out_main -> mockOutput]
+    );
     result = formatter.formatOutputs;
-    expected = "Outputs: main 1-2 (limiter on)";
+    expected = "Outputs: main 1-2 (limiter off)";
     this.assertEquals(result, expected, "formatOutputs should show main output when configured");
   }
 
@@ -208,7 +232,7 @@ CCFormatterTest : UnitTest {
 
   test_collectChainSlots_withChains {
     var result;
-    mockCC.fx.chains = Dictionary[
+    mockCC.fx.router.chains = Dictionary[
       \myChain -> [\fx_distortion, \fx_reverb],
       \otherChain -> [\fx_delay]
     ];
@@ -222,7 +246,7 @@ CCFormatterTest : UnitTest {
   // ========== isChainConnection tests ==========
 
   test_isChainConnection_true {
-    mockCC.fx.chains = Dictionary[\myChain -> [\fx_a, \fx_b, \fx_c]];
+    mockCC.fx.router.chains = Dictionary[\myChain -> [\fx_a, \fx_b, \fx_c]];
     this.assert(
       formatter.isChainConnection(\fx_a, \fx_b),
       "Should detect connection within chain"
@@ -234,7 +258,7 @@ CCFormatterTest : UnitTest {
   }
 
   test_isChainConnection_false {
-    mockCC.fx.chains = Dictionary[\myChain -> [\fx_a, \fx_b, \fx_c]];
+    mockCC.fx.router.chains = Dictionary[\myChain -> [\fx_a, \fx_b, \fx_c]];
     this.assert(
       formatter.isChainConnection(\fx_a, \fx_c).not,
       "Should not detect non-adjacent slots as chain connection"
@@ -309,7 +333,7 @@ CCFormatterTest : UnitTest {
   test_collectChainInputBuses_withChain {
     var result;
     var mockInBus = (index: 16);
-    mockCC.fx.chains = Dictionary[\myChain -> [\fx_first, \fx_second]];
+    mockCC.fx.router.chains = Dictionary[\myChain -> [\fx_first, \fx_second]];
     mockCC.fx.loaded = Dictionary[\fx_first -> (inBus: mockInBus)];
     result = formatter.collectChainInputBuses;
     this.assertEquals(result[\myChain], 16, "collectChainInputBuses should map chain name to first slot's inBus index");
@@ -413,7 +437,7 @@ CCFormatterTest : UnitTest {
   // ========== appendDebugConnections tests ==========
 
   test_appendDebugConnections_empty {
-    mockCC.fx.connections = Dictionary[];
+    mockCC.fx.router.connections = Dictionary[];
     this.assertEquals(
       formatter.appendDebugConnections(["line"]),
       ["line"],
@@ -423,8 +447,8 @@ CCFormatterTest : UnitTest {
 
   test_appendDebugConnections_withNonChainConnection {
     var result;
-    mockCC.fx.connections = Dictionary[\fx_dist -> (to: \fx_reverb)];
-    mockCC.fx.chains = Dictionary[];
+    mockCC.fx.router.connections = Dictionary[\fx_dist -> (to: \fx_reverb)];
+    mockCC.fx.router.chains = Dictionary[];
     result = formatter.appendDebugConnections(["a", "b", "c"]);
     this.assertEquals(
       result,
@@ -435,8 +459,8 @@ CCFormatterTest : UnitTest {
 
   test_appendDebugConnections_filtersChainConnections {
     var result;
-    mockCC.fx.connections = Dictionary[\fx_a -> (to: \fx_b)];
-    mockCC.fx.chains = Dictionary[\myChain -> [\fx_a, \fx_b]];
+    mockCC.fx.router.connections = Dictionary[\fx_a -> (to: \fx_b)];
+    mockCC.fx.router.chains = Dictionary[\myChain -> [\fx_a, \fx_b]];
     result = formatter.appendDebugConnections(["line"]);
     this.assertEquals(result, ["line"], "appendDebugConnections should filter out chain connections");
   }
@@ -445,7 +469,7 @@ CCFormatterTest : UnitTest {
 
   test_appendDebugSources_empty {
     var warnings = [];
-    mockCC.fx.routes = Dictionary[];
+    mockCC.fx.router.routes = Dictionary[];
     this.assertEquals(
       formatter.appendDebugSources(["line"], Dictionary[], warnings),
       ["line"],
@@ -456,8 +480,9 @@ CCFormatterTest : UnitTest {
   test_appendDebugSources_withRoutes {
     var warnings = [];
     var result;
+    var routeInfo = (target: \fx_reverb);
     Pdef(\testPdef1).clear;
-    mockCC.fx.routes = Dictionary[\testPdef1 -> \fx_reverb];
+    mockCC.fx.router.routes[\testPdef1] = routeInfo;
     mockCC.fx.loaded = Dictionary[];
     result = formatter.appendDebugSources(["a", "b", "c"], Dictionary[], warnings);
     this.assertEquals(
@@ -470,7 +495,10 @@ CCFormatterTest : UnitTest {
   // ========== appendDebugSidechains tests ==========
 
   test_appendDebugSidechains_empty {
-    mockCC.fx.sidechains = Dictionary[];
+    mockCC.fx.sidechains = (
+      size: 0,
+      sidechains: Dictionary[]
+    );
     this.assertEquals(
       formatter.appendDebugSidechains(["line"]),
       ["line"],
