@@ -50,7 +50,7 @@ export class OutputParser {
   }
 
   static wrapCode(code: string): string {
-    return `(${code.trim()}).postln; "${OutputParser.END_MARKER}".postln;`
+    return `try { (${code.trim()}).postln } { |err| ("ERROR: " ++ err.errorString).postln }; "${OutputParser.END_MARKER}".postln;`
   }
 
   static bootCommand(): string {
