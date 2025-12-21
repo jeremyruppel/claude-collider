@@ -46,6 +46,30 @@ CCSamples {
     ^paths.keys.asArray.sort;
   }
 
+  // Format buffer info string
+  formatInfo { |name, buf|
+    ^"% (%s, %ch, %Hz)".format(name, buf.duration.round(0.01), buf.numChannels, buf.sampleRate.asInteger);
+  }
+
+  // Explicitly load a sample buffer into memory
+  load { |name|
+    var key = name.asString;
+    var path = paths.at(key);
+    var buf = buffers.at(key);
+
+    if(path.isNil) {
+      "CCSamples: unknown sample '%'".format(name).warn;
+      ^nil;
+    };
+
+    if(buf.notNil) { ^buf };
+
+    Buffer.read(cc.server, path, action: { |loadedBuf|
+      buffers.put(key, loadedBuf);
+    });
+    ^nil;
+  }
+
   // Play a sample once (lazy loads if needed)
   play { |name, rate=1, amp=0.5|
     var key = name.asString;
@@ -57,12 +81,10 @@ CCSamples {
       ^nil;
     };
 
-    // Already loaded - play immediately
     if(buf.notNil) {
       ^Synth(\cc_sampler, [\buf, buf, \rate, rate, \amp, amp]);
     };
 
-    // Lazy load then play
     Buffer.read(cc.server, path, action: { |loadedBuf|
       buffers.put(key, loadedBuf);
       Synth(\cc_sampler, [\buf, loadedBuf, \rate, rate, \amp, amp]);
@@ -109,7 +131,7 @@ CCSamples {
     var lines = this.names.collect { |name|
       var buf = buffers.at(name);
       if(buf.notNil) {
-        "% (%s, %ch, %Hz)".format(name, buf.duration.round(0.01), buf.numChannels, buf.sampleRate.asInteger);
+        this.formatInfo(name, buf);
       } {
         "% (not loaded)".format(name);
       };

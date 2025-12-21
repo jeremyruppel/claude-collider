@@ -71,6 +71,7 @@ All audio routes through output Ndefs with limiter protection.
 ## Samples: ${sampleList}
 
 Use synth_inspect, fx_inspect, sample_inspect for details.
+Use sample_load before patterns to avoid latency on first trigger.
 Use sc_status for state, routing_debug for signal flow.`
 }
 
@@ -522,6 +523,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: "object",
           properties: {},
           required: [],
+        },
+      },
+      {
+        name: "sample_load",
+        description:
+          "Explicitly load a sample into memory. Use this before playing samples in patterns to avoid latency on first trigger.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "Sample name (without extension)",
+            },
+          },
+          required: ["name"],
         },
       },
       {
@@ -1126,6 +1142,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await sc.execute("~cc.samples.describe")
         return {
           content: [{ type: "text", text: result }],
+        }
+      }
+
+      case "sample_load": {
+        const { name: sampleName } = args as { name: string }
+        await sc.execute(`~cc.samples.load("${sampleName}")`)
+        return {
+          content: [
+            { type: "text", text: `Loading sample "${sampleName}"` },
+          ],
         }
       }
 

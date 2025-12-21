@@ -112,6 +112,7 @@ Place WAV or AIFF files in your samples directory (default: `~/.claudecollider/s
 | Tool             | Description                                           |
 | ---------------- | ----------------------------------------------------- |
 | `sample_inspect` | List available samples (shows loaded/unloaded status) |
+| `sample_load`    | Explicitly load a sample buffer into memory           |
 | `sample_play`    | Play a sample once (loads buffer if needed)           |
 | `sample_free`    | Free a sample buffer from memory                      |
 | `sample_reload`  | Rescan samples directory for new files                |

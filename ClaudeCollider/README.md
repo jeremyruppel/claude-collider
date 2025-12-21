@@ -125,11 +125,12 @@ Place WAV or AIFF files in the samples directory. On boot, file paths are scanne
 
 ~cc.samples.list              // List available sample names
 ~cc.samples.at(\kick)         // Get buffer by name (nil if not loaded)
+~cc.samples.load(\kick)       // Explicitly load buffer (for use in patterns)
 ~cc.samples.play(\kick)       // One-shot playback (lazy loads buffer)
 ~cc.samples.play(\snare, 0.5, 0.8)  // With rate and amp
 
-// Use in patterns (play once first to load the buffer)
-~cc.samples.play(\kick);
+// Use in patterns (load first to avoid latency on first trigger)
+~cc.samples.load(\kick);
 Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1).play
 
 // Memory management
@@ -139,7 +140,7 @@ Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1).play
 ~cc.samples.describe          // Print sample status (loaded/unloaded)
 ```
 
-**Note**: Call `~cc.samples.play(\name)` first to lazy-load a buffer before using `at(\name)` in Pbind.
+**Note**: Call `~cc.samples.load(\name)` to pre-load a buffer before using `at(\name)` in Pbind.
 
 ### CCFX
 
