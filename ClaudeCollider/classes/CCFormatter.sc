@@ -152,7 +152,7 @@ CCFormatter {
       standaloneEffects.do { |slot|
         var info = fx.loaded[slot];
         var ndef = Ndef(slot);
-        var inBus = ndef.bus !? _.index ?? "?";
+        var inBus = info.inBus.index;
         var status = if(ndef.isPlaying) { "✓ playing" } { "○ stopped" };
         lines = lines.add("  % (bus %) %".format(slot, inBus, status));
         lines = lines.add("    params: %".format(this.formatEffectParams(info)));
