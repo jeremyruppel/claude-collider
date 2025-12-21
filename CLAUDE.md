@@ -24,7 +24,7 @@ The codebase has two main components:
 
 ### 1. TypeScript MCP Server (`/src`)
 
-- **index.ts** - Main entry point, registers 38+ tools for Claude to call, handles all tool request routing
+- **index.ts** - Main entry point, registers 35 tools for Claude to call, handles all tool request routing
 - **supercollider.ts** - Core class managing SuperCollider process lifecycle (boot, execute, stop, quit). Uses EventEmitter with state machine (Stopped, Booting, Running)
 - **process.ts** - Spawns and manages sclang child process, handles stdin/stdout with OutputParser
 - **parser.ts** - Parses SuperCollider output, detects execution results using `<<<END<<<` delimiter
@@ -40,14 +40,18 @@ The codebase has two main components:
 
 The SC backend providing live coding toolkit classes:
 
-- **CC** - Main facade class, entry point stored in `~cc`. Manages server boot, tempo, stop/clear operations. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`, `~cc.formatter`
+- **CC** - Main facade class, entry point stored in `~cc`. Manages server boot, tempo, stop/clear operations. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`, `~cc.formatter`, `~cc.outputs`, `~cc.router`, `~cc.sidechains`
 - **CCSynths** - SynthDef management with 27+ pre-built instruments organized by category: drums (kick, snare, hihat, clap, openhat, tom, rim, shaker, cowbell), bass (bass, acid, sub, reese, fmbass), leads (lead), melodic (pluck, bell, keys, strings), pads (pad), textural (noise, drone, riser), utility (click, sine, sampler, grains). All synths use `cc_` prefix
-- **CCFX** - Ndef-based effects system with 17+ effects organized by type: filters (lpf, hpf, bpf), time-based (reverb, delay, pingpong), modulation (chorus, flanger, phaser, tremolo), distortion (distortion, bitcrush, wavefold), dynamics (compressor, limiter, gate), stereo (widener, autopan). Supports effect routing, chaining, and sidechaining
+- **CCFX** - Ndef-based effects system with 18 effects organized by type: filters (lpf, hpf, bpf), time-based (reverb, delay, pingpong), modulation (chorus, flanger, phaser, tremolo), distortion (distortion, bitcrush, wavefold), dynamics (compressor, limiter, gate), stereo (widener, autopan). Supports effect routing, chaining, and sidechaining
 - **CCMIDI** - MIDI device management with polyphonic/monophonic note mapping, CC-to-bus mapping with configurable ranges and curves, event logging, and MIDI learn
 - **CCSamples** - Sample management with lazy loading from `~/.claudecollider/samples`. Supports WAV/AIFF, playback with rate control, and directory rescanning
 - **CCRecorder** - Audio recording to WAV files in `~/.claudecollider/recordings` with auto-generated timestamped filenames
 - **CCState** - Bus and session state management, creates and tracks control/audio buses in the current environment
 - **CCFormatter** - Status formatting for console output, generates server status, tempo, sample counts, playing Pdefs/Ndefs, and detailed routing debug visualization
+- **CCOutputs** - Hardware output routing manager with per-output limiters. Routes sources to specific outputs or stereo pairs
+- **CCOutput** - Single hardware output destination (mono or stereo pair) with limiter protection
+- **CCRouter** - Effect-to-effect connections, named effect chains, and source-to-effect routing
+- **CCSidechain** - Sidechain compressor management for ducking effects (e.g., kick ducking bass)
 
 ## Key Design Patterns
 
