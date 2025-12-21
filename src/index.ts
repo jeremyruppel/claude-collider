@@ -33,6 +33,12 @@ async function formatBootReadme(): Promise<string> {
   Ndef(\\pad, { ... }).play           # continuous synth
   Ppar([Pbind(...), Pbind(...)])     # sync multiple patterns
 
+## Drum Pattern Template
+  Pdef(\\kick, Pbind(\\instrument, \\cc_kick, \\freq, 48, \\dur, 1, \\amp, 0.7)).play
+
+  ⚠️  \\freq, 48 is REQUIRED for all drum synths!
+  Without it, drums play at ~261Hz (middle C) and sound wrong.
+
 ## Output Routing
 All audio routes through output Ndefs with limiter protection.
 - Default: outputs 1-2 (main output)
@@ -58,7 +64,6 @@ All audio routes through output Ndefs with limiter protection.
 ~cc.sidechains # CCSidechain - sidechain compressors
 
 ## Gotchas
-- Pbind auto-sets \\freq ~261Hz. For drums: \\freq, 48
 - NEVER call Synth() inside Ndef — infinite spawning
 
 ## Synths: ${synthList}
@@ -834,7 +839,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           channel?: number
           mono?: boolean
           velToAmp?: boolean
-          cc?: Record<string, string | { param: string; range?: [number, number]; curve?: "lin" | "exp" }>
+          cc?: Record<
+            string,
+            | string
+            | { param: string; range?: [number, number]; curve?: "lin" | "exp" }
+          >
         }
 
         const chanArg = channel !== undefined ? channel : "nil"
@@ -848,7 +857,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             if (typeof mapping === "string") {
               return `${ccNum} -> \\${mapping}`
             } else {
-              const range = mapping.range ? `[${mapping.range[0]}, ${mapping.range[1]}]` : "[0, 1]"
+              const range = mapping.range
+                ? `[${mapping.range[0]}, ${mapping.range[1]}]`
+                : "[0, 1]"
               const curve = mapping.curve ? `\\${mapping.curve}` : "\\lin"
               return `${ccNum} -> (param: \\${mapping.param}, range: ${range}, curve: ${curve})`
             }
