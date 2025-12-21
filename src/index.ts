@@ -47,6 +47,11 @@ All audio routes through output Ndefs with limiter protection.
 - fx_chain: Create named effect chains
 - fx_sidechain: Create sidechain compressors for ducking
 
+## MIDI
+- midi_connect: Connect to MIDI devices
+- midi_play: Play a synth via MIDI with optional CC mappings
+- midi_stop: Stop MIDI playback
+
 ## Subsystems (via sc_execute)
 ~cc.outputs    # CCOutputs - hardware output routing
 ~cc.router     # CCRouter - effect connections and chains
@@ -230,96 +235,47 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
-        name: "midi_map_notes",
+        name: "midi_play",
         description:
-          "Route MIDI keyboard notes to a synth. Synth must accept freq, amp, and gate parameters.",
+          "Play a synth with MIDI keyboard. Optionally map CC controllers to synth parameters. Replaces any existing MIDI synth.",
         inputSchema: {
           type: "object",
           properties: {
-            synthName: {
+            synth: {
               type: "string",
               description:
-                "Name of the SynthDef to trigger (without cc_ prefix)",
+                "Name of the synth to play (without cc_ prefix). Must have freq, amp, gate params.",
             },
             channel: {
               type: "number",
               description:
                 "MIDI channel 0-15. Omit to respond to all channels.",
             },
-            velocityToAmp: {
-              type: "boolean",
-              description: "Map note velocity to amplitude (default: true)",
-            },
             mono: {
               type: "boolean",
               description:
                 "Monophonic mode - only one note at a time (default: false)",
             },
-          },
-          required: ["synthName"],
-        },
-      },
-      {
-        name: "midi_map_cc",
-        description:
-          "Route a MIDI control change (knob/slider) to a named bus for modulating synth parameters.",
-        inputSchema: {
-          type: "object",
-          properties: {
+            velToAmp: {
+              type: "boolean",
+              description: "Map note velocity to amplitude (default: true)",
+            },
             cc: {
-              type: "number",
-              description: "CC number 0-127",
-            },
-            busName: {
-              type: "string",
+              type: "object",
               description:
-                "Name for the control bus (e.g. 'cutoff'). Will be stored as ~busName.",
-            },
-            range: {
-              type: "array",
-              items: { type: "number" },
-              description: "Output range [min, max] (default: [0, 1])",
-            },
-            curve: {
-              type: "string",
-              enum: ["lin", "exp"],
-              description: "Mapping curve (default: lin)",
-            },
-            channel: {
-              type: "number",
-              description: "MIDI channel 0-15. Omit for all channels.",
+                "CC mappings: {ccNumber: 'paramName'} or {ccNumber: {param: 'name', range: [min, max], curve: 'lin'|'exp'}}",
+              additionalProperties: true,
             },
           },
-          required: ["cc", "busName"],
+          required: ["synth"],
         },
       },
       {
-        name: "midi_clear",
-        description: "Clear all MIDI mappings.",
+        name: "midi_stop",
+        description: "Stop MIDI playback and release the current MIDI synth.",
         inputSchema: {
           type: "object",
           properties: {},
-          required: [],
-        },
-      },
-      {
-        name: "midi_thru",
-        description:
-          "Route MIDI input to MIDI output. Requires midi_connect with 'out' first.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            outputChannel: {
-              type: "number",
-              description:
-                "MIDI output channel 1-16. Omit to pass through original channel.",
-            },
-            inputChannel: {
-              type: "number",
-              description:
-                "MIDI input channel 1-16 to listen on. Omit for all channels.",
-            },
-          },
           required: [],
         },
       },
@@ -685,8 +641,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "output_status",
-        description:
-          "Show all active output routings and their destinations.",
+        description: "Show all active output routings and their destinations.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -873,82 +828,55 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
 
-      case "midi_map_notes": {
-        const { synthName, channel, velocityToAmp, mono } = args as {
-          synthName: string
+      case "midi_play": {
+        const { synth, channel, mono, velToAmp, cc } = args as {
+          synth: string
           channel?: number
-          velocityToAmp?: boolean
           mono?: boolean
+          velToAmp?: boolean
+          cc?: Record<string, string | { param: string; range?: [number, number]; curve?: "lin" | "exp" }>
         }
+
         const chanArg = channel !== undefined ? channel : "nil"
-        const velArg = velocityToAmp !== undefined ? velocityToAmp : true
-        const monoArg = mono !== undefined ? mono : false
+        const monoArg = mono ?? false
+        const velArg = velToAmp ?? true
+
+        // Build CC mappings dictionary for SC
+        let ccArg = "nil"
+        if (cc && Object.keys(cc).length > 0) {
+          const mappings = Object.entries(cc).map(([ccNum, mapping]) => {
+            if (typeof mapping === "string") {
+              return `${ccNum} -> \\${mapping}`
+            } else {
+              const range = mapping.range ? `[${mapping.range[0]}, ${mapping.range[1]}]` : "[0, 1]"
+              const curve = mapping.curve ? `\\${mapping.curve}` : "\\lin"
+              return `${ccNum} -> (param: \\${mapping.param}, range: ${range}, curve: ${curve})`
+            }
+          })
+          ccArg = `Dictionary[${mappings.join(", ")}]`
+        }
+
         await sc.execute(
-          `~cc.midi.mapNotes(\\${synthName}, ${chanArg}, ${velArg}, ${monoArg})`
+          `~cc.midi.play(\\${synth}, ${chanArg}, ${monoArg}, ${velArg}, ${ccArg})`
         )
-        const modeStr = monoArg ? "monophonic" : "polyphonic"
-        const chanStr =
-          channel !== undefined ? `channel ${channel}` : "all channels"
+
+        const modeStr = monoArg ? "mono" : "poly"
+        const chanStr = channel !== undefined ? `ch ${channel}` : "all ch"
+        const ccStr = cc ? `, CC: ${Object.keys(cc).join(",")}` : ""
         return {
           content: [
             {
               type: "text",
-              text: `Mapped MIDI notes to \\cc_${synthName} (${modeStr}, ${chanStr})`,
+              text: `MIDI → ${synth} (${modeStr}, ${chanStr}${ccStr})`,
             },
           ],
         }
       }
 
-      case "midi_map_cc": {
-        const { cc, busName, range, curve, channel } = args as {
-          cc: number
-          busName: string
-          range?: [number, number]
-          curve?: "lin" | "exp"
-          channel?: number
-        }
-        const rangeArg = range ? `[${range[0]}, ${range[1]}]` : "[0, 1]"
-        const curveArg = curve ? `\\${curve}` : "\\lin"
-        const chanArg = channel !== undefined ? channel : "nil"
-        await sc.execute(
-          `~cc.midi.mapCC(${cc}, \\${busName}, ${rangeArg}, ${curveArg}, ${chanArg})`
-        )
+      case "midi_stop": {
+        await sc.execute("~cc.midi.stop")
         return {
-          content: [
-            {
-              type: "text",
-              text: `Mapped CC ${cc} to ~${busName} (${range?.[0] ?? 0}-${
-                range?.[1] ?? 1
-              }, ${curve ?? "lin"})`,
-            },
-          ],
-        }
-      }
-
-      case "midi_clear": {
-        await sc.execute("~cc.midi.clearMappings")
-        return {
-          content: [{ type: "text", text: "Cleared all MIDI mappings" }],
-        }
-      }
-
-      case "midi_thru": {
-        const { outputChannel, inputChannel } = args as {
-          outputChannel?: number
-          inputChannel?: number
-        }
-        // Convert 1-indexed to 0-indexed for SC
-        const outChanArg =
-          outputChannel !== undefined ? outputChannel - 1 : "nil"
-        const inChanArg =
-          inputChannel !== undefined ? inputChannel - 1 : "nil"
-        await sc.execute(`~cc.midi.thru(${inChanArg}, ${outChanArg})`)
-        const chanInfo =
-          outputChannel !== undefined
-            ? `channel ${outputChannel}`
-            : "original channel"
-        return {
-          content: [{ type: "text", text: `MIDI thru enabled → ${chanInfo}` }],
+          content: [{ type: "text", text: "MIDI synth stopped" }],
         }
       }
 
@@ -1028,7 +956,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "fx_route_trigger": {
-        const { source, sidechain, passthrough = true } = args as {
+        const {
+          source,
+          sidechain,
+          passthrough = true,
+        } = args as {
           source: string
           sidechain: string
           passthrough?: boolean
@@ -1277,7 +1209,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await sc.execute(`~cc.fx.unrouteFromOutput(\\${source})`)
         return {
           content: [
-            { type: "text", text: `Unrouted ${source}, now using main outputs` },
+            {
+              type: "text",
+              text: `Unrouted ${source}, now using main outputs`,
+            },
           ],
         }
       }

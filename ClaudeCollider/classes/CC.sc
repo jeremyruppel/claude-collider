@@ -117,7 +117,7 @@ CC {
       };
     };
     fx.clearAll;
-    midi.clearAll;
+    midi.clear;
     samples.freeAll;
     if(recorder.isRecording) { recorder.stop };
     state.clear;

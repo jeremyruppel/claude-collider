@@ -283,41 +283,33 @@ Manages sidechain compressors for ducking effects.
 
 ### CCMIDI
 
-MIDI device management and mapping.
+MIDI device connection and synth playback.
 
 ```supercollider
+// Device connection
 ~cc.midi.listDevices              // List MIDI devices (inputs and outputs)
 ~cc.midi.connectAll               // Connect all inputs
 ~cc.midi.connect("Launchpad", \in)
 ~cc.midi.connect(0, \out)         // Connect by index
 ~cc.midi.disconnect(\all)         // Disconnect all
 
-// Map notes to synth (polyphonic by default)
-~cc.midi.mapNotes(\pad)
-~cc.midi.mapNotes(\pad, velocityToAmp: true)
+// Play a synth via MIDI (simple)
+~cc.midi.play(\pad)               // Polyphonic, all channels
 
-// Map notes (monophonic, specific channel)
-~cc.midi.mapNotes(\lead, channel: 0, mono: true)
+// Play with options
+~cc.midi.play(\lead, channel: 0, mono: true)
 
-// Map CC to control bus (creates ~busName)
-~cc.midi.mapCC(1, \cutoff, [200, 8000], \exp)
-~cc.midi.mapCC(74, \filter, [0, 1], \lin, channel: 0)
+// Play with CC mappings
+~cc.midi.play(\acid, ccMappings: Dictionary[
+  1 -> \cutoff,                   // Simple: CC 1 → cutoff (0-1)
+  74 -> (param: \res, range: [0.1, 0.9], curve: \lin)  // Full spec
+])
 
-// MIDI learn
-~cc.midi.learn(timeout: 10, callback: { |result| result.postln })
+// Stop MIDI playback
+~cc.midi.stop
 
-// Send MIDI out
-~cc.midi.send(\noteOn, 0, 60, 100)
-~cc.midi.send(\cc, 0, 1, 64)
-
-// Event logging
-~cc.midi.enableLog(true)
-~cc.midi.getRecent(20)            // Get last 20 events
-~cc.midi.getRecent(type: \noteOn) // Filter by type
-
-// Clear
-~cc.midi.clearMappings            // Clear note/CC mappings
-~cc.midi.clearAll                 // Clear everything including connections
+// Clear everything
+~cc.midi.clear                    // Stop synth and disconnect devices
 ~cc.midi.status                   // Get MIDI status
 ```
 

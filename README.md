@@ -70,9 +70,8 @@ Restart Claude Desktop after updating the config.
 | ------------------- | -------------------------------------------------------------------- |
 | `midi_list_devices` | List available MIDI input and output devices                         |
 | `midi_connect`      | Connect to a MIDI device by name or index (use 'all' for all inputs) |
-| `midi_map_notes`    | Map MIDI notes to trigger a synth (polyphonic or mono)               |
-| `midi_map_cc`       | Map a MIDI CC to a control bus for parameter modulation              |
-| `midi_clear`        | Clear all MIDI mappings                                              |
+| `midi_play`         | Play a synth via MIDI keyboard with optional CC parameter mappings   |
+| `midi_stop`         | Stop MIDI playback and release the current synth                     |
 
 ### Synth Tools
 
@@ -192,7 +191,7 @@ Load effects with `fx_load`:
 - "Make a 303-style acid bassline"
 - "Set the tempo to 120 BPM"
 - "Connect my MIDI keyboard and let me play the pad synth"
-- "Map CC 1 to control the filter cutoff"
+- "Use CC 1 (mod wheel) to control the filter cutoff"
 - "Show me the server status"
 - "Add some reverb to the drums"
 - "Create an effect chain with filter, distortion, and delay for the bass"
