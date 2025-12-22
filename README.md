@@ -49,14 +49,13 @@ The `env` block is optional - paths default to `~/.claudecollider/samples` and `
 
 Restart Claude Desktop after updating the config.
 
-## Available Tools
+## Available Tools (20 total)
 
-### SuperCollider Tools
+### Core Tools
 
 | Tool               | Description                                                              |
 | ------------------ | ------------------------------------------------------------------------ |
-| `sc_boot`          | Boot the audio server (options: device, numOutputs)                      |
-| `sc_execute`       | Execute SuperCollider code (play sounds, define synths, create patterns) |
+| `sc_execute`       | Execute SuperCollider code (auto-boots on first use)                     |
 | `sc_stop`          | Stop all sounds (Cmd+Period equivalent)                                  |
 | `sc_status`        | Get status: tempo, synths, CPU, active patterns                          |
 | `sc_tempo`         | Get or set the tempo in BPM                                              |
@@ -64,72 +63,52 @@ Restart Claude Desktop after updating the config.
 | `sc_reboot`        | Reboot the audio server (options: device, numOutputs)                    |
 | `sc_audio_devices` | List available audio input and output devices                            |
 
-### MIDI Tools
+### MIDI
 
-| Tool                | Description                                                          |
-| ------------------- | -------------------------------------------------------------------- |
-| `midi_list_devices` | List available MIDI input and output devices                         |
-| `midi_connect`      | Connect to a MIDI device by name or index (use 'all' for all inputs) |
-| `midi_play`         | Play a synth via MIDI keyboard with optional CC parameter mappings   |
-| `midi_stop`         | Stop MIDI playback and release the current synth                     |
+| Tool   | Description                                                                      |
+| ------ | -------------------------------------------------------------------------------- |
+| `midi` | MIDI operations: `list` devices, `connect` to device, `play` synth, or `stop`    |
 
-### Synth Tools
+### Synths & Effects
 
-| Tool            | Description                                                      |
-| --------------- | ---------------------------------------------------------------- |
-| `synth_inspect` | List all available synths with their descriptions and parameters |
+| Tool            | Description                                                       |
+| --------------- | ----------------------------------------------------------------- |
+| `synth_inspect` | List all available synths with their descriptions and parameters  |
+| `fx_load`       | Load a pre-built effect (returns slot name for routing)           |
+| `fx_manage`     | Manage effects: `set` params, `bypass`, or `remove`               |
+| `fx_wire`       | Route audio: `source`→effect, `effect`→effect, or `sidechain` trigger |
+| `fx_chain`      | Create a named chain of effects wired in series                   |
+| `fx_sidechain`  | Create a sidechain compressor (e.g., kick ducking bass)           |
+| `fx_inspect`    | List all available effects with their descriptions and parameters |
 
-### Effects Tools
+### Samples
 
-| Tool               | Description                                                       |
-| ------------------ | ----------------------------------------------------------------- |
-| `fx_inspect`       | List all available effects with their descriptions and parameters |
-| `fx_load`          | Load a pre-built effect (returns input bus for routing)           |
-| `fx_set`           | Set parameters on a loaded effect                                 |
-| `fx_route`         | Route a sound source (Pdef/Ndef) to an effect                     |
-| `fx_connect`       | Connect one effect's output to another effect's input             |
-| `fx_chain`         | Create a named chain of effects wired in series                   |
-| `fx_sidechain`     | Create a sidechain compressor (e.g., kick ducking bass)           |
-| `fx_route_trigger` | Route a source to the trigger input of a sidechain                |
-| `fx_bypass`        | Bypass an effect (pass audio through unchanged)                   |
-| `fx_remove`        | Remove an effect and free its resources                           |
-| `routing_debug`    | Debug audio routing: signal flow, buses, effect params, sources   |
+Place WAV or AIFF files in your samples directory (default: `~/.claudecollider/samples/`).
 
-### Output Routing Tools
+| Tool     | Description                                                                |
+| -------- | -------------------------------------------------------------------------- |
+| `sample` | Sample operations: `inspect`, `load`, `play`, `free`, or `reload` directory |
+
+### Recording
+
+Record your jams to WAV files (default: `~/.claudecollider/recordings/`).
+
+| Tool        | Description                                         |
+| ----------- | --------------------------------------------------- |
+| `recording` | Recording operations: `start`, `stop`, or `status`  |
+
+### Output Routing
 
 Route audio to specific hardware outputs for multi-output setups.
 
-| Tool             | Description                                                       |
-| ---------------- | ----------------------------------------------------------------- |
-| `output_route`   | Route a source (Pdef/Ndef) to specific hardware outputs           |
-| `output_unroute` | Remove output routing, return source to main outputs (1-2)        |
-| `output_status`  | Show all active output routings and their destinations            |
-
-### Sample Tools
-
-Place WAV or AIFF files in your samples directory (default: `~/.claudecollider/samples/`). Samples are discovered on boot and lazy loaded on first use.
-
-| Tool             | Description                                           |
-| ---------------- | ----------------------------------------------------- |
-| `sample_inspect` | List available samples (shows loaded/unloaded status) |
-| `sample_load`    | Explicitly load a sample buffer into memory           |
-| `sample_play`    | Play a sample once (loads buffer if needed)           |
-| `sample_free`    | Free a sample buffer from memory                      |
-| `sample_reload`  | Rescan samples directory for new files                |
-
-### Recording Tools
-
-Record your jams to WAV files in your recordings directory (default: `~/.claudecollider/recordings/`).
-
-| Tool               | Description                                |
-| ------------------ | ------------------------------------------ |
-| `recording_start`  | Start recording audio output to a WAV file |
-| `recording_stop`   | Stop recording and get the saved file path |
-| `recording_status` | Check if recording is active               |
+| Tool            | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| `output`        | Output routing: `route` to outputs, `unroute`, or `status` |
+| `routing_debug` | Debug audio routing: signal flow, buses, effect params   |
 
 ## Pre-built SynthDefs
 
-All synths are automatically loaded when you call `sc_boot`. Use them with the `\cc_` prefix:
+All synths are automatically loaded on first tool use. Use them with the `\cc_` prefix:
 
 **Drums**:
 

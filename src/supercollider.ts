@@ -81,10 +81,16 @@ export class SuperCollider extends EventEmitter {
   }
 
   async execute(code: string): Promise<string> {
+    // Auto-boot if stopped
+    if (this.state === ServerState.Stopped) {
+      await this.boot()
+    } else if (this.state === ServerState.Booting) {
+      // Wait for boot to complete
+      await this.waitForRunning()
+    }
+
     if (this.state !== ServerState.Running) {
-      throw new Error(
-        `SuperCollider is not running (state: ${this.state}). Call boot() first.`
-      )
+      throw new Error(`SuperCollider failed to start (state: ${this.state})`)
     }
 
     return new Promise<string>((resolve, reject) => {
@@ -156,6 +162,34 @@ export class SuperCollider extends EventEmitter {
       }
 
       this.once("cc-ready", onReady)
+    })
+  }
+
+  private waitForRunning(timeoutMs: number = 10000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.state === ServerState.Running) {
+        resolve()
+        return
+      }
+
+      const timeout = setTimeout(() => {
+        reject(new Error("Timed out waiting for SuperCollider to start"))
+      }, timeoutMs)
+
+      const checkState = () => {
+        if (this.state === ServerState.Running) {
+          clearTimeout(timeout)
+          resolve()
+        } else if (this.state === ServerState.Stopped) {
+          clearTimeout(timeout)
+          reject(new Error("SuperCollider failed to boot"))
+        } else {
+          // Still booting, check again soon
+          setTimeout(checkState, 100)
+        }
+      }
+
+      checkState()
     })
   }
 
