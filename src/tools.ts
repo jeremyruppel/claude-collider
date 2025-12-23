@@ -48,9 +48,67 @@ export class Tools {
     await this.samples.load()
     this.initialized = true
 
-    // Return server output + status on first boot
+    // Return server output + usage guide + status on first boot
     const status = await this.sc.execute("~cc.status")
-    return `${serverOutput}\n\n${status}`
+    return `${serverOutput}\n\n${this.formatUsageGuide()}\n\n${status}`
+  }
+
+  private formatUsageGuide(): string {
+    return `## Quick Start
+
+# Play a drum pattern (note: \\freq, 48 is REQUIRED for drums)
+Pdef(\\kick, Pbind(\\instrument, \\cc_kick, \\freq, 48, \\dur, 1, \\amp, 0.7)).play
+
+# Play a melodic pattern
+Pdef(\\bass, Pbind(\\instrument, \\cc_bass, \\freq, Pseq([48, 48, 60, 55].midicps, inf), \\dur, 0.5, \\amp, 0.5)).play
+
+# Play a continuous synth (Ndef)
+Ndef(\\pad, { SinOsc.ar([220, 221], 0, 0.2) }).play
+
+# Stop a pattern
+Pdef(\\kick).stop
+
+# Update a playing pattern (just redefine it)
+Pdef(\\kick, Pbind(\\instrument, \\cc_kick, \\freq, 48, \\dur, 0.5, \\amp, 0.8)).play
+
+## Effects Routing
+
+# Load effect, route pattern through it
+cc_fx({action: "load", name: "reverb"})
+cc_fx({action: "wire", source: "bass", target: "fx_reverb"})
+cc_fx({action: "set", slot: "fx_reverb", params: {mix: 0.4, room: 0.8}})
+
+## Samples
+
+# List available samples
+cc_sample({action: "inspect"})
+
+# Pre-load a sample (required before using in patterns)
+cc_sample({action: "load", name: "kick"})
+
+# One-shot playback via tool
+cc_sample({action: "play", name: "kick", rate: 1, amp: 0.8})
+
+# Use sample in a pattern (must load first!)
+~cc.samples.load(\\kick);
+Pdef(\\samp, Pbind(\\instrument, \\cc_sampler, \\buf, ~cc.samples.at(\\kick), \\dur, 1, \\rate, 1)).play
+
+# Granular playback (cc_grains synth)
+~cc.samples.load(\\ambient);
+Synth(\\cc_grains, [\\buf, ~cc.samples.at(\\ambient), \\pos, 0.5, \\grainSize, 0.1, \\grainRate, 20])
+
+## Key Rules
+- Drum synths need \\freq, 48 (or similar low value) - without it they sound wrong
+- Use Pdef for rhythmic patterns, Ndef for continuous sounds
+- Pattern names should be symbols: \\kick not "kick"
+- Semicolons between statements, no trailing semicolon
+- NEVER put Synth() inside Ndef - causes infinite spawning
+
+## Tools
+- cc_status({action: "synths"}) - list available synths with params
+- cc_status({action: "effects"}) - list available effects with params
+- cc_control({action: "stop"}) - stop all sounds
+- cc_control({action: "tempo", bpm: 120}) - set tempo`
   }
 
   // ============================================================
