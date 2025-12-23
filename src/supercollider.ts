@@ -75,6 +75,7 @@ export class SuperCollider extends EventEmitter {
       this.process.on("stdout", (data) => this.emit("stdout", data))
       this.process.on("stderr", (data) => this.emit("stderr", data))
       this.process.on("cc-ready", () => this.emit("cc-ready"))
+      this.process.on("error-output", (msg) => this.emit("sc-error", msg))
 
       this.process.spawn()
     })
@@ -149,19 +150,49 @@ export class SuperCollider extends EventEmitter {
     return this.state === ServerState.Running
   }
 
-  waitForCCReady(timeoutMs: number = 10000): Promise<void> {
+  waitForCCReady(timeoutMs: number = 10000): Promise<string> {
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
+      const output: string[] = []
+
+      const captureOutput = (data: string) => {
+        output.push(data)
+      }
+
+      const cleanup = () => {
+        clearTimeout(timeout)
         this.removeListener("cc-ready", onReady)
-        reject(new Error("Timed out waiting for ClaudeCollider ready"))
+        this.removeListener("sc-error", onError)
+        this.removeListener("stdout", captureOutput)
+        this.removeListener("stderr", captureOutput)
+      }
+
+      const timeout = setTimeout(() => {
+        cleanup()
+        const outputText = output.join("").trim()
+        const msg = outputText
+          ? `Timed out waiting for ClaudeCollider ready.\n\nServer output:\n${outputText}`
+          : "Timed out waiting for ClaudeCollider ready (no output received)"
+        reject(new Error(msg))
       }, timeoutMs)
 
       const onReady = () => {
-        clearTimeout(timeout)
-        resolve()
+        cleanup()
+        resolve(output.join("").trim())
       }
 
+      const onError = (errorMsg: string) => {
+        cleanup()
+        const outputText = output.join("").trim()
+        const msg = outputText
+          ? `SuperCollider error during boot: ${errorMsg}\n\nServer output:\n${outputText}`
+          : `SuperCollider error during boot: ${errorMsg}`
+        reject(new Error(msg))
+      }
+
+      this.on("stdout", captureOutput)
+      this.on("stderr", captureOutput)
       this.once("cc-ready", onReady)
+      this.once("sc-error", onError)
     })
   }
 

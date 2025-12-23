@@ -32,13 +32,13 @@ const server = new Server(
   }
 )
 
-// List available tools
+// List available tools (9 consolidated tools)
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
-      // Core SC tools (7)
+      // 1. cc_execute - Run arbitrary SuperCollider code
       {
-        name: "sc_execute",
+        name: "cc_execute",
         description:
           "Run SuperCollider code directly. For custom synths, patterns, or anything not covered by other tools. Auto-boots if needed.",
         inputSchema: {
@@ -52,85 +52,173 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["code"],
         },
       },
+
+      // 2. cc_status - Show status, routing, synths, or effects info
       {
-        name: "sc_stop",
-        description:
-          "Stop all currently playing sounds immediately (Cmd+Period equivalent)",
-        inputSchema: {
-          type: "object",
-          properties: {},
-          required: [],
-        },
-      },
-      {
-        name: "sc_status",
+        name: "cc_status",
         description:
           "Show current state: tempo, running patterns, active synths, and server CPU usage.",
         inputSchema: {
           type: "object",
-          properties: {},
-          required: [],
-        },
-      },
-      {
-        name: "sc_tempo",
-        description: "Get or set the tempo in BPM.",
-        inputSchema: {
-          type: "object",
           properties: {
-            bpm: {
-              type: "number",
-              description: "Tempo in BPM. Omit to get current tempo.",
+            action: {
+              type: "string",
+              enum: ["status", "routing", "synths", "effects"],
+              description:
+                "What to show: status (default), routing debug, available synths, or available effects",
             },
           },
           required: [],
         },
       },
+
+      // 3. cc_reboot - Restart audio server or list devices
       {
-        name: "sc_clear",
-        description:
-          "Full reset: stop all sounds, clear patterns, remove effects, and disconnect MIDI.",
-        inputSchema: {
-          type: "object",
-          properties: {},
-          required: [],
-        },
-      },
-      {
-        name: "sc_reboot",
+        name: "cc_reboot",
         description:
           "Restart the audio server, optionally switching to a different audio device.",
         inputSchema: {
           type: "object",
           properties: {
+            action: {
+              type: "string",
+              enum: ["reboot", "devices"],
+              description: "Operation: reboot server (default) or list audio devices",
+            },
             device: {
               type: "string",
-              description: "Audio device name. Omit to keep current device.",
+              description: "Audio device name (for reboot). Omit to keep current device.",
             },
             numOutputs: {
               type: "number",
               description:
-                "Number of output channels. Omit to keep current setting.",
+                "Number of output channels (for reboot). Omit to keep current setting.",
             },
           },
           required: [],
         },
       },
+
+      // 4. cc_control - Stop, clear, or set tempo
       {
-        name: "sc_audio_devices",
-        description: "List available audio input and output devices.",
+        name: "cc_control",
+        description:
+          "Control playback: stop all sounds, clear everything, or get/set tempo.",
         inputSchema: {
           type: "object",
-          properties: {},
-          required: [],
+          properties: {
+            action: {
+              type: "string",
+              enum: ["stop", "clear", "tempo"],
+              description:
+                "Operation: stop (silence all), clear (full reset), or tempo (get/set BPM)",
+            },
+            bpm: {
+              type: "number",
+              description: "Tempo in BPM (for action=tempo). Omit to get current tempo.",
+            },
+          },
+          required: ["action"],
         },
       },
 
-      // Consolidated MIDI tool
+      // 5. cc_fx - All effects operations
       {
-        name: "midi",
+        name: "cc_fx",
         description:
-          "MIDI operations: list devices, connect, play synth, or stop.",
+          "Effects operations: load, set params, bypass, remove, wire routing, sidechain, or create chain.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            action: {
+              type: "string",
+              enum: ["load", "set", "bypass", "remove", "wire", "sidechain", "chain"],
+              description: "Effect operation to perform",
+            },
+            // For load
+            name: {
+              type: "string",
+              description:
+                "Effect or sidechain name (for load/sidechain/chain). E.g. reverb, delay, distortion",
+            },
+            slot: {
+              type: "string",
+              description: "Ndef slot name (for load, default: fx_<name>; for set/bypass/remove)",
+            },
+            // For set
+            params: {
+              type: "object",
+              description: "Parameter name/value pairs (for action=set)",
+            },
+            // For bypass
+            bypass: {
+              type: "boolean",
+              description: "true to bypass, false to re-enable (for action=bypass, default: true)",
+            },
+            // For wire
+            source: {
+              type: "string",
+              description: "Source (Pdef, Ndef, or effect slot) for wire action",
+            },
+            target: {
+              type: "string",
+              description: "Destination (effect slot, chain, or sidechain) for wire action",
+            },
+            type: {
+              type: "string",
+              enum: ["source", "effect", "sidechain"],
+              description:
+                "Wire type: source→effect (default), effect→effect, or sidechain trigger",
+            },
+            passthrough: {
+              type: "boolean",
+              description: "For sidechain wire: source still audible? (default: true)",
+            },
+            // For sidechain
+            threshold: {
+              type: "number",
+              description: "Compression threshold 0-1 (for sidechain, default: 0.1)",
+            },
+            ratio: {
+              type: "number",
+              description: "Compression ratio 1-20 (for sidechain, default: 4)",
+            },
+            attack: {
+              type: "number",
+              description: "Attack time in seconds (for sidechain, default: 0.01)",
+            },
+            release: {
+              type: "number",
+              description: "Release time in seconds (for sidechain, default: 0.1)",
+            },
+            // For chain
+            effects: {
+              type: "array",
+              description:
+                "Ordered list of effects for chain. Each item: string or {name, params}.",
+              items: {
+                oneOf: [
+                  { type: "string" },
+                  {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      params: { type: "object" },
+                    },
+                    required: ["name"],
+                  },
+                ],
+              },
+            },
+          },
+          required: ["action"],
+        },
+      },
+
+      // 6. cc_midi - MIDI operations
+      {
+        name: "cc_midi",
+        description: "MIDI operations: list devices, connect, play synth, or stop.",
         inputSchema: {
           type: "object",
           properties: {
@@ -176,175 +264,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
 
-      // FX tools (7)
+      // 7. cc_sample - Sample operations
       {
-        name: "fx_load",
-        description:
-          "Load an effect (reverb, delay, distortion, etc). Returns the slot name for routing.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            name: {
-              type: "string",
-              description: "Effect name (e.g. reverb, delay, distortion)",
-            },
-            slot: {
-              type: "string",
-              description: "Ndef slot name (default: fx_<name>)",
-            },
-          },
-          required: ["name"],
-        },
-      },
-      {
-        name: "fx_manage",
-        description: "Manage effects: set parameters, bypass, or remove.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            action: {
-              type: "string",
-              enum: ["set", "bypass", "remove"],
-              description: "Operation to perform",
-            },
-            slot: {
-              type: "string",
-              description: "Effect slot name",
-            },
-            params: {
-              type: "object",
-              description: "Parameter name/value pairs (for action=set)",
-            },
-            bypass: {
-              type: "boolean",
-              description: "true to bypass, false to re-enable (for action=bypass, default: true)",
-            },
-          },
-          required: ["action", "slot"],
-        },
-      },
-      {
-        name: "fx_wire",
-        description:
-          "Route audio: source to effect, effect to effect, or to sidechain trigger.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            source: {
-              type: "string",
-              description: "Source (Pdef, Ndef, or effect slot)",
-            },
-            target: {
-              type: "string",
-              description: "Destination (effect slot, chain, or sidechain)",
-            },
-            type: {
-              type: "string",
-              enum: ["source", "effect", "sidechain"],
-              description:
-                "Routing type: source→effect (default), effect→effect, or sidechain trigger",
-            },
-            passthrough: {
-              type: "boolean",
-              description:
-                "For sidechain: source still audible? (default: true)",
-            },
-          },
-          required: ["source", "target"],
-        },
-      },
-      {
-        name: "fx_sidechain",
-        description:
-          "Create a sidechain compressor for ducking effects (e.g., kick ducking bass).",
-        inputSchema: {
-          type: "object",
-          properties: {
-            name: {
-              type: "string",
-              description: "Name for this sidechain (e.g. 'bassDuck')",
-            },
-            threshold: {
-              type: "number",
-              description: "Compression threshold 0-1 (default: 0.1)",
-            },
-            ratio: {
-              type: "number",
-              description: "Compression ratio 1-20 (default: 4)",
-            },
-            attack: {
-              type: "number",
-              description: "Attack time in seconds (default: 0.01)",
-            },
-            release: {
-              type: "number",
-              description: "Release time in seconds (default: 0.1)",
-            },
-          },
-          required: ["name"],
-        },
-      },
-      {
-        name: "fx_chain",
-        description:
-          "Create a named series of effects (e.g., distortion → delay → reverb). Route sources to the first slot.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            name: {
-              type: "string",
-              description: "Name for this chain (e.g. 'bass_chain')",
-            },
-            effects: {
-              type: "array",
-              description:
-                "Ordered list of effects. Each item can be a string (effect name) or an object with name and params.",
-              items: {
-                oneOf: [
-                  { type: "string" },
-                  {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      params: { type: "object" },
-                    },
-                    required: ["name"],
-                  },
-                ],
-              },
-            },
-          },
-          required: ["name", "effects"],
-        },
-      },
-      {
-        name: "fx_inspect",
-        description:
-          "List all available effects with their descriptions and parameters.",
-        inputSchema: {
-          type: "object",
-          properties: {},
-          required: [],
-        },
-      },
-
-      // Synth tools
-      {
-        name: "synth_inspect",
-        description:
-          "List all available synths with their descriptions and parameters.",
-        inputSchema: {
-          type: "object",
-          properties: {},
-          required: [],
-        },
-      },
-
-      // Consolidated sample tool
-      {
-        name: "sample",
-        description:
-          "Sample operations: inspect, load, play, free, or reload directory.",
+        name: "cc_sample",
+        description: "Sample operations: inspect, load, play, free, or reload directory.",
         inputSchema: {
           type: "object",
           properties: {
@@ -370,9 +293,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
 
-      // Consolidated recording tool
+      // 8. cc_recording - Recording operations
       {
-        name: "recording",
+        name: "cc_recording",
         description: "Recording operations: start, stop, or check status.",
         inputSchema: {
           type: "object",
@@ -392,9 +315,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
 
-      // Consolidated output tool
+      // 9. cc_output - Hardware output routing
       {
-        name: "output",
+        name: "cc_output",
         description:
           "Hardware output routing: route source to outputs, unroute, or show status.",
         inputSchema: {
@@ -421,18 +344,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["action"],
         },
       },
-
-      // Debug tools
-      {
-        name: "routing_debug",
-        description:
-          "Debug the current audio routing: shows signal flow, bus indices, effect parameters, and active sources.",
-        inputSchema: {
-          type: "object",
-          properties: {},
-          required: [],
-        },
-      },
     ],
   }
 })
@@ -443,44 +354,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
-      case "sc_execute":
-        return await tools.sc_execute(args as { code: string })
-      case "sc_stop":
-        return await tools.sc_stop()
-      case "sc_status":
-        return await tools.sc_status()
-      case "sc_tempo":
-        return await tools.sc_tempo(args as { bpm?: number })
-      case "sc_clear":
-        return await tools.sc_clear()
-      case "sc_reboot":
-        return await tools.sc_reboot(args as { device?: string; numOutputs?: number })
-      case "sc_audio_devices":
-        return await tools.sc_audio_devices()
-      case "midi":
-        return await tools.midi(args as Parameters<typeof tools.midi>[0])
-      case "fx_load":
-        return await tools.fx_load(args as { name: string; slot?: string })
-      case "fx_manage":
-        return await tools.fx_manage(args as Parameters<typeof tools.fx_manage>[0])
-      case "fx_wire":
-        return await tools.fx_wire(args as Parameters<typeof tools.fx_wire>[0])
-      case "fx_sidechain":
-        return await tools.fx_sidechain(args as Parameters<typeof tools.fx_sidechain>[0])
-      case "fx_chain":
-        return await tools.fx_chain(args as Parameters<typeof tools.fx_chain>[0])
-      case "fx_inspect":
-        return await tools.fx_inspect()
-      case "synth_inspect":
-        return await tools.synth_inspect()
-      case "sample":
-        return await tools.sample(args as Parameters<typeof tools.sample>[0])
-      case "recording":
-        return await tools.recording(args as Parameters<typeof tools.recording>[0])
-      case "output":
-        return await tools.output(args as Parameters<typeof tools.output>[0])
-      case "routing_debug":
-        return await tools.routing_debug()
+      case "cc_execute":
+        return await tools.cc_execute(args as { code: string })
+      case "cc_status":
+        return await tools.cc_status(
+          args as { action?: "status" | "routing" | "synths" | "effects" }
+        )
+      case "cc_reboot":
+        return await tools.cc_reboot(
+          args as { action?: "reboot" | "devices"; device?: string; numOutputs?: number }
+        )
+      case "cc_control":
+        return await tools.cc_control(args as { action: "stop" | "clear" | "tempo"; bpm?: number })
+      case "cc_fx":
+        return await tools.cc_fx(args as Parameters<typeof tools.cc_fx>[0])
+      case "cc_midi":
+        return await tools.cc_midi(args as Parameters<typeof tools.cc_midi>[0])
+      case "cc_sample":
+        return await tools.cc_sample(args as Parameters<typeof tools.cc_sample>[0])
+      case "cc_recording":
+        return await tools.cc_recording(args as Parameters<typeof tools.cc_recording>[0])
+      case "cc_output":
+        return await tools.cc_output(args as Parameters<typeof tools.cc_output>[0])
       default:
         return {
           content: [{ type: "text", text: `Unknown tool: ${name}` }],

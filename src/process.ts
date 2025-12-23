@@ -9,6 +9,7 @@ export class SclangProcess extends EventEmitter {
   private readonly config: SclangConfig
   private readonly parser: OutputParser
   private process: ChildProcess | null = null
+  private errorEmitted = false
 
   constructor(config: SclangConfig) {
     super()
@@ -44,6 +45,7 @@ export class SclangProcess extends EventEmitter {
 
   sendWrapped(code: string): void {
     this.parser.clear()
+    this.errorEmitted = false
     this.send(OutputParser.wrapCode(code))
   }
 
@@ -123,7 +125,8 @@ export class SclangProcess extends EventEmitter {
       }
     }
 
-    if (this.parser.hasError()) {
+    if (this.parser.hasError() && !this.errorEmitted) {
+      this.errorEmitted = true
       this.emit("error-output", this.parser.formatError())
     }
   }

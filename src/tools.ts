@@ -42,60 +42,22 @@ export class Tools {
     await this.sc.execute(
       `~cc = CC.boot(device: nil, numOutputs: nil, samplesDir: "${this.sc.getSamplesPath()}", recordingsDir: "${this.sc.getRecordingsPath()}")`
     )
-    await this.sc.waitForCCReady()
+    const serverOutput = await this.sc.waitForCCReady()
     await this.synthdefs.load()
     await this.effects.load()
     await this.samples.load()
     this.initialized = true
 
-    return await this.formatBootReadme()
+    // Return server output + status on first boot
+    const status = await this.sc.execute("~cc.status")
+    return `${serverOutput}\n\n${status}`
   }
 
-  private async formatBootReadme(): Promise<string> {
-    const synthList = await this.sc.execute("~cc.synths.list")
-    const fxList = await this.sc.execute("~cc.fx.list")
-    const sampleList = await this.sc.execute("~cc.samples.list")
-
-    return `# ClaudeCollider Ready
-
-## Quick Reference
-  Synth(\\\\cc_kick)                    # one-shot synth
-  Pdef(\\\\beat, Pbind(...)).play       # pattern (use for beats)
-  Ndef(\\\\pad, { ... }).play           # continuous synth
-  Ppar([Pbind(...), Pbind(...)])     # sync multiple patterns
-
-## Drum Pattern Template
-  Pdef(\\\\kick, Pbind(\\\\instrument, \\\\cc_kick, \\\\freq, 48, \\\\dur, 1, \\\\amp, 0.7)).play
-
-  ⚠️  \\\\freq, 48 is REQUIRED for all drum synths!
-  Without it, drums play at ~261Hz (middle C) and sound wrong.
-
-## Tools Reference
-- fx_load({name}): Load effect, returns slot name
-- fx_manage({action, slot, params?, bypass?}): set/bypass/remove effects
-- fx_wire({source, target, type?, passthrough?}): source→fx, fx→fx, or sidechain
-- fx_chain({name, effects}): Create named effect chain
-- fx_sidechain({name, ...}): Create sidechain compressor
-- midi({action, ...}): list/connect/play/stop
-- sample({action, name?, ...}): inspect/load/play/free/reload
-- recording({action, filename?}): start/stop/status
-- output({action, source?, outputs?}): route/unroute/status
-
-## Gotchas
-- sc_execute: semicolons between statements, no trailing semicolon
-- NEVER call Synth() inside Ndef — infinite spawning
-
-## Synths: ${synthList}
-## Effects: ${fxList}
-## Samples: ${sampleList}
-
-Use synth_inspect, fx_inspect, sample({action: "inspect"}) for details.
-Use sample({action: "load", name}) before patterns to avoid latency.`
-  }
-
-  // Core SC tools
-  async sc_execute(args: { code: string }): Promise<ToolResult> {
-    const bootMessage = await this.ensureReady()
+  // ============================================================
+  // cc_execute - Run arbitrary SuperCollider code
+  // ============================================================
+  async cc_execute(args: { code: string }): Promise<ToolResult> {
+    const bootStatus = await this.ensureReady()
     const { code } = args
     if (!code) {
       return {
@@ -104,97 +66,387 @@ Use sample({action: "load", name}) before patterns to avoid latency.`
       }
     }
     const result = await this.sc.execute(code)
-    const text = bootMessage ? `${bootMessage}\n\n---\n\n${result}` : result
+    // On first boot, prepend status; otherwise just return result
+    const text = bootStatus ? `${bootStatus}\n\n${result}` : result
     return { content: [{ type: "text", text }] }
   }
 
-  async sc_stop(): Promise<ToolResult> {
+  // ============================================================
+  // cc_status - Show status, routing, synths, or effects info
+  // ============================================================
+  async cc_status(args: {
+    action?: "status" | "routing" | "synths" | "effects"
+  }): Promise<ToolResult> {
     await this.ensureReady()
-    await this.sc.execute("~cc.stop")
-    return { content: [{ type: "text", text: "Stopped all sounds" }] }
-  }
+    const { action = "status" } = args
 
-  async sc_status(): Promise<ToolResult> {
-    await this.ensureReady()
-    const result = await this.sc.execute("~cc.status")
-    return { content: [{ type: "text", text: result }] }
-  }
+    switch (action) {
+      case "status": {
+        const result = await this.sc.execute("~cc.status")
+        return { content: [{ type: "text", text: result }] }
+      }
 
-  async sc_tempo(args: { bpm?: number }): Promise<ToolResult> {
-    await this.ensureReady()
-    const { bpm } = args
-    if (bpm !== undefined) {
-      await this.sc.execute(`~cc.tempo(${bpm})`)
-      return { content: [{ type: "text", text: `Tempo set to ${bpm} BPM` }] }
-    } else {
-      const result = await this.sc.execute("~cc.tempo")
-      return { content: [{ type: "text", text: `Current tempo: ${result} BPM` }] }
+      case "routing": {
+        const result = await this.sc.execute("~cc.formatter.formatRoutingDebug")
+        return { content: [{ type: "text", text: result }] }
+      }
+
+      case "synths": {
+        const result = await this.sc.execute("~cc.synths.describe")
+        return { content: [{ type: "text", text: result }] }
+      }
+
+      case "effects": {
+        const result = await this.sc.execute("~cc.fx.describe")
+        return { content: [{ type: "text", text: result }] }
+      }
+
+      default:
+        return {
+          content: [{ type: "text", text: `Unknown status action: ${action}` }],
+          isError: true,
+        }
     }
   }
 
-  async sc_clear(): Promise<ToolResult> {
+  // ============================================================
+  // cc_reboot - Reboot server or list audio devices
+  // ============================================================
+  async cc_reboot(args: {
+    action?: "reboot" | "devices"
+    device?: string
+    numOutputs?: number
+  }): Promise<ToolResult> {
     await this.ensureReady()
-    await this.sc.execute("~cc.clear")
-    return {
-      content: [
-        {
-          type: "text",
-          text: "Cleared all sounds, patterns, effects, and MIDI mappings",
-        },
-      ],
-    }
-  }
+    const { action = "reboot", device, numOutputs } = args
 
-  async sc_reboot(args: { device?: string; numOutputs?: number }): Promise<ToolResult> {
-    await this.ensureReady()
-    const { device, numOutputs } = args
-    const deviceArg = device ? `"${device}"` : "nil"
-    const numOutputsArg = numOutputs ?? "nil"
-    await this.sc.execute(`~cc.reboot(${deviceArg}, ${numOutputsArg})`)
-    await this.sc.waitForCCReady()
-    const parts = []
-    if (device) parts.push(`device: ${device}`)
-    if (numOutputs) parts.push(`outputs: ${numOutputs}`)
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Rebooted${parts.length ? ` with ${parts.join(", ")}` : ""}`,
-        },
-      ],
-    }
-  }
-
-  async sc_audio_devices(): Promise<ToolResult> {
-    await this.ensureReady()
-    const result = await this.sc.execute(`
-      ServerOptions.devices.collect { |dev, i|
-        "DEV:" ++ i ++ ":" ++ dev
-      }.join("\\\\n")
-    `)
-    const lines = result.split("\n")
-    const devices: string[] = []
-    for (const line of lines) {
-      if (line.startsWith("DEV:")) {
-        const parts = line.split(":")
-        if (parts.length >= 3) {
-          devices.push(parts.slice(2).join(":"))
+    switch (action) {
+      case "reboot": {
+        const deviceArg = device ? `"${device}"` : "nil"
+        const numOutputsArg = numOutputs ?? "nil"
+        await this.sc.execute(`~cc.reboot(${deviceArg}, ${numOutputsArg})`)
+        const serverOutput = await this.sc.waitForCCReady()
+        const status = await this.sc.execute("~cc.status")
+        return {
+          content: [
+            {
+              type: "text",
+              text: `${serverOutput}\n\n${status}`,
+            },
+          ],
         }
       }
-    }
-    let text = "Audio Devices:\n"
-    if (devices.length === 0) {
-      text += "  (none found)\n"
-    } else {
-      for (const dev of devices) {
-        text += `  - ${dev}\n`
+
+      case "devices": {
+        const result = await this.sc.execute(`
+          ServerOptions.devices.collect { |dev, i|
+            "DEV:" ++ i ++ ":" ++ dev
+          }.join("\\\\n")
+        `)
+        const lines = result.split("\n")
+        const devices: string[] = []
+        for (const line of lines) {
+          if (line.startsWith("DEV:")) {
+            const parts = line.split(":")
+            if (parts.length >= 3) {
+              devices.push(parts.slice(2).join(":"))
+            }
+          }
+        }
+        let text = "Audio Devices:\n"
+        if (devices.length === 0) {
+          text += "  (none found)\n"
+        } else {
+          for (const dev of devices) {
+            text += `  - ${dev}\n`
+          }
+        }
+        return { content: [{ type: "text", text }] }
       }
+
+      default:
+        return {
+          content: [{ type: "text", text: `Unknown reboot action: ${action}` }],
+          isError: true,
+        }
     }
-    return { content: [{ type: "text", text }] }
   }
 
-  // Consolidated MIDI tool
-  async midi(args: {
+  // ============================================================
+  // cc_control - Stop, clear, or set tempo
+  // ============================================================
+  async cc_control(args: {
+    action: "stop" | "clear" | "tempo"
+    bpm?: number
+  }): Promise<ToolResult> {
+    await this.ensureReady()
+    const { action, bpm } = args
+
+    switch (action) {
+      case "stop": {
+        await this.sc.execute("~cc.stop")
+        return { content: [{ type: "text", text: "Stopped all sounds" }] }
+      }
+
+      case "clear": {
+        await this.sc.execute("~cc.clear")
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Cleared all sounds, patterns, effects, and MIDI mappings",
+            },
+          ],
+        }
+      }
+
+      case "tempo": {
+        if (bpm !== undefined) {
+          await this.sc.execute(`~cc.tempo(${bpm})`)
+          return { content: [{ type: "text", text: `Tempo set to ${bpm} BPM` }] }
+        } else {
+          const result = await this.sc.execute("~cc.tempo")
+          return { content: [{ type: "text", text: `Current tempo: ${result} BPM` }] }
+        }
+      }
+
+      default:
+        return {
+          content: [{ type: "text", text: `Unknown control action: ${action}` }],
+          isError: true,
+        }
+    }
+  }
+
+  // ============================================================
+  // cc_fx - All effects operations
+  // ============================================================
+  async cc_fx(args: {
+    action: "load" | "set" | "bypass" | "remove" | "wire" | "sidechain" | "chain"
+    // For load
+    name?: string
+    slot?: string
+    // For set/bypass/remove
+    params?: Record<string, number>
+    bypass?: boolean
+    // For wire
+    source?: string
+    target?: string
+    type?: "source" | "effect" | "sidechain"
+    passthrough?: boolean
+    // For sidechain
+    threshold?: number
+    ratio?: number
+    attack?: number
+    release?: number
+    // For chain
+    effects?: Array<string | { name: string; params?: Record<string, number> }>
+  }): Promise<ToolResult> {
+    await this.ensureReady()
+    const { action } = args
+
+    switch (action) {
+      case "load": {
+        const { name: effectName, slot } = args
+        if (!effectName) {
+          return {
+            content: [{ type: "text", text: "Error: name required for load" }],
+            isError: true,
+          }
+        }
+        const slotArg = slot ? `\\${slot}` : "nil"
+        const result = await this.sc.execute(`~cc.fx.load(\\${effectName}, ${slotArg})`)
+        return {
+          content: [
+            { type: "text", text: `Loaded effect: ${slot || `fx_${effectName}`}\n${result}` },
+          ],
+        }
+      }
+
+      case "set": {
+        const { slot, params } = args
+        if (!slot) {
+          return {
+            content: [{ type: "text", text: "Error: slot required for set" }],
+            isError: true,
+          }
+        }
+        if (!params) {
+          return {
+            content: [{ type: "text", text: "Error: params required for set" }],
+            isError: true,
+          }
+        }
+        const paramStr = formatParams(params)
+        await this.sc.execute(`~cc.fx.set(\\${slot}, ${paramStr})`)
+        return {
+          content: [{ type: "text", text: `Set ${Object.keys(params).join(", ")} on ${slot}` }],
+        }
+      }
+
+      case "bypass": {
+        const { slot, bypass = true } = args
+        if (!slot) {
+          return {
+            content: [{ type: "text", text: "Error: slot required for bypass" }],
+            isError: true,
+          }
+        }
+        await this.sc.execute(`~cc.fx.bypass(\\${slot}, ${bypass})`)
+        return {
+          content: [{ type: "text", text: bypass ? `Bypassed ${slot}` : `Enabled ${slot}` }],
+        }
+      }
+
+      case "remove": {
+        const { slot } = args
+        if (!slot) {
+          return {
+            content: [{ type: "text", text: "Error: slot required for remove" }],
+            isError: true,
+          }
+        }
+        await this.sc.execute(`~cc.fx.remove(\\${slot})`)
+        return { content: [{ type: "text", text: `Removed ${slot}` }] }
+      }
+
+      case "wire": {
+        const { source, target, type = "source", passthrough = true } = args
+        if (!source || !target) {
+          return {
+            content: [{ type: "text", text: "Error: source and target required for wire" }],
+            isError: true,
+          }
+        }
+
+        switch (type) {
+          case "source": {
+            await this.sc.execute(`~cc.fx.route(\\${source}, \\${target})`)
+            return { content: [{ type: "text", text: `Routed ${source} → ${target}` }] }
+          }
+
+          case "effect": {
+            const result = await this.sc.execute(`~cc.fx.connect(\\${source}, \\${target})`)
+            if (result.includes("nil")) {
+              return {
+                content: [{ type: "text", text: `Failed to connect ${source} → ${target}` }],
+                isError: true,
+              }
+            }
+            return { content: [{ type: "text", text: `Connected ${source} → ${target}` }] }
+          }
+
+          case "sidechain": {
+            await this.sc.execute(`~cc.fx.routeTrigger(\\${source}, \\${target}, ${passthrough})`)
+            const passthroughNote = passthrough
+              ? " (passthrough enabled - source still audible)"
+              : " (passthrough disabled - source redirected to trigger only)"
+            return {
+              content: [
+                { type: "text", text: `Routed ${source} as trigger for sidechain ${target}${passthroughNote}` },
+              ],
+            }
+          }
+
+          default:
+            return {
+              content: [{ type: "text", text: `Unknown wire type: ${type}` }],
+              isError: true,
+            }
+        }
+      }
+
+      case "sidechain": {
+        const {
+          name: scName,
+          threshold = 0.1,
+          ratio = 4,
+          attack = 0.01,
+          release = 0.1,
+        } = args
+        if (!scName) {
+          return {
+            content: [{ type: "text", text: "Error: name required for sidechain" }],
+            isError: true,
+          }
+        }
+        const result = await this.sc.execute(
+          `~cc.fx.sidechain(\\${scName}, ${threshold}, ${ratio}, ${attack}, ${release})`
+        )
+        return {
+          content: [{ type: "text", text: `Created sidechain: ${scName}\n${result}` }],
+        }
+      }
+
+      case "chain": {
+        const { name: chainName, effects: fxList } = args
+        if (!chainName) {
+          return {
+            content: [{ type: "text", text: "Error: name required for chain" }],
+            isError: true,
+          }
+        }
+        if (!fxList || fxList.length === 0) {
+          return {
+            content: [{ type: "text", text: "Error: effects array cannot be empty" }],
+            isError: true,
+          }
+        }
+
+        const slots: string[] = []
+        const results: string[] = []
+
+        for (let i = 0; i < fxList.length; i++) {
+          const fx = fxList[i]
+          const fxName = typeof fx === "string" ? fx : fx.name
+          const fxParams = typeof fx === "object" && fx.params ? fx.params : null
+          const slotName = `${chainName}_${i}_${fxName}`
+
+          const loadResult = await this.sc.execute(`~cc.fx.load(\\${fxName}, \\${slotName})`)
+          if (loadResult.includes("unknown effect")) {
+            return {
+              content: [
+                { type: "text", text: `Error: Unknown effect '${fxName}' at position ${i}` },
+              ],
+              isError: true,
+            }
+          }
+
+          if (fxParams) {
+            const paramStr = formatParams(fxParams)
+            await this.sc.execute(`~cc.fx.set(\\${slotName}, ${paramStr})`)
+          }
+
+          slots.push(slotName)
+          results.push(`  → ${slotName}`)
+        }
+
+        for (let i = 0; i < slots.length - 1; i++) {
+          await this.sc.execute(`~cc.fx.connect(\\${slots[i]}, \\${slots[i + 1]})`)
+        }
+
+        const slotsArray = slots.map((s) => `\\${s}`).join(", ")
+        await this.sc.execute(`~cc.fx.registerChain(\\${chainName}, [${slotsArray}])`)
+
+        results.push("  → main out")
+        results.unshift(`Created chain: ${chainName}`)
+        results.push(`Route sources to: ${slots[0]}`)
+
+        return { content: [{ type: "text", text: results.join("\n") }] }
+      }
+
+      default:
+        return {
+          content: [{ type: "text", text: `Unknown fx action: ${action}` }],
+          isError: true,
+        }
+    }
+  }
+
+  // ============================================================
+  // cc_midi - MIDI operations
+  // ============================================================
+  async cc_midi(args: {
     action: "list" | "connect" | "play" | "stop"
     device?: string
     direction?: "in" | "out" | "all"
@@ -287,203 +539,10 @@ Use sample({action: "load", name}) before patterns to avoid latency.`
     }
   }
 
-  // FX tools
-  async fx_load(args: { name: string; slot?: string }): Promise<ToolResult> {
-    await this.ensureReady()
-    const { name: effectName, slot } = args
-    const slotArg = slot ? `\\${slot}` : "nil"
-    const result = await this.sc.execute(`~cc.fx.load(\\${effectName}, ${slotArg})`)
-    return {
-      content: [
-        { type: "text", text: `Loaded effect: ${slot || `fx_${effectName}`}\n${result}` },
-      ],
-    }
-  }
-
-  async fx_manage(args: {
-    action: "set" | "bypass" | "remove"
-    slot: string
-    params?: Record<string, number>
-    bypass?: boolean
-  }): Promise<ToolResult> {
-    await this.ensureReady()
-    const { action, slot, params, bypass = true } = args
-
-    switch (action) {
-      case "set": {
-        if (!params) {
-          return {
-            content: [{ type: "text", text: "Error: params required for action=set" }],
-            isError: true,
-          }
-        }
-        const paramStr = formatParams(params)
-        await this.sc.execute(`~cc.fx.set(\\${slot}, ${paramStr})`)
-        return {
-          content: [{ type: "text", text: `Set ${Object.keys(params).join(", ")} on ${slot}` }],
-        }
-      }
-
-      case "bypass": {
-        await this.sc.execute(`~cc.fx.bypass(\\${slot}, ${bypass})`)
-        return {
-          content: [{ type: "text", text: bypass ? `Bypassed ${slot}` : `Enabled ${slot}` }],
-        }
-      }
-
-      case "remove": {
-        await this.sc.execute(`~cc.fx.remove(\\${slot})`)
-        return { content: [{ type: "text", text: `Removed ${slot}` }] }
-      }
-
-      default:
-        return {
-          content: [{ type: "text", text: `Unknown fx_manage action: ${action}` }],
-          isError: true,
-        }
-    }
-  }
-
-  async fx_wire(args: {
-    source: string
-    target: string
-    type?: "source" | "effect" | "sidechain"
-    passthrough?: boolean
-  }): Promise<ToolResult> {
-    await this.ensureReady()
-    const { source, target, type = "source", passthrough = true } = args
-
-    switch (type) {
-      case "source": {
-        await this.sc.execute(`~cc.fx.route(\\${source}, \\${target})`)
-        return { content: [{ type: "text", text: `Routed ${source} → ${target}` }] }
-      }
-
-      case "effect": {
-        const result = await this.sc.execute(`~cc.fx.connect(\\${source}, \\${target})`)
-        if (result.includes("nil")) {
-          return {
-            content: [{ type: "text", text: `Failed to connect ${source} → ${target}` }],
-            isError: true,
-          }
-        }
-        return { content: [{ type: "text", text: `Connected ${source} → ${target}` }] }
-      }
-
-      case "sidechain": {
-        await this.sc.execute(`~cc.fx.routeTrigger(\\${source}, \\${target}, ${passthrough})`)
-        const passthroughNote = passthrough
-          ? " (passthrough enabled - source still audible)"
-          : " (passthrough disabled - source redirected to trigger only)"
-        return {
-          content: [
-            { type: "text", text: `Routed ${source} as trigger for sidechain ${target}${passthroughNote}` },
-          ],
-        }
-      }
-
-      default:
-        return {
-          content: [{ type: "text", text: `Unknown fx_wire type: ${type}` }],
-          isError: true,
-        }
-    }
-  }
-
-  async fx_sidechain(args: {
-    name: string
-    threshold?: number
-    ratio?: number
-    attack?: number
-    release?: number
-  }): Promise<ToolResult> {
-    await this.ensureReady()
-    const {
-      name: scName,
-      threshold = 0.1,
-      ratio = 4,
-      attack = 0.01,
-      release = 0.1,
-    } = args
-    const result = await this.sc.execute(
-      `~cc.fx.sidechain(\\${scName}, ${threshold}, ${ratio}, ${attack}, ${release})`
-    )
-    return {
-      content: [{ type: "text", text: `Created sidechain: ${scName}\n${result}` }],
-    }
-  }
-
-  async fx_chain(args: {
-    name: string
-    effects: Array<string | { name: string; params?: Record<string, number> }>
-  }): Promise<ToolResult> {
-    await this.ensureReady()
-    const { name: chainName, effects: fxList } = args
-
-    if (!fxList || fxList.length === 0) {
-      return {
-        content: [{ type: "text", text: "Error: effects array cannot be empty" }],
-        isError: true,
-      }
-    }
-
-    const slots: string[] = []
-    const results: string[] = []
-
-    for (let i = 0; i < fxList.length; i++) {
-      const fx = fxList[i]
-      const fxName = typeof fx === "string" ? fx : fx.name
-      const fxParams = typeof fx === "object" && fx.params ? fx.params : null
-      const slotName = `${chainName}_${i}_${fxName}`
-
-      const loadResult = await this.sc.execute(`~cc.fx.load(\\${fxName}, \\${slotName})`)
-      if (loadResult.includes("unknown effect")) {
-        return {
-          content: [
-            { type: "text", text: `Error: Unknown effect '${fxName}' at position ${i}` },
-          ],
-          isError: true,
-        }
-      }
-
-      if (fxParams) {
-        const paramStr = formatParams(fxParams)
-        await this.sc.execute(`~cc.fx.set(\\${slotName}, ${paramStr})`)
-      }
-
-      slots.push(slotName)
-      results.push(`  → ${slotName}`)
-    }
-
-    for (let i = 0; i < slots.length - 1; i++) {
-      await this.sc.execute(`~cc.fx.connect(\\${slots[i]}, \\${slots[i + 1]})`)
-    }
-
-    const slotsArray = slots.map((s) => `\\${s}`).join(", ")
-    await this.sc.execute(`~cc.fx.registerChain(\\${chainName}, [${slotsArray}])`)
-
-    results.push("  → main out")
-    results.unshift(`Created chain: ${chainName}`)
-    results.push(`Route sources to: ${slots[0]}`)
-
-    return { content: [{ type: "text", text: results.join("\n") }] }
-  }
-
-  async fx_inspect(): Promise<ToolResult> {
-    await this.ensureReady()
-    const result = await this.sc.execute("~cc.fx.describe")
-    return { content: [{ type: "text", text: result }] }
-  }
-
-  // Synth tools
-  async synth_inspect(): Promise<ToolResult> {
-    await this.ensureReady()
-    const result = await this.sc.execute("~cc.synths.describe")
-    return { content: [{ type: "text", text: result }] }
-  }
-
-  // Consolidated sample tool
-  async sample(args: {
+  // ============================================================
+  // cc_sample - Sample operations
+  // ============================================================
+  async cc_sample(args: {
     action: "inspect" | "load" | "play" | "free" | "reload"
     name?: string
     rate?: number
@@ -549,8 +608,10 @@ Use sample({action: "load", name}) before patterns to avoid latency.`
     }
   }
 
-  // Consolidated recording tool
-  async recording(args: {
+  // ============================================================
+  // cc_recording - Recording operations
+  // ============================================================
+  async cc_recording(args: {
     action: "start" | "stop" | "status"
     filename?: string
   }): Promise<ToolResult> {
@@ -588,8 +649,10 @@ Use sample({action: "load", name}) before patterns to avoid latency.`
     }
   }
 
-  // Consolidated output tool
-  async output(args: {
+  // ============================================================
+  // cc_output - Hardware output routing
+  // ============================================================
+  async cc_output(args: {
     action: "route" | "unroute" | "status"
     source?: string
     outputs?: number | number[]
@@ -637,12 +700,5 @@ Use sample({action: "load", name}) before patterns to avoid latency.`
           isError: true,
         }
     }
-  }
-
-  // Debug tools
-  async routing_debug(): Promise<ToolResult> {
-    await this.ensureReady()
-    const result = await this.sc.execute("~cc.formatter.formatRoutingDebug")
-    return { content: [{ type: "text", text: result }] }
   }
 }
