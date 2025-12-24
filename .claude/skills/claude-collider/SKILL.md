@@ -1,7 +1,6 @@
 ---
 name: claude-collider
-description: Use when live coding music with SuperCollider via ClaudeCollider
-MCP server.
+description: Use when live coding music with SuperCollider via ClaudeCollider MCP server.
 ---
 
 # SuperCollider Live Coding with ClaudeCollider
