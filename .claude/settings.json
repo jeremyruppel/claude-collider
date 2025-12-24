@@ -1,6 +1,6 @@
 {
+  "spinnerTipsEnabled": false,
   "permissions": {
-    "spinnerTipsEnabled": false,
-    "allow": ["mcp__claude-collider__*"]
+    "allow": ["mcp__claude-collider__*", "Skill(claude-collider)"]
   }
 }
