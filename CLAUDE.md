@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+IF YOU ARE MAKING MUSIC, STOP READING THI SFILE AND USE THE /claude-collider SKILL.
+THIS IS FOR CODING HELP ONLY.
+
 ## Project Overview
 
 Claude Collider is an MCP (Model Context Protocol) server that enables Claude to generate and execute SuperCollider code in real-time for live music synthesis. It bridges Claude's natural language understanding with SuperCollider's audio synthesis capabilities.

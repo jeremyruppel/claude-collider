@@ -49,62 +49,19 @@ The `env` block is optional - paths default to `~/.claudecollider/samples` and `
 
 Restart Claude Desktop after updating the config.
 
-## Available Tools (20 total)
+## Available Tools (9 total)
 
-### Core Tools
-
-| Tool               | Description                                                              |
-| ------------------ | ------------------------------------------------------------------------ |
-| `sc_execute`       | Execute SuperCollider code (auto-boots on first use)                     |
-| `sc_stop`          | Stop all sounds (Cmd+Period equivalent)                                  |
-| `sc_status`        | Get status: tempo, synths, CPU, active patterns                          |
-| `sc_tempo`         | Get or set the tempo in BPM                                              |
-| `sc_clear`         | Stop all sounds and clear patterns, effects, and MIDI mappings           |
-| `sc_reboot`        | Reboot the audio server (options: device, numOutputs)                    |
-| `sc_audio_devices` | List available audio input and output devices                            |
-
-### MIDI
-
-| Tool   | Description                                                                      |
-| ------ | -------------------------------------------------------------------------------- |
-| `midi` | MIDI operations: `list` devices, `connect` to device, `play` synth, or `stop`    |
-
-### Synths & Effects
-
-| Tool            | Description                                                       |
-| --------------- | ----------------------------------------------------------------- |
-| `synth_inspect` | List all available synths with their descriptions and parameters  |
-| `fx_load`       | Load a pre-built effect (returns slot name for routing)           |
-| `fx_manage`     | Manage effects: `set` params, `bypass`, or `remove`               |
-| `fx_wire`       | Route audio: `source`→effect, `effect`→effect, or `sidechain` trigger |
-| `fx_chain`      | Create a named chain of effects wired in series                   |
-| `fx_sidechain`  | Create a sidechain compressor (e.g., kick ducking bass)           |
-| `fx_inspect`    | List all available effects with their descriptions and parameters |
-
-### Samples
-
-Place WAV or AIFF files in your samples directory (default: `~/.claudecollider/samples/`).
-
-| Tool     | Description                                                                |
-| -------- | -------------------------------------------------------------------------- |
-| `sample` | Sample operations: `inspect`, `load`, `play`, `free`, or `reload` directory |
-
-### Recording
-
-Record your jams to WAV files (default: `~/.claudecollider/recordings/`).
-
-| Tool        | Description                                         |
-| ----------- | --------------------------------------------------- |
-| `recording` | Recording operations: `start`, `stop`, or `status`  |
-
-### Output Routing
-
-Route audio to specific hardware outputs for multi-output setups.
-
-| Tool            | Description                                              |
-| --------------- | -------------------------------------------------------- |
-| `output`        | Output routing: `route` to outputs, `unroute`, or `status` |
-| `routing_debug` | Debug audio routing: signal flow, buses, effect params   |
+| Tool           | Description                                                              |
+| -------------- | ------------------------------------------------------------------------ |
+| `cc_execute`   | Execute SuperCollider code (auto-boots on first use)                     |
+| `cc_status`    | Show status, routing debug, available synths, or available effects       |
+| `cc_reboot`    | Reboot the audio server or list audio devices                            |
+| `cc_control`   | Control playback: stop all sounds, clear everything, or get/set tempo    |
+| `cc_fx`        | Effects operations: load, set params, bypass, remove, wire, sidechain, chain |
+| `cc_midi`      | MIDI operations: list devices, connect, play synth, or stop              |
+| `cc_sample`    | Sample operations: inspect, load, play, free, or reload directory        |
+| `cc_recording` | Recording operations: start, stop, or check status                       |
+| `cc_output`    | Hardware output routing: route to outputs, unroute, or show status       |
 
 ## Pre-built SynthDefs
 
@@ -154,7 +111,7 @@ All synths are automatically loaded on first tool use. Use them with the `\cc_` 
 
 ## Pre-built Effects
 
-Load effects with `fx_load`:
+Load effects with `cc_fx`:
 
 - **Filters**: lpf, hpf, bpf
 - **Time-based**: reverb, delay, pingpong

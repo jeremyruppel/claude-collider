@@ -7,228 +7,160 @@ MCP server.
 # SuperCollider Live Coding with ClaudeCollider
 
 This skill enables live music synthesis using SuperCollider via the ClaudeCollider MCP server.
-Use this skill to run SuperCollider code, manage synths/effects, control MIDI
-devices, handle samples, and record audio.
 
-## Tools Available
+## Quick Reference
 
-| Tool           | Purpose                                         |
-| -------------- | ----------------------------------------------- |
-| `cc_execute`   | Run SuperCollider code directly                 |
-| `cc_status`    | Show status, list synths/effects, debug routing |
-| `cc_control`   | Stop, clear, or set tempo                       |
-| `cc_fx`        | Load/manage effects and routing                 |
-| `cc_midi`      | MIDI device control                             |
-| `cc_sample`    | Sample playback and management                  |
-| `cc_recording` | Record audio output                             |
-| `cc_output`    | Hardware output routing                         |
-| `cc_reboot`    | Restart server or list audio devices            |
+### Key Rules
 
-## Pattern Types
-
-### Pdef - Rhythmic Patterns (drums, sequences)
-
-```supercollider
-Pdef(\kick, Pbind(
-  \instrument, \cc_kick,
-  \freq, 48,              // REQUIRED for drums!
-  \dur, 1,
-  \amp, 0.7
-)).play
-```
-
-### Ndef - Continuous Sounds (pads, drones)
-
-```supercollider
-Ndef(\pad, {
-  var sig = Saw.ar([110, 111], 0.3);
-  sig * EnvGen.kr(Env.asr(2, 1, 2), \gate.kr(1))
-}).play
-```
-
-### Tdef - Timed Tasks (sequencing, automation)
-
-```supercollider
-Tdef(\ramp, {
-  100.do { |i|
-    ~cc.fx.set(\fx_lpf, \cutoff, i.linexp(0, 99, 200, 8000));
-    0.05.wait;
-  }
-}).play
-```
-
-## Synths Reference
-
-### Drums (one-shot, need `\freq, 48`)
-
-- `\cc_kick` - Punchy kick with sub bass
-- `\cc_snare` - Snappy snare drum
-- `\cc_hihat` - Closed hi-hat
-- `\cc_openhat` - Open hi-hat with decay
-- `\cc_clap` - Layered clap
-- `\cc_tom` - Tunable tom
-- `\cc_rim` - Rimshot
-- `\cc_shaker` - Shaker
-- `\cc_cowbell` - Classic cowbell
-
-### Bass (gate-controlled)
-
-- `\cc_bass` - Saw bass with filter
-- `\cc_acid` - 303-style acid bass
-- `\cc_sub` - Pure sub bass
-- `\cc_reese` - Detuned reese bass
-- `\cc_fmbass` - FM bass
-
-### Melodic (gate-controlled)
-
-- `\cc_lead` - Mono lead synth
-- `\cc_pluck` - Plucked string
-- `\cc_bell` - FM bell
-- `\cc_keys` - Electric piano
-- `\cc_strings` - String ensemble
-
-### Pads (gate-controlled)
-
-- `\cc_pad` - Warm stereo pad
-
-### Utility
-
-- `\cc_sampler` - Sample playback (needs `\buf`)
-- `\cc_grains` - Granular synthesis (needs `\buf`)
-- `\cc_sine` - Pure sine tone
-- `\cc_noise` - Filtered noise
-
-## Effects Routing
-
-```supercollider
-// 1. Load an effect
-cc_fx({action: "load", name: "reverb"})
-
-// 2. Route a pattern through it
-cc_fx({action: "wire", source: "bass", target: "fx_reverb"})
-
-// 3. Adjust parameters
-cc_fx({action: "set", slot: "fx_reverb", params: {mix: 0.4, room: 0.8}})
-
-// 4. Chain effects
-cc_fx({action: "chain", name: "bass_chain", effects: ["distortion", "delay", "reverb"]})
-cc_fx({action: "wire", source: "bass", target: "bass_chain_0_distortion"})
-```
-
-### Available Effects
-
-- **Filters**: `lpf`, `hpf`, `bpf`
-- **Time**: `reverb`, `delay`, `pingpong`
-- **Modulation**: `chorus`, `flanger`, `phaser`, `tremolo`
-- **Distortion**: `distortion`, `bitcrush`, `wavefold`
-- **Dynamics**: `compressor`, `limiter`, `gate`
-- **Stereo**: `widener`, `autopan`
-
-## Samples
-
-```supercollider
-// Pre-load before using in patterns
-cc_sample({action: "load", name: "kick"})
-
-// One-shot playback
-cc_sample({action: "play", name: "kick", rate: 1, amp: 0.8})
-
-// In a pattern
-Pdef(\samp, Pbind(
-  \instrument, \cc_sampler,
-  \buf, ~cc.samples.at(\kick),
-  \dur, 1,
-  \rate, 1
-)).play
-
-// Granular
-Synth(\cc_grains, [\buf, ~cc.samples.at(\ambient), \pos, 0.5, \grainSize, 0.1])
-```
-
-## Common Patterns
-
-### Basic Beat
-
-```supercollider
-Pdef(\beat, Ppar([
-  Pbind(\instrument, \cc_kick, \freq, 48, \dur, 1, \amp, 0.8),
-  Pbind(\instrument, \cc_hihat, \freq, 48, \dur, 0.25, \amp, 0.3),
-  Pbind(\instrument, \cc_snare, \freq, 48, \dur, 2, \amp, 0.6, \lag, 1)
-])).play
-```
-
-### Melodic Sequence
-
-```supercollider
-Pdef(\melody, Pbind(
-  \instrument, \cc_pluck,
-  \freq, Pseq([60, 63, 67, 70].midicps, inf),
-  \dur, Pseq([0.5, 0.5, 0.25, 0.75], inf),
-  \amp, 0.5
-)).play
-```
-
-### Evolving Pad
-
-```supercollider
-Ndef(\evolve, {
-  var sig = \cc_pad.ar(\freq, 220, \amp, 0.3);
-  sig * SinOsc.kr(0.1).range(0.3, 1)
-}).play
-```
-
-## Key Rules
-
-1. **Drums need `\freq, 48`** - Without it, drums sound wrong (default is middle C)
+1. **Drums need `\freq, 48`** - IMPORTANT Without it, drums sound wrong
 2. **Use Pdef for rhythms** - Patterns that repeat
 3. **Use Ndef for continuous** - Pads, drones, textures
 4. **Symbols not strings** - `\kick` not `"kick"`
 5. **Semicolons between statements** - No trailing semicolon
 6. **NEVER Synth() inside Ndef** - Causes infinite spawning
-7. **Load samples first** - Before using in patterns
 
-## Updating Live
+---
+
+# CC API Reference
+
+The main entry point stored in `~cc`. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`.
+
+## CC - Main Class
+
+| Method                                   | Description                                             |
+| ---------------------------------------- | ------------------------------------------------------- |
+| `tempo(bpm)`                             | Get/set tempo in BPM                                    |
+| `stop`                                   | Stop all Pdefs and Ndefs                                |
+| `clear`                                  | Full reset: free all synths, patterns, effects, samples |
+| `status`                                 | Get formatted status string                             |
+| `reboot(device, numOutputs, onComplete)` | Restart the server                                      |
+
+---
+
+## ~cc.synths - Synth Definitions
+
+27+ pre-built synths with `cc_` prefix.
+
+| Method                | Description                         |
+| --------------------- | ----------------------------------- |
+| `list`                | Comma-separated list of synth names |
+| `describe`            | Detailed descriptions with params   |
+| `play(name, ...args)` | One-shot synth playback             |
+
+### Usage
 
 ```supercollider
-// Redefine to update (takes effect on next loop)
-Pdef(\kick, Pbind(\instrument, \cc_kick, \freq, 48, \dur, 0.5, \amp, 0.9)).play
-
-// Quantized update (musical timing)
-Pdef(\kick).quant = 4;  // Update on next 4-beat boundary
-
-// Crossfade Ndef changes
-Ndef(\pad).fadeTime = 2;
-Ndef(\pad, { ... new sound ... })
+~cc.synths.play(\cc_kick, \freq, 48, \amp, 0.8);
 ```
 
-## Control Flow
+---
+
+## ~cc.fx - Effects System
+
+18 built-in effects with routing, chaining, and sidechaining.
+
+| Method                                               | Description                                |
+| ---------------------------------------------------- | ------------------------------------------ |
+| `load(name, slot)`                                   | Load effect (slot defaults to `fx_<name>`) |
+| `set(slot, ...args)`                                 | Set effect parameters                      |
+| `bypass(slot, bool)`                                 | Bypass/re-enable effect                    |
+| `remove(slot)`                                       | Remove effect                              |
+| `route(source, target)`                              | Route Pdef/Ndef to effect                  |
+| `connect(from, to)`                                  | Chain effect output to another effect      |
+| `sidechain(name, threshold, ratio, attack, release)` | Create sidechain compressor                |
+| `routeTrigger(source, sidechainName, passthrough)`   | Route trigger to sidechain                 |
+| `routeToOutput(source, channels)`                    | Route to hardware outputs                  |
+| `list`                                               | Available effect names                     |
+| `describe`                                           | Effect descriptions with params            |
+| `status`                                             | Current effects and routing                |
+
+### Usage
 
 ```supercollider
-// Stop one pattern
-Pdef(\kick).stop
-
-// Stop all sounds
-cc_control({action: "stop"})
-
-// Full reset
-cc_control({action: "clear"})
-
-// Set tempo
-cc_control({action: "tempo", bpm: 128})
+~cc.fx.load(\reverb);
+~cc.fx.route(\bass, \fx_reverb);
+~cc.fx.set(\fx_reverb, \mix, 0.5, \room, 0.9);
 ```
 
-## Discovery
+---
+
+## ~cc.midi - MIDI Control
+
+| Method                                                 | Description                           |
+| ------------------------------------------------------ | ------------------------------------- |
+| `listDevices`                                          | List available MIDI devices           |
+| `connect(device, direction)`                           | Connect device (`\in` or `\out`)      |
+| `connectAll`                                           | Connect all MIDI inputs               |
+| `disconnect(direction)`                                | Disconnect (`\in`, `\out`, or `\all`) |
+| `play(synthName, channel, mono, velToAmp, ccMappings)` | Play synth via MIDI                   |
+| `stop`                                                 | Stop current MIDI synth               |
+| `status`                                               | Get MIDI status                       |
+
+### Usage
 
 ```supercollider
-// List all synths with parameters
-cc_status({action: "synths"})
+~cc.midi.connectAll;
+~cc.midi.play(\lead, nil, false, true, (
+  1: \cutoff,                           // CC1 -> cutoff
+  74: (param: \res, range: [0.1, 0.9])  // CC74 -> res with range
+));
+```
 
-// List all effects with parameters
-cc_status({action: "effects"})
+---
 
-// Show current routing
-cc_status({action: "routing"})
+## ~cc.samples - Sample Management
 
-// Show server status
-cc_status()
+Samples from `~/.claudecollider/samples`.
+
+| Method                  | Description                    |
+| ----------------------- | ------------------------------ |
+| `load(name)`            | Load sample buffer into memory |
+| `at(name)`              | Get buffer (nil if not loaded) |
+| `play(name, rate, amp)` | One-shot playback              |
+| `free(name)`            | Free buffer                    |
+| `reload`                | Rescan directory for new files |
+| `names`                 | Array of sample names          |
+| `list`                  | Comma-separated list           |
+
+### Usage
+
+```supercollider
+~cc.samples.load(\kick);
+~cc.samples.play(\kick, 1, 0.8);
+Pdef(\samp, Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1)).play
+```
+
+---
+
+## ~cc.recorder - Audio Recording
+
+Records to `~/.claudecollider/recordings`.
+
+| Method            | Description                         |
+| ----------------- | ----------------------------------- |
+| `start(filename)` | Start recording (auto-names if nil) |
+| `stop`            | Stop recording, returns path        |
+| `status`          | Recording status                    |
+| `isRecording`     | Boolean                             |
+
+---
+
+## ~cc.state - Bus Management
+
+Named control/audio buses stored in current environment.
+
+| Method                         | Description                           |
+| ------------------------------ | ------------------------------------- |
+| `bus(name, numChannels, rate)` | Get or create bus (also sets `~name`) |
+| `setBus(name, value)`          | Set bus value                         |
+| `getBus(name)`                 | Get bus by name                       |
+| `freeBus(name)`                | Free bus                              |
+| `clear`                        | Free all buses                        |
+
+### Usage
+
+```supercollider
+~cc.state.bus(\cutoff, 1, \control);
+~cc.state.setBus(\cutoff, 2000);
+Synth(\cc_acid, [\cutoff, ~cutoff.asMap]);  // Map bus to param
 ```
