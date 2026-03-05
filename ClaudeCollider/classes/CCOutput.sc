@@ -115,11 +115,7 @@ CCOutput {
 
   setHwOut { |out|
     hwOut = out;
-    if(this.isMain) {
-      ndef.set(\out, out);
-    } {
-      ndef.set(\hwOut, out);
-    };
+    ndef.set(\hwOut, out);
   }
 
   // ========== Cleanup ==========

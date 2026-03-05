@@ -61,9 +61,9 @@ CCOutputs {
     ndef = Ndef(\out_main, {
       var sig = InFeedback.ar(\in.kr(0), 2);
       sig = Limiter.ar(sig, 0.95);
-      Out.ar(\out.kr(0), sig);
+      Out.ar(\hwOut.kr(0), sig);
     });
-    ndef.set(\in, mainBus.index, \out, 0);
+    ndef.set(\in, mainBus.index, \hwOut, 0);
     ndef.play;
 
     output = CCOutput(cc, \out_main, ndef, mainBus, [1, 2], 0);
