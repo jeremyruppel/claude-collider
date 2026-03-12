@@ -36,7 +36,7 @@ CCSynthManager {
 
   // Create a synth for the given note
   noteOn { |note, args|
-    var fullName = ("cc_" ++ synthName).asSymbol;
+    var fullName = synthName.asSymbol;
     var synth;
 
     args = args ?? [];

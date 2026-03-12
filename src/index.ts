@@ -239,7 +239,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             synth: {
               type: "string",
               description:
-                "Synth name without cc_ prefix (for play/stop). Multiple synths can be active simultaneously. For stop, omit to stop all.",
+                "Synth name e.g. cc_lead, cc_bass, cc_pad (for play/stop). Multiple synths can be active simultaneously. For stop, omit to stop all.",
             },
             channel: {
               type: "number",

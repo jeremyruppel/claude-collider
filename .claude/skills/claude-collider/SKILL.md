@@ -100,14 +100,14 @@ The main entry point stored in `~cc`. Access subsystems via `~cc.synths`, `~cc.f
 ```supercollider
 ~cc.midi.connectAll;
 // Multiple synths can be active simultaneously
-~cc.midi.play(\lead, 1, false, true, (
+~cc.midi.play(\cc_lead, 1, false, true, (
   1: \cutoff,                           // CC1 -> cutoff
   74: (param: \res, range: [0.1, 0.9])  // CC74 -> res with range
 ));
-~cc.midi.play(\bass, 2);
-~cc.midi.play(\pad, 4);
-~cc.midi.stop(\bass);  // stop just bass
-~cc.midi.stop;         // stop all
+~cc.midi.play(\cc_bass, 2);
+~cc.midi.play(\cc_pad, 4);
+~cc.midi.stop(\cc_bass);  // stop just bass
+~cc.midi.stop;             // stop all
 ```
 
 ---

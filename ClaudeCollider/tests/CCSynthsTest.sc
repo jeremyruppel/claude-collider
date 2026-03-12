@@ -24,7 +24,7 @@ CCSynthsTest : UnitTest {
   test_describe_formatsSynthWithParams {
     var result;
     synths.instVarPut(\defs, Dictionary[
-      \testsynth -> (
+      \cc_testsynth -> (
         description: "A test synth",
         def: { SynthDef(\cc_testsynth, { |out=0, freq=440, amp=0.5| }) }
       )
@@ -33,7 +33,7 @@ CCSynthsTest : UnitTest {
 
     this.assertEquals(
       result,
-      "testsynth - A test synth\n  params: out, freq, amp",
+      "cc_testsynth - A test synth\n  params: out, freq, amp",
       "describe should format synth with name, description, and params"
     );
   }
@@ -41,11 +41,11 @@ CCSynthsTest : UnitTest {
   test_describe_sortsSynthsAlphabetically {
     var result;
     synths.instVarPut(\defs, Dictionary[
-      \zebra -> (
+      \cc_zebra -> (
         description: "Z synth",
         def: { SynthDef(\cc_zebra, { |out=0| }) }
       ),
-      \alpha -> (
+      \cc_alpha -> (
         description: "A synth",
         def: { SynthDef(\cc_alpha, { |out=0| }) }
       )
@@ -54,7 +54,7 @@ CCSynthsTest : UnitTest {
 
     this.assertEquals(
       result,
-      "alpha - A synth\n  params: out\nzebra - Z synth\n  params: out",
+      "cc_alpha - A synth\n  params: out\ncc_zebra - Z synth\n  params: out",
       "describe should sort synths alphabetically"
     );
   }
@@ -86,22 +86,22 @@ CCSynthsTest : UnitTest {
   test_list_returnsCommaSeparatedString {
     var result;
     synths.instVarPut(\defs, Dictionary[
-      \kick -> (description: "Kick drum"),
-      \snare -> (description: "Snare drum")
+      \cc_kick -> (description: "Kick drum"),
+      \cc_snare -> (description: "Snare drum")
     ]);
     result = synths.list;
-    this.assertEquals(result, "kick, snare", "list should return comma-separated names");
+    this.assertEquals(result, "cc_kick, cc_snare", "list should return comma-separated names");
   }
 
   test_list_isSorted {
     var result;
     synths.instVarPut(\defs, Dictionary[
-      \zebra -> (description: "Z synth"),
-      \alpha -> (description: "A synth"),
-      \middle -> (description: "M synth")
+      \cc_zebra -> (description: "Z synth"),
+      \cc_alpha -> (description: "A synth"),
+      \cc_middle -> (description: "M synth")
     ]);
     result = synths.list;
-    this.assertEquals(result, "alpha, middle, zebra", "list should be sorted alphabetically");
+    this.assertEquals(result, "cc_alpha, cc_middle, cc_zebra", "list should be sorted alphabetically");
   }
 
   test_list_emptyReturnsNone {

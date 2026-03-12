@@ -18,7 +18,7 @@ CCSynths {
   defineSynths {
     ^(
       // ========== DRUMS ==========
-      kick: (
+      cc_kick: (
         description: "Punchy kick drum. Sine wave with pitch sweep from 2x to 1x freq over 20ms, plus sub layer. Default 48Hz (~G1), 300ms decay. One-shot.",
         def: {
           SynthDef(\cc_kick, { |out=0, freq=48, amp=0.5, decay=0.3|
@@ -32,7 +32,7 @@ CCSynths {
         }
       ),
 
-      snare: (
+      cc_snare: (
         description: "Snare drum. 30% sine body (180Hz default, pitch sweep 1.5x-1x) + 70% HPF noise at 1kHz. Noise decays at half the main decay time. Default 200ms decay. One-shot.",
         def: {
           SynthDef(\cc_snare, { |out=0, freq=180, amp=0.5, decay=0.2|
@@ -47,7 +47,7 @@ CCSynths {
         }
       ),
 
-      hihat: (
+      cc_hihat: (
         description: "Closed hi-hat. HPF white noise at 8kHz. Very short 50ms default decay for tight sound. Lower amp default (0.3). One-shot.",
         def: {
           SynthDef(\cc_hihat, { |out=0, amp=0.3, decay=0.05|
@@ -60,7 +60,7 @@ CCSynths {
         }
       ),
 
-      clap: (
+      cc_clap: (
         description: "Hand clap. Two BPF noise layers: sharp 10ms burst at 1500Hz + sustained body at 1200Hz. Default 150ms decay. One-shot.",
         def: {
           SynthDef(\cc_clap, { |out=0, amp=0.5, decay=0.15|
@@ -75,7 +75,7 @@ CCSynths {
         }
       ),
 
-      openhat: (
+      cc_openhat: (
         description: "Open hi-hat. HPF noise at 6kHz with BPF peak at 10kHz for metallic shimmer. Slight pitch envelope on attack. Default 500ms decay. One-shot.",
         def: {
           SynthDef(\cc_openhat, { |out=0, amp=0.3, decay=0.5|
@@ -92,7 +92,7 @@ CCSynths {
         }
       ),
 
-      tom: (
+      cc_tom: (
         description: "Tom drum. Sine with exponential pitch drop from 2x to target freq over 40ms. LPF noise transient for attack. Default 120Hz, 300ms decay. One-shot.",
         def: {
           SynthDef(\cc_tom, { |out=0, freq=120, amp=0.5, decay=0.3|
@@ -110,7 +110,7 @@ CCSynths {
         }
       ),
 
-      rim: (
+      cc_rim: (
         description: "Rimshot/sidestick. Tight BPF noise (Q=0.02) at 1700Hz default + 1200Hz sine click on attack. Fixed 30ms decay, very percussive. One-shot.",
         def: {
           SynthDef(\cc_rim, { |out=0, amp=0.4, freq=1700|
@@ -127,7 +127,7 @@ CCSynths {
         }
       ),
 
-      shaker: (
+      cc_shaker: (
         description: "Shaker/maraca. HPF noise grain with adjustable color (cutoff, default 5kHz). Short 80ms default decay. Lower amp (0.2). One-shot.",
         def: {
           SynthDef(\cc_shaker, { |out=0, amp=0.2, decay=0.08, color=5000|
@@ -141,7 +141,7 @@ CCSynths {
         }
       ),
 
-      cowbell: (
+      cc_cowbell: (
         description: "808-style cowbell. Two detuned square waves (560Hz + 845Hz) through BPF at 700Hz. Steep -4 curve envelope. Default 400ms decay. One-shot.",
         def: {
           SynthDef(\cc_cowbell, { |out=0, amp=0.4, decay=0.4|
@@ -158,7 +158,7 @@ CCSynths {
       ),
 
       // ========== BASS ==========
-      bass: (
+      cc_bass: (
         description: "Sub bass with harmonics. Fundamental + 2nd harmonic (0.3x) + 3rd harmonic (0.1x). ADSR envelope (10ms att, 100ms dec, 0.7 sus, 100ms rel). Default 55Hz (~A1). Gate-controlled.",
         def: {
           SynthDef(\cc_bass, { |out=0, freq=55, amp=0.5, decay=0.5, gate=1|
@@ -171,7 +171,7 @@ CCSynths {
         }
       ),
 
-      acid: (
+      cc_acid: (
         description: "303-style acid bass. Saw through resonant LPF with filter envelope (perc, sweeps up 2x cutoff). Default cutoff 1kHz, res 0.3, decay 300ms controls filter sweep time. Gate-controlled.",
         def: {
           SynthDef(\cc_acid, { |out=0, freq=55, amp=0.5, cutoff=1000, res=0.3, decay=0.3, gate=1|
@@ -186,7 +186,7 @@ CCSynths {
         }
       ),
 
-      sub: (
+      cc_sub: (
         description: "Pure sub bass. Single sine with soft tanh saturation for warmth. Long ADSR (10ms att, 100ms dec, 0.8 sus, decay param controls release). Ideal for layering under other bass sounds. Gate-controlled.",
         def: {
           SynthDef(\cc_sub, { |out=0, freq=55, amp=0.5, decay=1, gate=1|
@@ -202,7 +202,7 @@ CCSynths {
         }
       ),
 
-      reese: (
+      cc_reese: (
         description: "Reese bass (DnB/dubstep). Three saws detuned by +/- detune param (default 0.5Hz) for phasing movement. LPF at 800Hz default, fixed 0.3 resonance. Gate-controlled.",
         def: {
           SynthDef(\cc_reese, { |out=0, freq=55, amp=0.4, detune=0.5, cutoff=800, gate=1|
@@ -219,7 +219,7 @@ CCSynths {
         }
       ),
 
-      fmbass: (
+      cc_fmbass: (
         description: "FM bass. 2-operator FM: sine modulator at freq*ratio into sine carrier. Index (default 3) controls growl/aggression. Ratio=1 for harmonic, try 0.5 or 2 for different timbres. Gate-controlled.",
         def: {
           SynthDef(\cc_fmbass, { |out=0, freq=55, amp=0.4, index=3, ratio=1, gate=1|
@@ -235,7 +235,7 @@ CCSynths {
       ),
 
       // ========== LEADS ==========
-      lead: (
+      cc_lead: (
         description: "Detuned saw lead. Two saws (1x and 1.005x freq) through resonant LPF. Default cutoff 4kHz, res 0.2. Pannable. ADSR with adjustable att/rel (default 10ms/300ms). Gate-controlled.",
         def: {
           SynthDef(\cc_lead, { |out=0, freq=440, amp=0.5, pan=0, gate=1,
@@ -250,7 +250,7 @@ CCSynths {
       ),
 
       // ========== MELODIC ==========
-      pluck: (
+      cc_pluck: (
         description: "Karplus-Strong plucked string. Physical modeling using Pluck UGen. Color (0-1, default 0.5) controls brightness/damping. Decay (default 2s) sets ring time. One-shot.",
         def: {
           SynthDef(\cc_pluck, { |out=0, freq=440, amp=0.4, decay=2, color=0.5|
@@ -271,7 +271,7 @@ CCSynths {
         }
       ),
 
-      bell: (
+      cc_bell: (
         description: "FM bell. Inharmonic FM ratios (2.4x, 3.1x, 5.2x) for metallic/glassy timbre. Brightness (default 3) controls FM index. Long 4s default decay. One-shot.",
         def: {
           SynthDef(\cc_bell, { |out=0, freq=440, amp=0.3, decay=4, brightness=3|
@@ -289,7 +289,7 @@ CCSynths {
         }
       ),
 
-      keys: (
+      cc_keys: (
         description: "Electric piano (Rhodes-style). FM with 2:1 ratio + 80ms bark envelope on attack for tine character. Brightness (0-1) controls both sustained FM index and attack bark intensity. Gate-controlled.",
         def: {
           SynthDef(\cc_keys, { |out=0, freq=440, amp=0.4, attack=0.01, release=1, brightness=0.5, gate=1|
@@ -309,7 +309,7 @@ CCSynths {
         }
       ),
 
-      strings: (
+      cc_strings: (
         description: "String ensemble. Five detuned saws spread +/- detune*1% around fundamental. LPF at 3kHz tames brightness. Slow 500ms default attack, 1s release. Gate-controlled.",
         def: {
           SynthDef(\cc_strings, { |out=0, freq=440, amp=0.3, attack=0.5, release=1, detune=0.3, gate=1|
@@ -331,7 +331,7 @@ CCSynths {
       ),
 
       // ========== PADS ==========
-      pad: (
+      cc_pad: (
         description: "Soft ambient pad. Three slightly detuned sines (0.99x, 1x, 1.01x) + octave-down saw pair. LPF at 2kHz. Default freq 220Hz, 500ms attack, 1s release. Gate-controlled.",
         def: {
           SynthDef(\cc_pad, { |out=0, freq=220, amp=0.3, attack=0.5, release=1, gate=1|
@@ -347,7 +347,7 @@ CCSynths {
       ),
 
       // ========== TEXTURAL ==========
-      noise: (
+      cc_noise: (
         description: "Filtered noise. White noise through switchable filter: type 0=LPF, 1=HPF, 2=BPF. Cutoff (default 2kHz) and res (default 0.3) shape the sound. Gate-controlled.",
         def: {
           SynthDef(\cc_noise, { |out=0, amp=0.3, cutoff=2000, res=0.3, type=0, gate=1|
@@ -366,7 +366,7 @@ CCSynths {
         }
       ),
 
-      drone: (
+      cc_drone: (
         description: "Warm, evolving saw drone (6 stacked harmonics with independent drift, wandering resonant LPF, built-in reverb)",
         def: {
           SynthDef(\cc_drone, { |out=0, freq=55, amp=0.25, spread=0.8, movement=0.5, filterLo=200, filterHi=1200, room=0.9, mix=0.6, gate=1|
@@ -400,7 +400,7 @@ CCSynths {
         }
       ),
 
-      riser: (
+      cc_riser: (
         description: "Tension riser/sweep. Two detuned saws + layered noise, all sweeping exponentially from startFreq (200Hz) to endFreq (4kHz) over duration (4s). Noise crescendos during sweep. One-shot, self-timed.",
         def: {
           SynthDef(\cc_riser, { |out=0, amp=0.4, duration=4, startFreq=200, endFreq=4000|
@@ -428,7 +428,7 @@ CCSynths {
       ),
 
       // ========== UTILITY ==========
-      click: (
+      cc_click: (
         description: "Metronome click. Sine (default 1500Hz) + HPF noise at 4kHz for transient. Very short 20ms fixed decay. Use freq to change pitch for downbeat/offbeat distinction. One-shot.",
         def: {
           SynthDef(\cc_click, { |out=0, amp=0.3, freq=1500|
@@ -443,7 +443,7 @@ CCSynths {
         }
       ),
 
-      sine: (
+      cc_sine: (
         description: "Pure sine tone. Single SinOsc, no processing. ADSR (10ms att, 100ms dec, 0.9 sus, 100ms rel). Default 440Hz. Useful for testing, layering, or simple tones. Gate-controlled.",
         def: {
           SynthDef(\cc_sine, { |out=0, freq=440, amp=0.3, gate=1|
@@ -456,7 +456,7 @@ CCSynths {
         }
       ),
 
-      sampler: (
+      cc_sampler: (
         description: "Sample playback. Plays stereo buffer with rate control (negative=reverse). Start (0-1) sets playback position. Auto-frees when buffer ends. Use with ~cc.samples.at(name) for buf param. One-shot.",
         def: {
           SynthDef(\cc_sampler, { |out=0, buf=0, amp=0.5, rate=1, start=0|
@@ -468,7 +468,7 @@ CCSynths {
         }
       ),
 
-      grains: (
+      cc_grains: (
         description: "Granular synthesis. GrainBuf with adjustable pos (0-1), posSpeed (movement rate), grainSize (100ms default), grainRate (20/sec), pitch, and stereo spread. Random pan per grain. Gate-controlled.",
         def: {
           SynthDef(\cc_grains, { |out=0, buf=0, amp=0.3, pos=0.5, posSpeed=0, grainSize=0.1, grainRate=20, pitch=1, spread=0.5, gate=1|
@@ -519,9 +519,8 @@ CCSynths {
   }
 
   play { |name ...args|
-    var synthName = ("cc_" ++ name).asSymbol;
     if(loaded.includes(name).not) { this.load(name) };
-    ^Synth(synthName, args);
+    ^Synth(name.asSymbol, args);
   }
 
   list {
