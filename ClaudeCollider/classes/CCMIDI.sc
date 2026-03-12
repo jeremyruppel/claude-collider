@@ -36,11 +36,13 @@ CCMIDI {
   // Multiple synths can be active simultaneously
   // ccMappings: Dictionary of ccNum -> (param, range, curve) or just ccNum -> param
   play { |synthName, channel, mono=false, velToAmp=true, ccMappings|
+    var newSynth;
+
     // Stop existing synth with this name if any
     if(synths[synthName].notNil) { synths[synthName].free };
 
     // Create new MIDI synth
-    var newSynth = CCMIDISynth(synthName, cc.server);
+    newSynth = CCMIDISynth(synthName, cc.server);
     newSynth.channel = channel;
     newSynth.mono = mono;
     newSynth.velToAmp = velToAmp;
