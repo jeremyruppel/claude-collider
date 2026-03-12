@@ -44,6 +44,26 @@ CCMIDISynthTest : UnitTest {
     this.assertEquals(midiSynth.synthName, \newSynth, "Should update synth name");
   }
 
+  // ========== channel setter ==========
+
+  test_channel_setter {
+    midiSynth.channel = 5;
+    this.assertEquals(midiSynth.channel, 5, "Should update channel");
+  }
+
+  test_channel_setter_nil {
+    midiSynth.channel = 5;
+    midiSynth.channel = nil;
+    this.assertEquals(midiSynth.channel, nil, "Should allow nil for all channels");
+  }
+
+  // ========== velToAmp setter ==========
+
+  test_velToAmp_setter {
+    midiSynth.velToAmp = false;
+    this.assertEquals(midiSynth.velToAmp, false, "Should update velToAmp");
+  }
+
   // ========== mono setter ==========
 
   test_mono_setter {

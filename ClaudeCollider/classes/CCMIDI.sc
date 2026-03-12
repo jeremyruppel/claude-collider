@@ -3,7 +3,7 @@
 CCMIDI {
   var <cc;
   var <input;      // CCMIDIInput
-  var <synth;      // Current CCMIDISynth
+  var <synths;     // Dictionary: synthName -> CCMIDISynth
 
   *new { |cc|
     ^super.new.init(cc);
@@ -12,7 +12,7 @@ CCMIDI {
   init { |argCC|
     cc = argCC;
     input = CCMIDIInput();
-    synth = nil;
+    synths = Dictionary[];
   }
 
   // Device connection (delegates to CCMIDIInput)
@@ -33,26 +33,27 @@ CCMIDI {
   }
 
   // Play a synth via MIDI
+  // Multiple synths can be active simultaneously
   // ccMappings: Dictionary of ccNum -> (param, range, curve) or just ccNum -> param
   play { |synthName, channel, mono=false, velToAmp=true, ccMappings|
-    // Stop existing synth if any
-    if(synth.notNil) { synth.free };
+    // Stop existing synth with this name if any
+    if(synths[synthName].notNil) { synths[synthName].free };
 
     // Create new MIDI synth
-    synth = CCMIDISynth(synthName, cc.server);
-    synth.channel = channel;
-    synth.mono = mono;
-    synth.velToAmp = velToAmp;
+    var newSynth = CCMIDISynth(synthName, cc.server);
+    newSynth.channel = channel;
+    newSynth.mono = mono;
+    newSynth.velToAmp = velToAmp;
 
     // Apply CC mappings
     if(ccMappings.notNil) {
       ccMappings.keysValuesDo { |ccNum, mapping|
         if(mapping.isKindOf(Symbol) or: { mapping.isKindOf(String) }) {
           // Simple: ccNum -> param
-          synth.mapCC(ccNum, mapping);
+          newSynth.mapCC(ccNum, mapping);
         } {
           // Full: ccNum -> (param, range, curve)
-          synth.mapCC(
+          newSynth.mapCC(
             ccNum,
             mapping[\param] ?? mapping[0],
             mapping[\range] ?? mapping[1],
@@ -62,15 +63,21 @@ CCMIDI {
       };
     };
 
-    synth.enable;
-    ^synth;
+    newSynth.enable;
+    synths[synthName] = newSynth;
+    ^newSynth;
   }
 
-  // Stop current MIDI synth
-  stop {
-    if(synth.notNil) {
-      synth.free;
-      synth = nil;
+  // Stop MIDI synth(s) - nil stops all, name stops one
+  stop { |synthName|
+    if(synthName.notNil) {
+      if(synths[synthName].notNil) {
+        synths[synthName].free;
+        synths.removeAt(synthName);
+      };
+    } {
+      synths.do(_.free);
+      synths.clear;
     };
     ^true;
   }
@@ -85,7 +92,9 @@ CCMIDI {
   status {
     ^(
       input: input.status,
-      synth: if(synth.notNil) { synth.status } { nil }
+      synths: if(synths.size > 0) {
+        synths.collect(_.status)
+      } { nil }
     );
   }
 }

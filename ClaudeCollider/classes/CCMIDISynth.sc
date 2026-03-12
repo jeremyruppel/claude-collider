@@ -36,6 +36,10 @@ CCMIDISynth {
     defId = idCounter;
   }
 
+  // Setters
+  channel_ { |ch| channel = ch }
+  velToAmp_ { |v| velToAmp = v }
+
   // Forward to manager
   synthName { ^manager.synthName }
   synthName_ { |name| manager.synthName = name }

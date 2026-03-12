@@ -585,8 +585,12 @@ Synth(\\cc_grains, [\\buf, ~cc.samples.at(\\ambient), \\pos, 0.5, \\grainSize, 0
       }
 
       case "stop": {
+        if (synth) {
+          await this.sc.execute(`~cc.midi.stop(\\${synth})`)
+          return { content: [{ type: "text", text: `MIDI synth stopped: ${synth}` }] }
+        }
         await this.sc.execute("~cc.midi.stop")
-        return { content: [{ type: "text", text: "MIDI synth stopped" }] }
+        return { content: [{ type: "text", text: "All MIDI synths stopped" }] }
       }
 
       default:
