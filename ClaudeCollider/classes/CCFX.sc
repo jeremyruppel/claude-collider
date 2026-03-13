@@ -24,7 +24,7 @@ CCFX {
 
   addRoutingSynthDefs {
     SynthDef(\cc_bus_copy, { |in, out|
-      Out.ar(out, In.ar(in, 2));
+      Out.ar(out, InFeedback.ar(in, 2));
     }).add;
   }
 
@@ -37,7 +37,7 @@ CCFX {
         description: "Low pass filter with resonance",
         params: [\cutoff, 1000, \resonance, 0.5],
         func: { |in, cutoff=1000, resonance=0.5|
-          RLPF.ar(In.ar(in, 2), cutoff, resonance);
+          RLPF.ar(InFeedback.ar(in, 2), cutoff, resonance);
         }
       ),
 
@@ -45,7 +45,7 @@ CCFX {
         description: "High pass filter with resonance",
         params: [\cutoff, 200, \resonance, 0.5],
         func: { |in, cutoff=200, resonance=0.5|
-          RHPF.ar(In.ar(in, 2), cutoff, resonance);
+          RHPF.ar(InFeedback.ar(in, 2), cutoff, resonance);
         }
       ),
 
@@ -53,7 +53,7 @@ CCFX {
         description: "Band pass filter",
         params: [\freq, 1000, \bw, 0.5],
         func: { |in, freq=1000, bw=0.5|
-          BPF.ar(In.ar(in, 2), freq, bw);
+          BPF.ar(InFeedback.ar(in, 2), freq, bw);
         }
       ),
 
@@ -62,7 +62,7 @@ CCFX {
         description: "Stereo reverb",
         params: [\mix, 0.33, \room, 0.8, \damp, 0.5],
         func: { |in, mix=0.33, room=0.8, damp=0.5|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           FreeVerb2.ar(sig[0], sig[1], mix, room, damp);
         }
       ),
@@ -71,7 +71,7 @@ CCFX {
         description: "Stereo delay with feedback",
         params: [\time, 0.375, \feedback, 0.5, \mix, 0.5],
         func: { |in, time=0.375, feedback=0.5, mix=0.5|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var delayed = CombL.ar(sig, 2, time, feedback * 4);
           (sig * (1 - mix)) + (delayed * mix);
         }
@@ -81,7 +81,7 @@ CCFX {
         description: "Ping pong stereo delay",
         params: [\time, 0.375, \feedback, 0.5, \mix, 0.5],
         func: { |in, time=0.375, feedback=0.5, mix=0.5|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var left = CombL.ar(sig[0], 2, time, feedback * 4);
           var right = CombL.ar(sig[1] + (left * 0.5), 2, time, feedback * 4);
           var delayed = [left + (right * 0.5), right];
@@ -94,7 +94,7 @@ CCFX {
         description: "Stereo chorus",
         params: [\rate, 0.5, \depth, 0.005, \mix, 0.5],
         func: { |in, rate=0.5, depth=0.005, mix=0.5|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var mod = SinOsc.kr([rate, rate * 1.01], [0, 0.5]).range(0.001, depth);
           var wet = DelayL.ar(sig, 0.1, mod);
           (sig * (1 - mix)) + (wet * mix);
@@ -105,7 +105,7 @@ CCFX {
         description: "Flanger with feedback",
         params: [\rate, 0.2, \depth, 0.003, \feedback, 0.5, \mix, 0.5],
         func: { |in, rate=0.2, depth=0.003, feedback=0.5, mix=0.5|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var mod = SinOsc.kr(rate).range(0.0001, depth);
           var wet = DelayL.ar(sig + (LocalIn.ar(2) * feedback), 0.02, mod);
           LocalOut.ar(wet);
@@ -117,7 +117,7 @@ CCFX {
         description: "Phaser effect",
         params: [\rate, 0.3, \depth, 2, \mix, 0.5],
         func: { |in, rate=0.3, depth=2, mix=0.5|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var mod = SinOsc.kr(rate).range(100, 4000);
           var wet = AllpassL.ar(sig, 0.1, mod.reciprocal, 0);
           (sig * (1 - mix)) + (wet * mix);
@@ -128,7 +128,7 @@ CCFX {
         description: "Amplitude modulation tremolo",
         params: [\rate, 4, \depth, 0.5],
         func: { |in, rate=4, depth=0.5|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var mod = SinOsc.kr(rate).range(1 - depth, 1);
           sig * mod;
         }
@@ -139,7 +139,7 @@ CCFX {
         description: "Soft clip distortion with tone control",
         params: [\drive, 2, \tone, 0.5, \mix, 1],
         func: { |in, drive=2, tone=0.5, mix=1|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var wet = (sig * drive).tanh;
           wet = LPF.ar(wet, tone.linexp(0, 1, 1000, 12000));
           (sig * (1 - mix)) + (wet * mix);
@@ -150,7 +150,7 @@ CCFX {
         description: "Bit crusher with sample rate reduction",
         params: [\bits, 4, \rate, 8000, \mix, 1],
         func: { |in, bits=4, rate=8000, mix=1|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var step = 2.pow(bits.neg.max(-8));  // bits: 1=harsh, 8=subtle
           var crushed = sig.round(step);
           var wet = Latch.ar(crushed, Impulse.ar(rate.clip(500, 44100)));
@@ -162,7 +162,7 @@ CCFX {
         description: "Wave folder distortion",
         params: [\amount, 2, \mix, 1],
         func: { |in, amount=2, mix=1|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var wet = (sig * amount).fold(-1, 1);
           (sig * (1 - mix)) + (wet * mix);
         }
@@ -173,7 +173,7 @@ CCFX {
         description: "Dynamics compressor",
         params: [\threshold, 0.5, \ratio, 4, \attack, 0.01, \release, 0.1, \makeup, 1],
         func: { |in, threshold=0.5, ratio=4, attack=0.01, release=0.1, makeup=1|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           Compander.ar(sig, sig, threshold, 1, ratio.reciprocal, attack, release, makeup);
         }
       ),
@@ -182,7 +182,7 @@ CCFX {
         description: "Brickwall limiter",
         params: [\level, 0.95, \lookahead, 0.01],
         func: { |in, level=0.95, lookahead=0.01|
-          Limiter.ar(In.ar(in, 2), level, lookahead);
+          Limiter.ar(InFeedback.ar(in, 2), level, lookahead);
         }
       ),
 
@@ -190,7 +190,7 @@ CCFX {
         description: "Noise gate",
         params: [\threshold, 0.1, \attack, 0.01, \release, 0.1],
         func: { |in, threshold=0.1, attack=0.01, release=0.1|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var env = Amplitude.kr(sig).max > threshold;
           sig * EnvGen.kr(Env.asr(attack, 1, release), env);
         }
@@ -201,7 +201,7 @@ CCFX {
         description: "Stereo width control",
         params: [\width, 1.5],
         func: { |in, width=1.5|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var mid = (sig[0] + sig[1]) * 0.5;
           var side = (sig[0] - sig[1]) * 0.5 * width;
           [mid + side, mid - side];
@@ -212,7 +212,7 @@ CCFX {
         description: "Automatic stereo panning",
         params: [\rate, 1, \depth, 1],
         func: { |in, rate=1, depth=1|
-          var sig = In.ar(in, 2);
+          var sig = InFeedback.ar(in, 2);
           var pan = SinOsc.kr(rate).range(-1 * depth, depth);
           Balance2.ar(sig[0], sig[1], pan);
         }
