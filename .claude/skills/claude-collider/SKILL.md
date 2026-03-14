@@ -7,6 +7,12 @@ description: Use when live coding music with SuperCollider via ClaudeCollider MC
 
 This skill enables live music synthesis using SuperCollider via the ClaudeCollider MCP server.
 
+## Related Skills
+
+- **Always load `/songwriting`** when composing or improving musical parts (bass lines, chords, melodies, drums). It contains music theory principles and genre conventions that produce better-sounding patterns.
+- Use `/record-tape` to save a session as a replayable tape.
+- Use `/arrange-tape` to compose an arrangement for a tape.
+
 ## Quick Reference
 
 ### Key Rules
