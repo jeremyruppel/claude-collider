@@ -108,7 +108,6 @@ CC {
   }
 
   clear {
-    server.freeAll;
     this.stop;
     Pdef.all.do(_.clear);
     if(Ndef.all[server].notNil) {
