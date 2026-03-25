@@ -30,12 +30,20 @@ CCFormatter {
     var lines = [
       this.formatServer,
       this.formatTempo,
+      this.formatArrangement,
       this.formatOutputs,
       this.formatSamples,
       this.formatPdefs,
       this.formatNdefs
-    ];
+    ].select(_.notNil);
     ^lines.join("\n");
+  }
+
+  formatArrangement {
+    if(CCArrangement.current.notNil and: { CCArrangement.current.isPlaying }) {
+      ^CCArrangement.current.status;
+    };
+    ^nil;
   }
 
   print {

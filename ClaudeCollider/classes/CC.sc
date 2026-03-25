@@ -99,6 +99,7 @@ CC {
   }
 
   stop {
+    if(CCArrangement.current.notNil) { CCArrangement.current.stop };
     Pdef.all.do(_.stop);
     if(Ndef.all[server].notNil) {
       Ndef.all[server].keysValuesDo { |key, ndef|
@@ -108,6 +109,7 @@ CC {
   }
 
   clear {
+    if(CCArrangement.current.notNil) { CCArrangement.current.stop };
     this.stop;
     Pdef.all.do(_.clear);
     if(Ndef.all[server].notNil) {

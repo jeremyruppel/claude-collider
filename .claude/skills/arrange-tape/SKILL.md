@@ -1,6 +1,6 @@
 ---
 name: arrange-tape
-description: Compose an arrangement for a tape — plan which elements enter and exit over time, then generate a playable SC Task.
+description: Compose an arrangement for a tape — plan which elements enter and exit over time, then generate a playable CCArrangement.
 ---
 
 # Arrange Tape
@@ -11,7 +11,7 @@ This skill composes an **arrangement** for a tape — the performance plan for h
 
 A tape's `.scd` defines all the musical elements (Pdefs, Ndefs, effects, sidechains). An arrangement defines *when* each element plays and stops, turning a static loop into a track with structure.
 
-Arrangements are SuperCollider `Task` blocks that play/stop Pdefs and Ndefs on a timeline using `.wait`.
+Arrangements use `CCArrangement` — a declarative class where you list sections as `[name, bars, elements]` arrays. The class handles all Pdef/Ndef start/stop diffing and uses `TempoClock.schedAbs` for drift-free timing.
 
 ## Process
 
@@ -19,7 +19,7 @@ Arrangements are SuperCollider `Task` blocks that play/stop Pdefs and Ndefs on a
 
 Read the tape's `.md` and `.scd` files to understand:
 - What elements exist (all Pdef/Ndef names)
-- The tempo (needed to calculate bar durations)
+- The tempo (needed to calculate total duration)
 - The vibe/genre (informs pacing and conventions)
 - Effects and sidechains (may need to be activated/deactivated per section)
 
@@ -38,8 +38,7 @@ Propose a section-by-section plan. Use standard arrangement conventions for the 
 
 For each section, specify:
 - **Name** and **length** in bars
-- Which elements **enter** (start playing)
-- Which elements **exit** (stop playing)
+- Which elements are **active** during that section
 - Any **parameter changes** (effect tweaks, filter sweeps, etc.)
 
 Present the plan as a table or outline and get user approval before writing code.
@@ -48,7 +47,7 @@ Present the plan as a table or outline and get user approval before writing code
 
 **IMPORTANT:** The arrangement does NOT go into the tape's `.scd` file. Tape `.scd` files define elements only — no arrangement logic. Instead, do one of:
 
-**Option A: Live performance** — Execute the Task directly via `cc_execute` during a session.
+**Option A: Live performance** — Execute via `cc_execute` during a session.
 
 **Option B: Separate file** — Write to `tapes/<name>-arrangement.scd` if the user wants to save it.
 
@@ -59,41 +58,36 @@ The arrangement code follows this pattern:
 // (but remove .play from each Pdef/Ndef — arrangement controls when they start)
 
 // Then execute the arrangement:
-~arrangement = Task({
-    var bar = <beats-per-bar>;  // usually 4
+CCArrangement([
+    [\intro, 8, [\kick, \hat]],
+    [\build, 8, [\kick, \hat, \bass, \rim]],
+    [\drop, 16, [\kick, \hat, \bass, \rim, \lead, \pad]],
+    [\break, 8, [\hat, \pad]],
+    [\drop2, 16, [\kick, \hat, \bass, \rim, \lead, \pad]],
+    [\outro, 8, [\kick, \hat]],
+]).play;
+```
 
-    ">>> SECTION NAME".postln;
-    Pdef(\element1).play(quant: <bar>);
-    Pdef(\element2).play(quant: <bar>);
-    (<bars> * bar).wait;
+Each section is `[name, bars, elements]`:
+- **name** — a symbol identifying the section (posted to console automatically)
+- **bars** — how many bars this section lasts
+- **elements** — which Pdefs/Ndefs should be playing during this section
 
-    ">>> NEXT SECTION".postln;
-    Pdef(\element3).play(quant: <bar>);
-    (<bars> * bar).wait;
+The class automatically diffs element lists between sections — elements not in the next section are stopped, new elements are started. You never need to manually call `.play` or `.stop` on individual Pdefs.
 
-    // ... more sections ...
+**Optional action function:** Add a 4th element for custom per-section logic (effect changes, parameter tweaks):
 
-    ">>> OUTRO".postln;
-    Pdef(\element1).stop;
-    (<bars> * bar).wait;
-
-    ">>> DONE".postln;
-}, TempoClock.default);
-
-~arrangement.play;
+```supercollider
+[\drop, 16, [\kick, \hat, \bass, \lead], { ~cc.fx.route(\lead, \delay) }]
 ```
 
 **Rules:**
 
-- Use `TempoClock.default` so timing follows the tape's tempo
-- `var bar = 4` for 4/4 time (most common). Adjust for other meters.
-- Always `quant:` Pdefs to the bar length for clean transitions
-- Log section names with `.postln` so progress is visible
-- Stop elements cleanly — don't rely on `~cc.clear` mid-arrangement
+- List **all** active elements per section — the class computes what to start/stop
 - Build tension by layering elements gradually — don't start everything at once
 - Breaks should strip down to 2-3 elements, then rebuild
-- Outros should remove elements in reverse order of introduction, with the most fundamental element (usually kick) last
-- End with all Pdefs/Ndefs stopped
+- Outros should remove elements gradually, with the most fundamental element (usually kick) last
+- The final section's elements are automatically stopped when the arrangement ends
 
 ### Step 4: Update the tape's `.md`
 
@@ -102,8 +96,8 @@ Add or update the `## Arrangement` section in the tape's `.md` to document what 
 ```markdown
 ## Arrangement (~<duration>)
 
-1. **<Section>** (<bars> bars) - <what enters/exits, brief description>
-2. **<Section>** (<bars> bars) - <what enters/exits>
+1. **<Section>** (<bars> bars) - <description of active elements>
+2. **<Section>** (<bars> bars) - <description of active elements>
 ...
 ```
 
@@ -114,7 +108,7 @@ Include approximate total duration calculated from tempo and total bars:
 
 When playing a tape that has an arrangement:
 1. Execute the tape's `.scd` blocks to define all elements, but **don't play them** — either remove `.play` calls or stop everything after defining
-2. Execute the arrangement Task to perform the piece
+2. Execute the arrangement to perform the piece
 
 When playing a tape without an arrangement:
 - Execute blocks in order as normal (elements start immediately)

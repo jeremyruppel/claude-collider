@@ -55,6 +55,7 @@ The SC backend providing live coding toolkit classes:
 - **CCOutput** - Single hardware output destination (mono or stereo pair) with limiter protection
 - **CCRouter** - Effect-to-effect connections, named effect chains, and source-to-effect routing
 - **CCSidechain** - Sidechain compressor management for ducking effects (e.g., kick ducking bass)
+- **CCArrangement** - Declarative song arrangement sequencer. Define sections as `[name, bars, elements]` arrays; handles Pdef/Ndef start/stop diffing, drift-free absolute beat scheduling via `TempoClock.schedAbs`, and live status tracking. Supports `goto` for jumping to sections during live performance
 
 ## Key Design Patterns
 
