@@ -42,6 +42,16 @@ Dm7 | C/E (alternating, 4 bars each)
 - Lead melody is exactly 2 bars (8 beats) with syncopated durations
 - Hats use long-short duration pairs (0.3, 0.2) for swing feel
 
+## Arrangement (~2:15)
+
+1. **Intro** (8 bars) - Kick and hats only, establishes the groove
+2. **Build** (8 bars) - Clap and acid bass join, rhythm section locks in
+3. **Drop 1** (16 bars) - Lead melody and stabs arrive, full energy
+4. **Break** (8 bars) - Strip to hats and pad, tension and space
+5. **Build 2** (8 bars) - Kick, clap, bass rebuild under the pad
+6. **Drop 2** (16 bars) - Everything together, pad adds warmth under the full mix
+7. **Outro** (8 bars) - Elements peel away, kick/hats/pad fade out
+
 ## Playback
 
-Execute each block from `st-geneviv.scd` verbatim via `cc_execute`. Run blocks in order — do not rewrite or improvise the patterns.
+Execute each block from `st-geneviv.scd` verbatim via `cc_execute`. Run blocks in order — do not rewrite or improvise the patterns. To play the arrangement, execute `st-geneviv-arrangement.scd` after all elements are defined.
