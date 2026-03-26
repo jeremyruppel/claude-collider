@@ -460,8 +460,10 @@ CCSynths {
         description: "Sample playback. Plays stereo buffer with rate control (negative=reverse). Start (0-1) sets playback position. Auto-frees when buffer ends. Use with ~cc.samples.at(name) for buf param. One-shot.",
         def: {
           SynthDef(\cc_sampler, { |out=0, buf=0, amp=0.5, rate=1, start=0|
-            var sig;
-            sig = PlayBuf.ar(2, buf, rate * BufRateScale.kr(buf), startPos: start * BufFrames.kr(buf), doneAction: 2);
+            var sig, frames;
+            frames = BufFrames.kr(buf);
+            FreeSelf.kr(frames <= 0);
+            sig = PlayBuf.ar(2, buf, rate * BufRateScale.kr(buf), startPos: start * frames, doneAction: 2);
             sig = sig * amp;
             Out.ar(out, sig);
           })
