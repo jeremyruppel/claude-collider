@@ -1,129 +1,142 @@
 # Melody & Lead Lines
 
+## Rule: Use CCMotif and CCPhrase
+
+**NEVER write a melody as a flat Pseq longer than 8 elements.** Use CCMotif for motifs and CCPhrase for structured development. This is the difference between a melody that sounds composed and one that sounds random.
+
+```supercollider
+// BAD: flat array, no structure, sounds random or contrived
+\degree, Pseq([0, 2, 4, Rest(), 2, 4, 5, Rest(), 3, 4, 2, 0, Rest(), Rest(), Rest(), Rest()], inf)
+
+// GOOD: motif with structured development
+var m = CCMotif([0, 2, 4, Rest()]);
+\degree, CCPhrase(m, [\state, \state, \transpose, 2, \invert])
+```
+
+## CCMotif — Transformable Melodic Fragment
+
+A CCMotif wraps a short degree array (2–6 notes + rests) and provides transformations. Each transformation returns a new CCMotif. Since it's a Pattern subclass, it works directly in Pseq and Pn.
+
+```supercollider
+var m = CCMotif([0, 2, 4, Rest()]);
+
+m.transpose(2)    // [2, 4, 6, Rest()]
+m.transpose(-1)   // [-1, 1, 3, Rest()]
+m.invert           // [0, -2, -4, Rest()] — mirror around first note
+m.retrograde       // [Rest(), 4, 2, 0]
+m.extend([3, 2])   // [0, 2, 4, Rest(), 3, 2]
+m.truncate(3)      // [0, 2, 4]
+
+// Chainable
+m.transpose(2).invert   // [2, 0, -2, Rest()]
+
+// Works directly with SC patterns
+\degree, Pseq([Pn(m, 2), m.transpose(2), m.invert], inf)
+```
+
+## CCPhrase — Motif Development Sequencer
+
+CCPhrase takes a motif and a development plan, producing a structured phrase that loops.
+
+**Operations:**
+- `\state` — play motif as-is
+- `\transpose, n` — play shifted by n degrees
+- `\invert` — play mirrored around first note
+- `\retrograde` — play reversed
+- `\extend, [degrees]` — play with extra notes appended
+
+```supercollider
+var m = CCMotif([0, 2, 4, Rest()]);
+
+// State it, repeat it, vary it, resolve it
+\degree, CCPhrase(m, [
+    \state,          // state the motif
+    \state,          // repeat so it registers
+    \transpose, 2,   // variation: shift up
+    \invert          // variation: mirror
+])
+```
+
+## CCMelody — Common Structures
+
+Convenience factory methods for standard melodic forms.
+
+### Call and response
+```supercollider
+var call = CCMotif([0, 2, 4, 5, Rest(), Rest()]);
+var resp = CCMotif([4, 3, 2, 0, Rest(), Rest()]);
+\degree, CCMelody.callAndResponse(call, resp)
+```
+
+### Auto-develop (state ×2, transpose, resolve)
+```supercollider
+\degree, CCMelody.develop(CCMotif([0, 2, 4, Rest()]))
+```
+
 ## Contour Shapes
 
-Every good melody has a recognizable shape. Choose one intentionally:
+Every motif has a shape. Choose one intentionally:
 
-### Arch (up then down)
-Natural, singable. The most common melodic shape:
-```supercollider
-\degree, Pseq([0, 2, 4, 5, 4, 2, 0, Rest()], inf)
-```
-
-### Descent
-Tension release, gravity pulling downward:
-```supercollider
-\degree, Pseq([5, 4, 3, 2, 1, 0, Rest(), Rest()], inf)
-```
-
-### Wave
-Gentle oscillation, hypnotic. Good for pads and ambient leads:
-```supercollider
-\degree, Pseq([0, 2, 4, 2, 0, -1, 0, 2], inf)
-```
-
-### Plateau
-Repeated note with rhythm as the hook. Pitch barely moves:
-```supercollider
-\degree, Pseq([0, 0, 0, 2, 0, 0, Rest(), 0], inf),
-\dur, Pseq([0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.5, 0.5], inf)
-```
+- **Arch** (up then down): `CCMotif([0, 2, 4, 2, 0, Rest()])` — natural, singable
+- **Descent** (gravity): `CCMotif([5, 4, 3, 2, 0, Rest()])` — tension release
+- **Wave** (oscillation): `CCMotif([0, 2, 4, 2, 0, -1, 0, Rest()])` — hypnotic, good for arps
+- **Plateau** (repeated note): `CCMotif([0, 0, 0, 2, 0, Rest()])` — rhythm is the hook
 
 ## Step vs Leap
 
-### Mostly stepwise motion
-Adjacent scale degrees (0→1, 3→2) sound smooth and singable. This should be the default.
-
-### Leaps for emphasis
-A leap (jump of 3+ degrees) grabs attention. Use sparingly. After a leap, resolve by step in the opposite direction:
-```supercollider
-// Leap up to 5, then step back down
-\degree, Pseq([0, 4, 3, 2, 1, 0, Rest(), Rest()], inf)
-//             ^ leap up   ^ stepwise descent
-```
-
-### Large leaps (>5th) should be rare
-An octave jump or 6th is powerful — save it for climactic moments.
-
-## Motif Development
-
-The secret to melodies that feel composed, not random:
-
-### 1. State a 2–4 note motif
-```supercollider
-\degree, Pseq([0, 2, 4, Rest()], 1)  // the motif: three rising notes
-```
-
-### 2. Repeat it
-```supercollider
-\degree, Pseq([0, 2, 4, Rest()], 2)  // say it again so it registers
-```
-
-### 3. Vary one thing
-Change rhythm, starting pitch, octave, or add a note:
-```supercollider
-// Variation 1: same shape, different starting note
-\degree, Pseq([2, 4, 5, Rest()], 1)
-
-// Variation 2: same notes, different rhythm
-\degree, Pseq([0, 2, 4, Rest()], 1),
-\dur, Pseq([0.5, 0.25, 0.25, 1], 1)  // was [0.25, 0.25, 0.25, 0.25]
-
-// Variation 3: add a tail
-\degree, Pseq([0, 2, 4, 3, 2, Rest()], 1)
-```
-
-Full example combining motif + variations:
-```supercollider
-Pdef(\melody, Pbind(
-    \instrument, \cc_lead,
-    \scale, Scale.dorian, \root, 2, \octave, 5,
-    \degree, Pseq([
-        0, 2, 4, Rest(),           // motif
-        0, 2, 4, Rest(),           // repeat
-        2, 4, 5, Rest(),           // vary: shift up
-        0, 2, 4, 3, 2, Rest()     // vary: add tail
-    ], inf),
-    \dur, Pseq([
-        0.25, 0.25, 0.25, 0.75,
-        0.25, 0.25, 0.25, 0.75,
-        0.25, 0.25, 0.25, 0.75,
-        0.25, 0.25, 0.25, 0.25, 0.25, 0.5
-    ], inf),
-    \amp, 0.4
-));
-```
+- **Mostly stepwise**: Adjacent degrees (0→1, 3→2) sound smooth. This is the default.
+- **Leaps for emphasis**: A jump of 3+ degrees grabs attention. Resolve by step in the opposite direction.
+- **Large leaps (>5th)**: Save for climactic moments. An octave jump is powerful — use it once.
 
 ## Phrasing
 
-### 2-bar or 4-bar phrases
-Don't write continuous streams of notes. Melodies breathe in phrases, just like speech:
-
-```supercollider
-// 2-bar phrase with breathing room
-\degree, Pseq([0, 2, 4, 3, 2, 0, Rest(), Rest()], inf),  // 1 bar melody, 1 bar rest
-\dur, 0.25
-```
+### Phrase length
+Motifs should be 2–6 notes. Phrases (via CCPhrase) should total 2 or 4 bars. Count your beats.
 
 ### Leave gaps
-`Rest()` between phrases is not empty — it's anticipation. The listener waits for the next phrase.
+End motifs with `Rest()`. The silence is anticipation, not emptiness.
 
 ### Call and response
-First phrase asks (ends on a tension note), second phrase answers (resolves to root):
+First phrase asks (ends on tension — degree 3, 4, or 5). Second phrase answers (resolves to 0 or 2):
 ```supercollider
-\degree, Pseq([
-    0, 2, 4, 5,  Rest(), Rest(),  // call: ends on 5 (tension)
-    4, 3, 2, 0,  Rest(), Rest()   // response: resolves to root
-], inf)
+var call = CCMotif([0, 2, 4, 5, Rest(), Rest()]);   // tension
+var resp = CCMotif([4, 3, 2, 0, Rest(), Rest()]);   // resolve
+\degree, CCMelody.callAndResponse(call, resp)
+```
+
+## Melody in Electronic Music
+
+Electronic melodies are different from pop/rock. They need to:
+- **Be sparse** — 3–5 notes per motif, lots of Rest()
+- **Loop as a hook** — the phrase cycle IS the melody
+- **Leave room** — effects (delay, reverb) fill space, not more notes
+- **Stay in register** — octave 4–5 for leads, don't overlap bass or pads
+
+## Full Example
+
+```supercollider
+var m = CCMotif([0, 2, 4, Rest()]);
+
+Pdef(\lead, Pbind(
+    \instrument, \cc_lead,
+    \scale, Scale.dorian, \root, 2, \octave, 5,
+    \degree, CCPhrase(m, [
+        \state,           // state the motif
+        \state,           // repeat
+        \transpose, 2,    // shift up — new territory
+        \extend, [3, 2, Rest()]  // add a descending tail — resolution
+    ]),
+    \dur, 0.25,
+    \amp, 0.4,
+    \sustain, 0.15
+)).play(quant: 4);
 ```
 
 ## Rhythmic Displacement
 
-Same notes, shifted by an 8th or 16th — instant variation with zero melodic effort:
+Same motif, shifted by a 16th — instant variation:
 ```supercollider
-// Original
-\degree, Pseq([0, 2, 4, Rest()], 1), \dur, 0.25
-
-// Displaced by one 16th: add a rest at the start
-\degree, Pseq([Rest(), 0, 2, 4], 1), \dur, 0.25
+var m = CCMotif([0, 2, 4, Rest()]);
+// Displace by adding a rest at the start
+var displaced = CCMotif([Rest()]).extend(m.degrees);
 ```
