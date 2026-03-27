@@ -29,7 +29,15 @@ Pdef(\clap, Pbind(
     \decay, 0.12
 )).play(quant: 4);
 
-// 5. Bass - acid line in D Dorian, syncopated with filter sweeps
+// 5. Open hat - and of 2 and 4
+Pdef(\ohat, Pbind(
+    \instrument, \cc_openhat, \freq, 48,
+    \dur, Pseq([Rest(0.5), 0.5, Rest(1), Rest(0.5), 0.5, Rest(1)], inf),
+    \amp, Pseq([0, 0.3, 0, 0, 0.25, 0], inf),
+    \decay, 0.15
+)).play(quant: 4);
+
+// 6. Bass - acid line in D Dorian, syncopated with filter sweeps
 Pdef(\bass, Pbind(
     \instrument, \cc_acid,
     \scale, Scale.dorian, \root, 2, \octave, 3,
@@ -38,16 +46,6 @@ Pdef(\bass, Pbind(
     \amp, Pseq([0.55, 0.25, 0, 0.45, 0.5, 0, 0.35, 0.2, 0.55, 0.25, 0, 0.4, 0.5, 0, 0.3, 0], inf),
     \cutoff, Pseq([400, 600, 400, 1800, 500, 400, 1200, 500, 400, 700, 400, 2200, 500, 400, 800, 400], inf),
     \res, 0.35, \decay, 0.18, \sustain, 0.12
-)).play(quant: 4);
-
-// 6. Lead - motif-based melody in D Dorian with syncopation (2 bar phrase)
-Pdef(\lead, Pbind(
-    \instrument, \cc_lead,
-    \scale, Scale.dorian, \root, 2, \octave, 5,
-    \degree, Pseq([Rest(), 0, 2, 4, Rest(), 3, 2, 0, Rest(), 4, 3, 2, 0, -1, 0, Rest()], inf),
-    \dur, Pseq([0.25, 0.5, 0.25, 0.75, 0.25, 0.5, 0.25, 0.75, 0.5, 0.25, 0.5, 0.5, 0.25, 0.25, 0.75, 1.5], inf),
-    \amp, Pseq([0, 0.35, 0.25, 0.4, 0, 0.3, 0.2, 0.3, 0, 0.35, 0.25, 0.2, 0.35, 0.2, 0.3, 0], inf),
-    \cutoff, 3500, \sustain, 0.12, \decay, 0.15
 )).play(quant: 4);
 
 // 7. Stabs - pluck fifths on offbeats
@@ -82,14 +80,8 @@ Ndef(\pad, {
 ~cc.fx.set(\fx_delay, \mix, 0.3, \time, 0.375, \fb, 0.4);
 ~cc.fx.route(\hats, \fx_delay);
 
-~cc.fx.load(\chorus);
-~cc.fx.set(\fx_chorus, \mix, 0.4, \depth, 0.006, \rate, 0.8);
-
 ~cc.fx.load(\pingpong);
 ~cc.fx.set(\fx_pingpong, \mix, 0.3, \time, 0.375, \fb, 0.45);
-
-~cc.fx.route(\lead, \fx_chorus);
-~cc.fx.connect(\fx_chorus, \fx_pingpong);
 ~cc.fx.route(\stabs, \fx_pingpong);
 
 // 10. Sidechain - kick ducks bass

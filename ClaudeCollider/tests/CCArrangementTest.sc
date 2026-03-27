@@ -11,6 +11,7 @@ CCArrangementTest : UnitTest {
   tearDown {
     if(CCArrangement.current.notNil) { CCArrangement.current.stop };
     Pdef.all.do(_.clear);
+    Ndef.all[Server.default.name] !? { |space| space.do(_.clear) };
   }
 
   // ========== constructor tests ==========
@@ -113,6 +114,28 @@ CCArrangementTest : UnitTest {
     this.assert(true, "Should warn but not throw for missing element");
   }
 
+  // ========== startElement Ndef tests ==========
+
+  test_startElement_ndef {
+    this.bootServer;
+    arr = CCArrangement([]);
+    Ndef(\testNdefStart, { SinOsc.ar(440, 0, 0.0) });
+    arr.startElement(\testNdefStart);
+    0.1.wait;
+    this.assert(Ndef(\testNdefStart).isPlaying, "Should play the Ndef");
+    Ndef(\testNdefStart).stop;
+  }
+
+  test_startElement_ndef_routesToMainOutput {
+    this.bootServer;
+    arr = CCArrangement([]);
+    Ndef(\testNdefBus, { SinOsc.ar(440, 0, 0.0) });
+    arr.startElement(\testNdefBus);
+    0.1.wait;
+    this.assertEquals(Ndef(\testNdefBus).monitor.out, 0, "Should route Ndef to bus 0");
+    Ndef(\testNdefBus).stop;
+  }
+
   // ========== stopElement tests ==========
 
   test_stopElement_pdef {
@@ -122,6 +145,15 @@ CCArrangementTest : UnitTest {
     0.1.wait;
     arr.stopElement(\testStop);
     this.assert(Pdef(\testStop).isPlaying.not, "Should stop the Pdef");
+  }
+
+  test_stopElement_ndef {
+    this.bootServer;
+    arr = CCArrangement([]);
+    Ndef(\testNdefStop, { SinOsc.ar(440, 0, 0.0) }).play;
+    0.1.wait;
+    arr.stopElement(\testNdefStop);
+    this.assert(Ndef(\testNdefStop).isPlaying.not, "Should stop the Ndef");
   }
 
   // ========== play/stop/current tests ==========

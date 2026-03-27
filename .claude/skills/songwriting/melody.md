@@ -91,7 +91,7 @@ Every motif has a shape. Choose one intentionally:
 ## Phrasing
 
 ### Phrase length
-Motifs should be 2–6 notes. Phrases (via CCPhrase) should total 2 or 4 bars. Count your beats.
+Motifs should be 2–6 notes. Phrases (via CCPhrase) should total **1 or 2 bars** — 4 bars is too long to register as repeating. Count your beats: motif notes × dur × number of development steps must equal the target bar count × beatsPerBar. Always verify the math before playing.
 
 ### Leave gaps
 End motifs with `Rest()`. The silence is anticipation, not emptiness.

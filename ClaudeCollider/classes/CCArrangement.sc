@@ -15,7 +15,6 @@ CCArrangement {
   var <sectionBars;
   var <isPlaying;
   var <activeElements;
-  var ndefAmps;
   var sectionBeats; // precomputed absolute beat positions for each section
   var startBeat;    // absolute beat when arrangement started
 
@@ -28,7 +27,6 @@ CCArrangement {
     beatsPerBar = argBeatsPerBar;
     isPlaying = false;
     activeElements = Set[];
-    ndefAmps = Dictionary[];
     sectionBeats = [];
   }
 
@@ -154,10 +152,9 @@ CCArrangement {
     if(Pdef.all[name].notNil) {
       Pdef(name).play(quant: beatsPerBar);
     } {
-      var proxySpace = Ndef.all[Server.default];
+      var proxySpace = Ndef.all[Server.default.name];
       if(proxySpace.notNil and: { proxySpace[name].notNil }) {
-        var amp = ndefAmps[name] ?? 1;
-        Ndef(name).set(\amp, amp);
+        Ndef(name).play(0);
       } {
         "CCArrangement: element '%' not found".format(name).warn;
       };
@@ -168,12 +165,9 @@ CCArrangement {
     if(Pdef.all[name].notNil) {
       Pdef(name).stop;
     } {
-      var proxySpace = Ndef.all[Server.default];
+      var proxySpace = Ndef.all[Server.default.name];
       if(proxySpace.notNil and: { proxySpace[name].notNil }) {
-        if(ndefAmps[name].isNil) {
-          ndefAmps[name] = Ndef(name).get(\amp) ?? 1;
-        };
-        Ndef(name).set(\amp, 0);
+        Ndef(name).stop;
       };
     };
   }
