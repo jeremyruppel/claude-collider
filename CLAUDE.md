@@ -1,76 +1,153 @@
-# CLAUDE.md
+# Claude Collider
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Claude Collider is an MCP server that lets Claude generate and execute SuperCollider code in real-time for live music synthesis.
 
-IF YOU ARE MAKING MUSIC, STOP READING THI SFILE AND USE THE /claude-collider SKILL.
-THIS IS FOR CODING HELP ONLY.
+## Skills
 
-## Project Overview
+| Skill | Description |
+| --- | --- |
+| `/claude-collider` | Live code music with SuperCollider |
+| `/play-tape` | Play a tape file (loads patterns, effects, arrangement) |
+| `/arrange-tape` | Compose a CCArrangement for a tape |
+| `/record-tape` | Record a live session as a tape (md + scd pair) |
+| `/songwriting` | Music theory reference for composing patterns and melodies |
 
-Claude Collider is an MCP (Model Context Protocol) server that enables Claude to generate and execute SuperCollider code in real-time for live music synthesis. It bridges Claude's natural language understanding with SuperCollider's audio synthesis capabilities.
+## Prefer MCP Tools Over Raw SC Code
 
-## Build & Run Commands
+Always use the dedicated MCP tools (`cc_fx`, `cc_sample`, `cc_midi`, `cc_control`, `cc_recording`, `cc_output`, `cc_reboot`, `cc_status`) instead of writing equivalent SuperCollider code with `cc_execute`. The tools handle error cases, validate input, and keep the server state consistent.
 
-```bash
-npm install      # Install dependencies
-npm run build    # Compile TypeScript to dist/
-npm start        # Run compiled server
-npm run dev      # Watch mode for development
-npm test         # Run tests
+Use `cc_execute` only for things the tools don't cover: Pdef/Ndef definitions, custom SynthDefs, CCArrangement, and other raw SC code.
+
+## Quick Reference
+
+1. **Drums need `\freq, 48`** — without it, drums sound wrong
+2. **Use Pdef for rhythms** — patterns that repeat
+3. **Use Ndef for continuous** — pads, drones, textures
+4. **Symbols not strings** — `\kick` not `"kick"`
+5. **Semicolons between statements** — no trailing semicolon
+6. **NEVER Synth() inside Ndef** — causes infinite spawning
+
+---
+
+# CC API Reference
+
+Main entry point stored in `~cc`. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`.
+
+## CC - Main Class
+
+| Method | Description |
+| --- | --- |
+| `tempo(bpm)` | Get/set tempo in BPM |
+| `stop` | Stop all Pdefs and Ndefs |
+| `clear` | Full reset: free all synths, patterns, effects, samples |
+| `status` | Get formatted status string |
+| `reboot(device, numOutputs, onComplete)` | Restart the server |
+
+## ~cc.synths - Synth Definitions
+
+27+ pre-built synths with `cc_` prefix.
+
+| Method | Description |
+| --- | --- |
+| `list` | Comma-separated list of synth names |
+| `describe` | Detailed descriptions with params |
+| `play(name, ...args)` | One-shot synth playback |
+
+```supercollider
+~cc.synths.play(\cc_kick, \freq, 48, \amp, 0.8);
 ```
 
-Debug mode: `DEBUG=claude-collider node dist/index.js` (logs to `/tmp/claude-collider.log`)
+## ~cc.fx - Effects System
 
-## Architecture
+18 built-in effects with routing, chaining, and sidechaining.
 
-The codebase has two main components:
+| Method | Description |
+| --- | --- |
+| `load(name, slot)` | Load effect (slot defaults to `fx_<name>`) |
+| `set(slot, ...args)` | Set effect parameters |
+| `bypass(slot, bool)` | Bypass/re-enable effect |
+| `remove(slot)` | Remove effect |
+| `route(source, target)` | Route Pdef/Ndef to effect |
+| `connect(from, to)` | Chain effect output to another effect |
+| `sidechain(name, threshold, ratio, attack, release)` | Create sidechain compressor |
+| `routeTrigger(source, sidechainName, passthrough)` | Route trigger to sidechain |
+| `routeToOutput(source, channels)` | Route to hardware outputs |
+| `list` | Available effect names |
+| `describe` | Effect descriptions with params |
+| `status` | Current effects and routing |
 
-### 1. TypeScript MCP Server (`/src`)
+```supercollider
+~cc.fx.load(\reverb);
+~cc.fx.route(\bass, \fx_reverb);
+~cc.fx.set(\fx_reverb, \mix, 0.5, \room, 0.9);
+```
 
-- **index.ts** - Main entry point, registers 35 tools for Claude to call, handles all tool request routing
-- **supercollider.ts** - Core class managing SuperCollider process lifecycle (boot, execute, stop, quit). Uses EventEmitter with state machine (Stopped, Booting, Running)
-- **process.ts** - Spawns and manages sclang child process, handles stdin/stdout with OutputParser
-- **parser.ts** - Parses SuperCollider output, detects execution results using `<<<END<<<` delimiter
-- **tokenizer.ts** - Transforms multi-line SC code to single-line format (required by sclang stdin)
-- **config.ts** - Configuration with environment variable overrides and auto-detection of sclang path
-- **types.ts** - TypeScript types and enums (ServerState, PendingOperation)
-- **debug.ts** - Debug logging utility, writes to `/tmp/claude-collider.log` when DEBUG=claude-collider
-- **effects.ts** - Effects class that loads effect descriptions dynamically from SuperCollider
-- **synthdefs.ts** - SynthDefs class that loads synth descriptions dynamically from SuperCollider
-- **samples.ts** - Samples class wrapping sample playback, loading, and freeing operations
+## ~cc.midi - MIDI Control
 
-### 2. SuperCollider Quark (`/ClaudeCollider`)
+| Method | Description |
+| --- | --- |
+| `listDevices` | List available MIDI devices |
+| `connect(device, direction)` | Connect device (`\in` or `\out`) |
+| `connectAll` | Connect all MIDI inputs |
+| `disconnect(direction)` | Disconnect (`\in`, `\out`, or `\all`) |
+| `play(synthName, channel, mono, velToAmp, ccMappings)` | Play synth via MIDI (multiple allowed) |
+| `stop(synthName)` | Stop one synth, or all if nil |
+| `status` | Get MIDI status |
 
-The SC backend providing live coding toolkit classes:
+```supercollider
+~cc.midi.connectAll;
+~cc.midi.play(\cc_lead, 1, false, true, (
+  1: \cutoff,
+  74: (param: \res, range: [0.1, 0.9])
+));
+~cc.midi.stop(\cc_lead);
+```
 
-- **CC** - Main facade class, entry point stored in `~cc`. Manages server boot, tempo, stop/clear operations. Access subsystems via `~cc.synths`, `~cc.fx`, `~cc.midi`, `~cc.samples`, `~cc.recorder`, `~cc.state`, `~cc.formatter`, `~cc.outputs`, `~cc.router`, `~cc.sidechains`
-- **CCSynths** - SynthDef management with 27+ pre-built instruments organized by category: drums (kick, snare, hihat, clap, openhat, tom, rim, shaker, cowbell), bass (bass, acid, sub, reese, fmbass), leads (lead), melodic (pluck, bell, keys, strings), pads (pad), textural (noise, drone, riser), utility (click, sine, sampler, grains). All synths use `cc_` prefix
-- **CCFX** - Ndef-based effects system with 18 effects organized by type: filters (lpf, hpf, bpf), time-based (reverb, delay, pingpong), modulation (chorus, flanger, phaser, tremolo), distortion (distortion, bitcrush, wavefold), dynamics (compressor, limiter, gate), stereo (widener, autopan). Supports effect routing, chaining, and sidechaining
-- **CCMIDI** - MIDI device management supporting multiple simultaneous synths, polyphonic/monophonic note mapping, CC-to-bus mapping with configurable ranges and curves, and per-synth stop
-- **CCSamples** - Sample management with lazy loading from `~/.claudecollider/samples`. Supports WAV/AIFF, playback with rate control, and directory rescanning
-- **CCRecorder** - Audio recording to WAV files in `~/.claudecollider/recordings` with auto-generated timestamped filenames
-- **CCState** - Bus and session state management, creates and tracks control/audio buses in the current environment
-- **CCFormatter** - Status formatting for console output, generates server status, tempo, sample counts, playing Pdefs/Ndefs, and detailed routing debug visualization
-- **CCOutputs** - Hardware output routing manager with per-output limiters. Routes sources to specific outputs or stereo pairs
-- **CCOutput** - Single hardware output destination (mono or stereo pair) with limiter protection
-- **CCRouter** - Effect-to-effect connections, named effect chains, and source-to-effect routing
-- **CCSidechain** - Sidechain compressor management for ducking effects (e.g., kick ducking bass)
-- **CCArrangement** - Declarative song arrangement sequencer. Define sections as `[name, bars, elements]` arrays; handles Pdef/Ndef start/stop diffing, drift-free absolute beat scheduling via `TempoClock.schedAbs`, and live status tracking. Supports `goto` for jumping to sections during live performance
+## ~cc.samples - Sample Management
 
-## Key Design Patterns
+Samples from `~/.claudecollider/samples`.
 
-**Single-line protocol**: All SC code sent to sclang must be on a single line. The tokenizer handles this safely, preserving comments and strings.
+| Method | Description |
+| --- | --- |
+| `load(name)` | Load sample buffer into memory |
+| `at(name)` | Get buffer (nil if not loaded) |
+| `play(name, rate, amp)` | One-shot playback |
+| `free(name)` | Free buffer |
+| `reload` | Rescan directory for new files |
+| `names` | Array of sample names |
+| `list` | Comma-separated list |
 
-**Result extraction**: Code is wrapped with unique markers (`<<<END<<<`) for reliable result parsing.
+```supercollider
+~cc.samples.load(\kick);
+~cc.samples.play(\kick, 1, 0.8);
+Pdef(\samp, Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1)).play
+```
 
-**State machine**: ServerState enum (Stopped, Booting, Running) controls boot sequence and prevents race conditions.
+## ~cc.recorder - Audio Recording
 
-## Environment Variables
+Records to `~/.claudecollider/recordings`.
 
-| Variable             | Default                        | Description                  |
-| -------------------- | ------------------------------ | ---------------------------- |
-| `SCLANG_PATH`        | Auto-detected                  | Path to sclang executable    |
-| `SC_BOOT_TIMEOUT`    | 10000                          | Boot timeout in ms           |
-| `SC_EXEC_TIMEOUT`    | 2000                           | Execution timeout in ms      |
-| `CC_SAMPLES_PATH`    | `~/.claudecollider/samples`    | Directory for audio samples  |
-| `CC_RECORDINGS_PATH` | `~/.claudecollider/recordings` | Directory for recorded audio |
+| Method | Description |
+| --- | --- |
+| `start(filename)` | Start recording (auto-names if nil) |
+| `stop` | Stop recording, returns path |
+| `status` | Recording status |
+| `isRecording` | Boolean |
+
+## ~cc.state - Bus Management
+
+Named control/audio buses stored in current environment.
+
+| Method | Description |
+| --- | --- |
+| `bus(name, numChannels, rate)` | Get or create bus (also sets `~name`) |
+| `setBus(name, value)` | Set bus value |
+| `getBus(name)` | Get bus by name |
+| `freeBus(name)` | Free bus |
+| `clear` | Free all buses |
+
+```supercollider
+~cc.state.bus(\cutoff, 1, \control);
+~cc.state.setBus(\cutoff, 2000);
+Synth(\cc_acid, [\cutoff, ~cutoff.asMap]);
+```
