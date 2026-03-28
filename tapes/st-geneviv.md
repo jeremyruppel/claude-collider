@@ -3,6 +3,7 @@ name: St Geneviv
 tempo: 128
 key: Dm
 scd: st-geneviv.scd
+arrangement: st-geneviv-arrangement.scd
 ---
 
 > **IMPORTANT:** This tape has a companion script at `st-geneviv.scd`. Execute each block from that file verbatim via `cc_execute` — do not improvise the patterns.

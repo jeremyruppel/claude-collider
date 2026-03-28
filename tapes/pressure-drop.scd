@@ -10,7 +10,7 @@ Pdef(\kick, Pbind(
     \instrument, \cc_kick, \freq, 48,
     \dur, 1,
     \amp, 0.6
-)).play(quant: 4);
+);
 
 // 3. Hi-hats - intricate 16ths with ghost notes and open/closed variation
 Pdef(\hat, Pbind(
@@ -20,14 +20,14 @@ Pdef(\hat, Pbind(
                 0.33, 0.1, 0.2, 0.08, 0.3, 0.1, 0.38, 0.12], inf),
     \decay, Pseq([0.03, 0.02, 0.02, 0.02, 0.03, 0.02, 0.06, 0.02,
                   0.03, 0.02, 0.02, 0.02, 0.03, 0.02, 0.1, 0.02], inf)
-)).play(quant: 4);
+);
 
-// 4. Clap - on 2 and 4
+// 4. Clap - on 4
 Pdef(\clap, Pbind(
     \instrument, \cc_clap, \freq, 48,
-    \dur, 2,
+    \dur, Pseq([Rest(3), 1], inf),
     \amp, 0.4
-)).play(quant: 4);
+);
 
 // 5. Shaker - subtle 16th texture
 Pdef(\shaker, Pbind(
@@ -35,14 +35,14 @@ Pdef(\shaker, Pbind(
     \dur, 0.25,
     \amp, Pseq([0.12, 0.06, 0.1, 0.05, 0.12, 0.05, 0.08, 0.06,
                 0.1, 0.06, 0.12, 0.05, 0.1, 0.06, 0.08, 0.05], inf)
-)).play(quant: 4);
+);
 
 // 6. Rim - syncopated pattern
 Pdef(\rim, Pbind(
     \instrument, \cc_rim, \freq, 48,
     \dur, Pseq([0.75, 0.5, 0.75, 0.5, 0.5, 1], inf),
     \amp, Pseq([0.2, 0.12, 0.18, 0.15, 0.12, 0.2], inf)
-)).play(quant: 4);
+);
 
 // 7. Bass - driving acid sequencer with filter sweeps
 Pdef(\bass, Pbind(
@@ -58,7 +58,7 @@ Pdef(\bass, Pbind(
                    400, 600, 1800, 700, 400, 500, 1200, 500], inf),
     \resonance, 0.35,
     \sustain, 0.1
-)).play(quant: 4);
+);
 
 // 8. Pad - Fm7 to Bbm7 with open voicings
 Pdef(\pad, Pbind(
@@ -74,7 +74,7 @@ Pdef(\pad, Pbind(
     \attack, 1.5,
     \sustain, 2,
     \release, 2
-)).play(quant: 4);
+);
 
 // 9. Stabs - choppy keys
 Pdef(\stab, Pbind(
@@ -86,7 +86,7 @@ Pdef(\stab, Pbind(
     \dur, 0.25,
     \amp, 0.2,
     \sustain, 0.08
-)).play(quant: 4);
+);
 
 // 10. Effects
 ~cc.fx.load(\reverb);

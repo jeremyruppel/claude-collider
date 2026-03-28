@@ -3,6 +3,7 @@ name: Night Drive
 tempo: 128
 key: Em
 scd: night-drive.scd
+arrangement: night-drive-arrangement.scd
 ---
 
 > **IMPORTANT:** This tape has a companion script at `night-drive.scd`. Execute each block from that file verbatim via `cc_execute` — do not improvise the patterns.

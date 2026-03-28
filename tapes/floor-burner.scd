@@ -10,7 +10,7 @@ Pdef(\kick, Pbind(
     \instrument, \cc_kick, \freq, 48,
     \dur, 1,
     \amp, 0.6
-)).play(quant: 4);
+);
 
 // 3. Hi-hat - 16ths with ghost notes and open hat variation
 Pdef(\hat, Pbind(
@@ -18,21 +18,21 @@ Pdef(\hat, Pbind(
     \dur, 0.25,
     \amp, Pseq([0.05, 0.28, 0.08, 0.22, 0.05, 0.3, 0.08, 0.18], inf),
     \decay, Pseq([0.02, 0.03, 0.02, 0.02, 0.02, 0.03, 0.02, 0.08], inf)
-)).play(quant: 4);
+);
 
 // 4. Clap - on 2 and 4
 Pdef(\clap, Pbind(
     \instrument, \cc_clap, \freq, 48,
     \dur, Pseq([Rest(1), 1, Rest(1), 1], inf),
     \amp, 0.4
-)).play(quant: 4);
+);
 
 // 5. Open hat - offbeat accents
 Pdef(\openhat, Pbind(
     \instrument, \cc_openhat, \freq, 48,
     \dur, Pseq([Rest(0.5), 0.5], inf),
     \amp, Pseq([0, 0.18, 0, 0.15], inf)
-)).play(quant: 4);
+);
 
 // 6. Rim - sparse ghost hits
 Pdef(\rim, Pbind(
@@ -42,14 +42,14 @@ Pdef(\rim, Pbind(
         0, 0, 0.15, 0, 0, 0, 0, 0.12,
         0, 0, 0, 0.15, 0, 0, 0.1, 0
     ], inf)
-)).play(quant: 4);
+);
 
 // 7. Shaker - steady 16ths glue
 Pdef(\shaker, Pbind(
     \instrument, \cc_shaker, \freq, 48,
     \dur, 0.25,
     \amp, Pseq([0.12, 0.06, 0.1, 0.06], inf)
-)).play(quant: 4);
+);
 
 // 8. Bass - syncopated root notes following chord progression
 Pdef(\bass, Pbind(
@@ -69,15 +69,28 @@ Pdef(\bass, Pbind(
         0.5, 0, 0.35, 0, 0, 0, 0.4, 0
     ], inf),
     \sustain, 0.2
-)).play(quant: 4);
+);
 
-// 9. Lead - syncopated melody using bass rhythm in upper register
+// 9. Lead - stepwise motif with retrograde variation
 Pdef(\lead, Pbind(
-    \instrument, \cc_lead,
+    \instrument, \cc_keys,
     \scale, Scale.dorian, \root, 7, \octave, 5,
-    \degree, Pseq([0, Rest(), 0, 4, Rest(), 0, 3, Rest(), 0, Rest(), 4, 0, Rest(), 2, Rest(), 0], inf),
+    \degree, CCPhrase(CCMotif([0, Rest(), 0, 2, Rest(), Rest(), Rest(), Rest(), 3, Rest(), 2, 0, Rest(), Rest(), Rest(), Rest()]), [\state, \state, \state, \retrograde]),
     \dur, 0.25,
-    \amp, Pseq([0.4, 0, 0.25, 0.4, 0, 0.3, 0.3, 0, 0.4, 0, 0.35, 0.25, 0, 0.38, 0, 0.3], inf),
-    \cutoff, 3500,
-    \sustain, 0.15
-)).play(quant: 4)
+    \amp, 0.25,
+    \sustain, 0.1
+);
+
+// 10. Effects - chorus and ping-pong delay on lead
+~cc.fx.load(\chorus);
+~cc.fx.set(\fx_chorus, \mix, 0.4, \rate, 0.3, \depth, 0.005);
+~cc.fx.route(\lead, \fx_chorus);
+
+~cc.fx.load(\pingpong);
+~cc.fx.set(\fx_pingpong, \mix, 0.3, \time, 1.0, \feedback, 0.4);
+~cc.fx.route(\lead, \fx_pingpong);
+
+// 11. Sidechain - kick ducks the lead
+~cc.fx.sidechain(\kick_duck, 0.08, 6, 0.005, 0.15);
+~cc.fx.route(\lead, \kick_duck);
+~cc.fx.routeTrigger(\kick, \kick_duck, true)

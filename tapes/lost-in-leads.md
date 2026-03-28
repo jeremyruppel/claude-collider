@@ -3,6 +3,7 @@ name: Lost in Leads
 tempo: 124
 key: D Dorian
 scd: lost-in-leads.scd
+arrangement: lost-in-leads-arrangement.scd
 ---
 
 > **IMPORTANT:** This tape has a companion script at `lost-in-leads.scd`. Execute each block from that file verbatim via `cc_execute` — do not improvise the patterns.

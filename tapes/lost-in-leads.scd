@@ -12,7 +12,7 @@ Pdef(\kick, Pbind(
     \amp, 0.8,
     \dur, 1,
     \drive, 1.3
-)).play(quant: 4);
+);
 
 // 3. Hihat - 16th note pattern with accents
 Pdef(\hat, Pbind(
@@ -21,7 +21,7 @@ Pdef(\hat, Pbind(
     \amp, Pseq([0.3, 0.15, 0.25, 0.15], inf),
     \dur, 0.25,
     \decay, 0.08
-)).play(quant: 4);
+);
 
 // 4. Snare - backbeat
 Pdef(\snare, Pbind(
@@ -30,7 +30,7 @@ Pdef(\snare, Pbind(
     \amp, 0.6,
     \dur, Pseq([Rest(1), 1], inf),
     \color, 0.5
-)).play(quant: 4);
+);
 
 // 5. Open hat - offbeat accents
 Pdef(\ohat, Pbind(
@@ -39,7 +39,7 @@ Pdef(\ohat, Pbind(
     \amp, Pseq([0, 0, 0.25, 0, 0, 0, 0.2, 0], inf),
     \dur, 0.25,
     \decay, 0.15
-)).play(quant: 4);
+);
 
 // 6. Rim - syncopated ghost hits
 Pdef(\rim, Pbind(
@@ -48,7 +48,7 @@ Pdef(\rim, Pbind(
     \amp, Pseq([0, 0, 0, 0.35, 0, 0.25, 0, 0], inf),
     \dur, 0.25,
     \decay, 0.04
-)).play(quant: 4);
+);
 
 // 7. Bass - syncopated D Dorian with filter movement
 Pdef(\bass, Pbind(
@@ -61,7 +61,7 @@ Pdef(\bass, Pbind(
     \dur, 0.25,
     \cutoff, Pseq([400, 400, 800, 600, 400, 500, 400, 400, 500, 400, 400, 1200, 400, 600, 400, 400], inf),
     \sustain, 0.15
-)).play(quant: 4);
+);
 
 // 8. Pad - 4-bar D Dorian progression with voice leading
 Pdef(\pad, Pbind(
@@ -75,7 +75,7 @@ Pdef(\pad, Pbind(
     \amp, 0.3,
     \dur, 4,
     \sustain, 3.8
-)).play(quant: 4);
+);
 
 // 9. Arp - 16th note D Dorian arp across octaves
 Pdef(\arp, Pbind(
@@ -87,4 +87,4 @@ Pdef(\arp, Pbind(
     \amp, Pseq([0.5, 0.3, 0.4, 0.3, 0.35, 0.25, 0.45, 0.3, 0.5, 0.3, 0.4, 0.3, 0.35, 0.25, 0.45, 0.3], inf),
     \dur, 0.25,
     \sustain, 0.15
-)).play(quant: 4);
+);

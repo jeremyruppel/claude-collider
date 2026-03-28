@@ -3,6 +3,7 @@ name: Floor Burner
 tempo: 132
 key: Gm
 scd: floor-burner.scd
+arrangement: floor-burner-arrangement.scd
 ---
 
 > **IMPORTANT:** This tape has a companion script at `floor-burner.scd`. Execute each block from that file verbatim via `cc_execute` — do not improvise the patterns.
@@ -24,7 +25,7 @@ Gm - Bb - C - F (i - III - IV - bVII, 4-bar cycle)
 - **Rim** (cc_rim) - Sparse ghost hits for syncopation
 - **Shaker** (cc_shaker) - Steady 16ths for rhythmic glue
 - **Bass** (cc_bass) - Syncopated root notes following the 4-bar chord progression, each bar with a different rhythm
-- **Lead** (cc_lead) - Funky syncopated pattern in octave 5, derived from the bass rhythm
+- **Lead** (cc_keys) - Stepwise motif with retrograde variation, sparse and rhythmic
 
 ## Arrangement (~2:04)
 
@@ -36,10 +37,18 @@ Gm - Bb - C - F (i - III - IV - bVII, 4-bar cycle)
 6. **Drop 2** (16 bars) - Everything + lead, peak energy
 7. **Outro** (8 bars) - Kick, hat, bass ride out
 
+## Effects
+
+- **Chorus** on lead (mix 0.4, rate 0.3, depth 0.005)
+- **Ping-pong delay** on lead (mix 0.3, time 1.0, feedback 0.4)
+
+## Sidechain
+
+- **kick_duck** — threshold 0.08, ratio 6, attack 0.005, release 0.15 -> lead, trigger: kick
+
 ## Notes
 
-- No effects or sidechain in this tape
-- Lead uses the same syncopated rhythm as the original bass pattern, transposed up to octave 5
+- Lead uses CCMotif/CCPhrase: stepwise motif stated 3x then retrograde on 4th bar
 - Each bar of the bass has a unique syncopation pattern to keep the 4-bar cycle interesting
 
 ## Playback

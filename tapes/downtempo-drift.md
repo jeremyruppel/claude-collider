@@ -3,6 +3,7 @@ name: Downtempo Drift
 tempo: 108
 key: E Phrygian
 scd: downtempo-drift.scd
+arrangement: downtempo-drift-arrangement.scd
 ---
 
 > **IMPORTANT:** This tape has a companion script at `downtempo-drift.scd`. Execute each block from that file verbatim via `cc_execute` — do not improvise the patterns.

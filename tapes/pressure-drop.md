@@ -3,6 +3,7 @@ name: Pressure Drop
 tempo: 126
 key: Fm
 scd: pressure-drop.scd
+arrangement: pressure-drop-arrangement.scd
 ---
 
 > **IMPORTANT:** This tape has a companion script at `pressure-drop.scd`. Execute each block from that file verbatim via `cc_execute` — do not improvise the patterns.
@@ -19,7 +20,7 @@ Fm7 | Fm7 | Bbm7 | Bbm7 (16 bars)
 
 - **Kick** (cc_kick) - Four on the floor, steady anchor
 - **Hi-hats** (cc_hihat) - Intricate 16ths with ghost notes, open hat on the "and" of 4
-- **Clap** (cc_clap) - Backbeat on 2 and 4
+- **Clap** (cc_clap) - Backbeat on 4
 - **Shaker** (cc_shaker) - Subtle 16th-note texture layer
 - **Rim** (cc_rim) - Syncopated pattern adding swing and movement
 - **Bass** (cc_acid) - Driving 16th-note sequencer with filter sweeps, roots and 4ths in F Dorian
