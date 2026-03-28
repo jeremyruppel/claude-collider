@@ -50,7 +50,9 @@ export class OutputParser {
   }
 
   static wrapCode(code: string): string {
-    return `try { (${code.trim()}).postln } { |err| ("ERROR: " ++ err.errorString).postln }; "${OutputParser.END_MARKER}".postln;`
+    // Strip trailing semicolons so (code).postln doesn't become (code;).postln
+    const trimmed = code.trim().replace(/;+$/, "")
+    return `try { (${trimmed}).postln } { |err| ("ERROR: " ++ err.errorString).postln }; "${OutputParser.END_MARKER}".postln;`
   }
 
   static bootCommand(): string {
