@@ -90,6 +90,10 @@ CCMIDI {
     input.disconnect;
   }
 
+  output {
+    ^input.output;
+  }
+
   // Status
   status {
     ^(

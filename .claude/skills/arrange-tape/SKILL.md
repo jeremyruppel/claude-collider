@@ -113,6 +113,17 @@ When playing a tape that has an arrangement:
 When playing a tape without an arrangement:
 - Execute blocks in order as normal (elements start immediately)
 
+## MIDI clock sync
+
+If the user wants to sync external gear, enable MIDI clock before playing the arrangement. CCArrangement automatically sends MIDI clock start/stop when `CCMIDIClock` is enabled:
+
+```supercollider
+~cc.midi.connect("My Device", \out);
+CCMIDIClock.enable(~cc.midi.output);
+```
+
+Once enabled, any `CCArrangement.play` sends MIDI Start + 24 ppqn clock ticks, and stop/finish sends MIDI Stop. No changes to the arrangement code are needed.
+
 ## Tips for good arrangements
 
 - **Genre conventions matter** — tech house builds slowly over 8-16 bar sections; DnB drops hit harder with shorter builds

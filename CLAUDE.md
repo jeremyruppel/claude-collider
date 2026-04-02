@@ -90,6 +90,7 @@ Main entry point stored in `~cc`. Access subsystems via `~cc.synths`, `~cc.fx`, 
 | `connect(device, direction)` | Connect device (`\in` or `\out`) |
 | `connectAll` | Connect all MIDI inputs |
 | `disconnect(direction)` | Disconnect (`\in`, `\out`, or `\all`) |
+| `output` | Get the connected MIDIOut instance |
 | `play(synthName, channel, mono, velToAmp, ccMappings)` | Play synth via MIDI (multiple allowed) |
 | `stop(synthName)` | Stop one synth, or all if nil |
 | `status` | Get MIDI status |
@@ -101,6 +102,23 @@ Main entry point stored in `~cc`. Access subsystems via `~cc.synths`, `~cc.fx`, 
   74: (param: \res, range: [0.1, 0.9])
 ));
 ~cc.midi.stop(\cc_lead);
+```
+
+## CCMIDIClock - MIDI Clock Output
+
+Sends MIDI clock (24 ppqn) synchronized to TempoClock. When enabled, CCArrangement automatically starts/stops the clock on play/stop.
+
+| Method | Description |
+| --- | --- |
+| `*enable(midiOut)` | Enable clock output with a MIDIOut instance |
+| `*disable` | Disable clock output |
+| `*start` | Start clock (no-op if not enabled) |
+| `*stop` | Stop clock (no-op if not enabled) |
+
+```supercollider
+~cc.midi.connect("My Device", \out);
+CCMIDIClock.enable(~cc.midi.output);
+// Arrangements now auto-send MIDI clock start/stop/ticks
 ```
 
 ## ~cc.samples - Sample Management

@@ -52,6 +52,17 @@ Play all Pdefs and Ndefs at once by calling `.play` on each one.
 **If the user chose Arrangement:**
 Execute the `CCArrangement([...]).play` code from the arrangement file.
 
+### Optional: MIDI clock sync
+
+If the user wants to sync external gear, enable MIDI clock before playing:
+
+```supercollider
+~cc.midi.connect("My Device", \out);
+CCMIDIClock.enable(~cc.midi.output);
+```
+
+CCArrangement automatically sends MIDI clock start/stop/ticks when enabled. No extra steps needed during playback.
+
 ## Key rules
 
 - **Always ask jam vs arrangement before playing.**

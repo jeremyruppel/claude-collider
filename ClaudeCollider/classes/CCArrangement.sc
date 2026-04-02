@@ -38,6 +38,7 @@ CCArrangement {
   }
 
   stop {
+    CCMIDIClock.stop;
     activeElements.do { |el| this.stopElement(el) };
     activeElements = Set[];
     isPlaying = false;
@@ -75,6 +76,7 @@ CCArrangement {
     var beat;
 
     isPlaying = true;
+    CCMIDIClock.start;
     startBeat = TempoClock.default.nextTimeOnGrid(beatsPerBar);
 
     // Precompute absolute beat positions
@@ -133,6 +135,7 @@ CCArrangement {
   }
 
   finish {
+    CCMIDIClock.stop;
     activeElements.do { |el| this.stopElement(el) };
     activeElements = Set[];
     sectionName = \done;
