@@ -26,6 +26,7 @@ Fm7 | Fm7 | Bbm7 | Bbm7 (16 bars)
 - **Bass** (cc_acid) - Driving 16th-note sequencer with filter sweeps, roots and 4ths in F Dorian
 - **Pad** (cc_pad) - Slow Fm7 to Bbm7 progression, open voicings, long attack
 - **Stabs** (cc_keys) - Choppy minor chord stabs, rhythmic and punchy
+- **Drone** (cc_drone) - Sustained F3, enters at the drop
 
 ## Effects
 
@@ -43,10 +44,10 @@ Fm7 | Fm7 | Bbm7 | Bbm7 (16 bars)
 3. **Groove** (8 bars) - Add clap, bass
 4. **Peak** (8 bars) - Add pad, stabs — full mix
 5. **Break** (4 bars) - Strip to pad + hats + rim
-6. **Drop** (12 bars) - Everything back
-7. **Break 2** (4 bars) - Pad + stabs only
-8. **Final Push** (12 bars) - Full energy
-9. **Outro** (8 bars) - Elements peel away, kick last
+6. **Drop** (12 bars) - Everything back + drone
+7. **Break 2** (4 bars) - Pad + stabs + drone
+8. **Final Push** (12 bars) - Full energy + drone
+9. **Outro** (8 bars) - Elements peel away, drone fades with hats, kick last
 
 ## Notes
 

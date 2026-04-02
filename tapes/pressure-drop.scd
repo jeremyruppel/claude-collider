@@ -88,7 +88,16 @@ Pdef(\stab, Pbind(
     \sustain, 0.08
 );
 
-// 10. Effects
+// 10. Drone - sustained F3
+Pdef(\drone, Pbind(
+    \instrument, \cc_drone,
+    \midinote, 53,
+    \dur, 8,
+    \amp, 0.4,
+    \sustain, 7.5
+));
+
+// 11. Effects
 ~cc.fx.load(\reverb);
 ~cc.fx.set(\fx_reverb, \mix, 0.45, \room, 0.7, \damp, 0.6);
 ~cc.fx.route(\pad, \fx_reverb);
@@ -97,7 +106,7 @@ Pdef(\stab, Pbind(
 ~cc.fx.set(\fx_delay, \mix, 0.3, \time, 0.375, \feedback, 0.35);
 ~cc.fx.route(\stab, \fx_delay);
 
-// 11. Sidechain - kick ducks the bass
+// 12. Sidechain - kick ducks the bass
 ~cc.fx.sidechain(\kick_duck, 0.08, 6, 0.005, 0.15);
 ~cc.fx.route(\bass, \kick_duck);
 ~cc.fx.routeTrigger(\kick, \kick_duck, true);
