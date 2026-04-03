@@ -1,24 +1,27 @@
 // CCMIDIClockTest - Unit tests for CCMIDIClock
 
+// Proper mock class — Event's stop method shadows doesNotUnderstand,
+// so an Event-based mock won't dispatch stop to its function slot.
+CCMIDIClockMockMidiOut {
+  var messages;
+  *new { |messages| ^super.new.init(messages) }
+  init { |argMessages| messages = argMessages }
+  start { messages.add(\start) }
+  stop { messages.add(\stop) }
+  midiClock { messages.add(\tick) }
+}
+
 CCMIDIClockTest : UnitTest {
   var mockMidiOut, messages;
 
   setUp {
     CCMIDIClock.disable;
     messages = List[];
-    mockMidiOut = this.createMockMidiOut;
+    mockMidiOut = CCMIDIClockMockMidiOut(messages);
   }
 
   tearDown {
     CCMIDIClock.disable;
-  }
-
-  createMockMidiOut {
-    ^(
-      start: { messages.add(\start) },
-      stop: { messages.add(\stop) },
-      midiClock: { messages.add(\tick) }
-    );
   }
 
   // ========== enable/disable tests ==========
@@ -136,13 +139,14 @@ CCMIDIClockTest : UnitTest {
   }
 
   test_stop_haltsTicks {
+    var countAtStop, countAfter;
     CCMIDIClock.enable(mockMidiOut);
     CCMIDIClock.current.start;
     0.2.wait;
     CCMIDIClock.current.stop;
-    var countAtStop = messages.select({ |m| m == \tick }).size;
+    countAtStop = messages.select({ |m| m == \tick }).size;
     0.5.wait;
-    var countAfter = messages.select({ |m| m == \tick }).size;
+    countAfter = messages.select({ |m| m == \tick }).size;
     this.assertEquals(countAtStop, countAfter, "Should not send ticks after stop");
   }
 }
