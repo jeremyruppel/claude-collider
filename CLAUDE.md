@@ -169,3 +169,27 @@ Named control/audio buses stored in current environment.
 ~cc.state.setBus(\cutoff, 2000);
 Synth(\cc_acid, [\cutoff, ~cutoff.asMap]);
 ```
+
+## CCBreakbeat - Breakbeat Slice Sequencer
+
+Divides a buffer into equal slices for pattern-based beat rearrangement. Standalone object (like CCMotif), not a CC subsystem.
+
+| Method | Description |
+| --- | --- |
+| `*new(buffer, numSlices=8)` | Create slicer from a Buffer |
+| `bars(numBars, beatsPerBar=4)` | Set slice duration from bar count (chainable) |
+| `dur_(beats)` | Set explicit slice duration in beats |
+| `sliceStart(index)` | Normalized start position (0-1) |
+| `sliceEnd(index)` | Normalized end position (0-1) |
+| `pattern(order, rate, amp)` | Returns Pbind for use with Pdef |
+| `play(order, name)` | Quick-play via Pdef |
+| `stop(name)` | Stop the Pdef |
+
+Negative indices reverse that slice's playback. Per-slice rates via array.
+
+```supercollider
+~cc.samples.load(\amen);
+b = CCBreakbeat(~cc.samples.at(\amen), 8).bars(1);
+Pdef(\break, b.pattern([0, 0, 3, 2, 7, 6, 5, 4]));
+Pdef(\break, b.pattern([0, 1, -2, 3, 4, 5, -6, 7]));
+```

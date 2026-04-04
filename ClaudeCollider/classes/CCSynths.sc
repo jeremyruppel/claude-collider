@@ -470,6 +470,27 @@ CCSynths {
         }
       ),
 
+      cc_breakbeat: (
+        description: "Breakbeat slice playback. Plays a segment of a stereo buffer from start (0-1) to end (0-1) with rate control. 3ms fade-out prevents clicks. Auto-frees. Use with CCBreakbeat class.",
+        def: {
+          SynthDef(\cc_breakbeat, { |out=0, buf=0, amp=0.5, rate=1, start=0, end=1|
+            var sig, frames, startPos, endPos, dur, env;
+            frames = BufFrames.kr(buf);
+            FreeSelf.kr(frames <= 0);
+            startPos = start * frames;
+            endPos = end * frames;
+            dur = (endPos - startPos).abs / (BufSampleRate.kr(buf) * rate.abs);
+            env = EnvGen.kr(
+              Env([1, 1, 0], [dur - 0.003, 0.003]),
+              doneAction: 2
+            );
+            sig = PlayBuf.ar(2, buf, rate * BufRateScale.kr(buf), startPos: startPos, doneAction: 2);
+            sig = sig * env * amp;
+            Out.ar(out, sig);
+          })
+        }
+      ),
+
       cc_grains: (
         description: "Granular synthesis. GrainBuf with adjustable pos (0-1), posSpeed (movement rate), grainSize (100ms default), grainRate (20/sec), pitch, and stereo spread. Random pan per grain. Gate-controlled.",
         def: {

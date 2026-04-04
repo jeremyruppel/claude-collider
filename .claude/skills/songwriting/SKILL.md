@@ -8,6 +8,7 @@ description: Music theory and songwriting reference for composing better pattern
 Load this skill when composing or improving individual musical parts. Read the relevant topic file for the part you're writing:
 
 - **bass.md** — Bass line theory, patterns, genre conventions
+- **breakbeats.md** — CCBreakbeat slicing, rearrangement, genre applications
 - **chords.md** — Voicing, voice leading, progressions, extensions
 - **melody.md** — Contour, motif, phrasing, tension/resolution
 - **rhythm.md** — Drum patterns, swing, ghost notes, genre grooves
