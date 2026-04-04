@@ -34,4 +34,4 @@ SuperCollider backend providing the live coding toolkit classes.
 - **CCRouter** — Effect-to-effect connections, named chains, source-to-effect routing
 - **CCSidechain** — Sidechain compressor management for ducking effects
 - **CCArrangement** — Declarative song arrangement sequencer. Sections as `[name, bars, elements]` arrays, Pdef/Ndef start/stop diffing, drift-free scheduling via `TempoClock.schedAbs`, live `goto` for jumping sections
-- **CCBreakbeat** — Breakbeat slice sequencer. Wraps a buffer, divides into N equal slices, returns Pbind patterns with reorderable slices. Negative indices reverse individual slices. Use `bars` to set timing, `pattern` to sequence
+- **CCBreakbeat** — Breakbeat slice sequencer. Constructor takes `(name, buffer, numSlices)` binding to a Pdef name. `pattern(order)` assigns the slice pattern to that Pdef. Negative indices reverse individual slices. Use `bars` to set timing

@@ -7,8 +7,9 @@
 
 // 2. Break - chopped breakbeat from 4-bar sample
 ~cc.samples.load(\drum_break_142bpm_4_bar);
-b = CCBreakbeat(~cc.samples.at(\drum_break_142bpm_4_bar), 16).bars(4);
-Pdef(\break, b.pattern((0..15), amp: 0.6)).play(quant: 4);
+b = CCBreakbeat(\break, ~cc.samples.at(\drum_break_142bpm_4_bar), 16).bars(4);
+b.pattern((0..15), amp: 0.6);
+Pdef(\break).play(quant: 4);
 
 // 3. Bass - syncopated acid bass in Fm with octave jump
 Pdef(\bass, Pbind(

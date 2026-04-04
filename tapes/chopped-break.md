@@ -17,13 +17,13 @@ Breakbeat chops with acid bass and stabby lead at 142 BPM in F minor.
 - **Bass** (cc_acid) - Syncopated 2-bar bass in Fm, long root notes with double-time hits and octave jump in bar 2
 - **Lead** (cc_keys) - Rhodes melody in Fm, 2-bar phrase with dotted eighth delay
 
-## Arrangement (~1:08)
+## Arrangement (~0:41)
 
 1. **Intro** (8 bars) - Original break in sequence
 2. **Build** (8 bars) - Acid bass enters
-3. **Drop** (16 bars) - Full stack, chopped break pattern
+3. **Drop** (8 bars) - Full stack, chopped break pattern
 4. **Break** (4 bars) - Lead melody solo
-5. **Drop 2** (16 bars) - Everything back, second chop pattern
+5. **Drop 2** (8 bars) - Everything back, second chop pattern
 6. **Outro** (8 bars) - Back to original sequence
 
 ## Notes

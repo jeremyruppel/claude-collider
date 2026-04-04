@@ -3,15 +3,17 @@
 // Negative indices in the order array reverse that slice's playback.
 
 CCBreakbeat {
+  var <name;
   var <buffer;
   var <numSlices;
   var <sliceDur;
 
-  *new { |buffer, numSlices=8|
-    ^super.new.init(buffer, numSlices);
+  *new { |name=\break, buffer, numSlices=8|
+    ^super.new.init(name, buffer, numSlices);
   }
 
-  init { |argBuffer, argNumSlices|
+  init { |argName, argBuffer, argNumSlices|
+    name = argName;
     buffer = argBuffer;
     numSlices = argNumSlices;
   }
@@ -37,13 +39,14 @@ CCBreakbeat {
     ^(index + 1) / numSlices;
   }
 
-  // Returns a Pbind for use with Pdef
+  // Assigns a slice pattern to the named Pdef and returns it.
   // order: Array of slice indices (negative = reverse playback)
   // rate: Number, Array, or Pattern for playback rate
   // amp: Number or Pattern for amplitude
   pattern { |order, rate=1, amp=0.5|
     var starts, ends, rates, dur;
 
+    order = order ?? { (0..numSlices-1) };
     dur = sliceDur ?? { this.computeSliceDur };
 
     starts = order.collect { |i| this.sliceStart(i.abs) };
@@ -62,7 +65,7 @@ CCBreakbeat {
         }, inf)
       };
 
-    ^Pbind(
+    Pdef(name, Pbind(
       \instrument, \cc_breakbeat,
       \buf, buffer,
       \start, Pseq(starts, inf),
@@ -70,26 +73,9 @@ CCBreakbeat {
       \rate, rates,
       \amp, amp,
       \dur, dur
-    );
-  }
-
-  // Quantization value: total loop length in beats
-  quant { |order|
-    var dur = sliceDur ?? { this.computeSliceDur };
-    ^(order.size * dur);
-  }
-
-  // Quick-play: wraps pattern in a Pdef with quantization
-  play { |order, name=\break|
-    order = order ?? { (0..numSlices-1) };
-    Pdef(name, this.pattern(order));
-    Pdef(name).quant_(this.quant(order));
-    Pdef(name).play;
+    ));
+    Pdef(name).quant_(order.size * dur);
     ^Pdef(name);
-  }
-
-  stop { |name=\break|
-    Pdef(name).stop;
   }
 
   // Compute slice duration in beats from buffer duration
