@@ -16,9 +16,16 @@ CCSidechain {
   // ========== Sidechain Creation ==========
 
   create { |name, threshold=0.1, ratio=4, attack=0.01, release=0.1|
-    var inBus = Bus.audio(cc.server, 2);
-    var triggerBus = Bus.audio(cc.server, 2);
-    var slotName = ("sidechain_" ++ name).asSymbol;
+    var inBus, triggerBus, slotName;
+
+    // Clean up existing sidechain with same name before recreating
+    if(sidechains[name.asSymbol].notNil) {
+      this.remove(name);
+    };
+
+    inBus = Bus.audio(cc.server, 2);
+    triggerBus = Bus.audio(cc.server, 2);
+    slotName = ("sidechain_" ++ name).asSymbol;
 
     Ndef(slotName, { |in, trigger, thresh=0.1, rat=4, att=0.01, rel=0.1|
       var sig = In.ar(in, 2);
@@ -89,7 +96,10 @@ CCSidechain {
     if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server].at(srcSym).notNil }) {
       srcNdef = Ndef(srcSym);
       if(srcNdef.bus.notNil) {
-        triggerSynth = Synth(\cc_bus_copy, [\in, srcNdef.bus.index, \out, sc.triggerBus.index]);
+        triggerSynth = Synth(
+          if(srcNdef.numChannels == 1) { \cc_bus_copy_mono } { \cc_bus_copy },
+          [\in, srcNdef.bus.index, \out, sc.triggerBus.index]
+        );
         sc.triggerRoutes[srcSym] = (triggerSynth: triggerSynth);
         if(passthrough.not) { srcNdef.stop };
         ^true;

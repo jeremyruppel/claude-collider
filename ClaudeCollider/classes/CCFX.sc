@@ -26,6 +26,9 @@ CCFX {
     SynthDef(\cc_bus_copy, { |in, out|
       Out.ar(out, InFeedback.ar(in, 2));
     }).add;
+    SynthDef(\cc_bus_copy_mono, { |in, out|
+      Out.ar(out, InFeedback.ar(in, 1).dup);
+    }).add;
   }
 
   // ========== EFFECT DEFINITIONS ==========

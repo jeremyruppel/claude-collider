@@ -107,6 +107,11 @@ CCRouter {
       ^false;
     };
 
+    // Clean up existing route before creating new one
+    if(routes[source.asSymbol].notNil) {
+      this.unroute(source);
+    };
+
     // Route Pdef source
     if(Pdef.all[source.asSymbol].notNil) {
       Pdef(source.asSymbol).set(\out, targetBus.index);
@@ -118,7 +123,10 @@ CCRouter {
     if(Ndef.all[fx.cc.server].notNil and: { Ndef.all[fx.cc.server].at(source.asSymbol).notNil }) {
       srcNdef = Ndef(source.asSymbol);
       if(srcNdef.bus.notNil) {
-        routeSynth = Synth(\cc_bus_copy, [\in, srcNdef.bus.index, \out, targetBus.index]);
+        routeSynth = Synth(
+          if(srcNdef.numChannels == 1) { \cc_bus_copy_mono } { \cc_bus_copy },
+          [\in, srcNdef.bus.index, \out, targetBus.index]
+        );
         routes[source.asSymbol] = (target: target.asSymbol, routeSynth: routeSynth);
         ^true;
       } {
