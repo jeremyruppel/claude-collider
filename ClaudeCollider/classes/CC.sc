@@ -101,27 +101,27 @@ CC {
   stop {
     if(CCArrangement.current.notNil) { CCArrangement.current.stop };
     Pdef.all.do(_.stop);
-    if(Ndef.all[server].notNil) {
-      Ndef.all[server].keysValuesDo { |key, ndef|
-        if(key.asString.beginsWith("out_").not) { ndef.stop };
-      };
-    };
+    this.eachNdef(_.stop);
   }
 
   clear {
     if(CCArrangement.current.notNil) { CCArrangement.current.stop };
     this.stop;
     Pdef.all.do(_.clear);
-    if(Ndef.all[server].notNil) {
-      Ndef.all[server].keysValuesDo { |key, ndef|
-        if(key.asString.beginsWith("out_").not) { ndef.clear };
-      };
-    };
+    this.eachNdef(_.clear);
     fx.clearAll;
     midi.clear;
     samples.freeAll;
     if(recorder.isRecording) { recorder.stop };
     state.clear;
+  }
+
+  eachNdef { |func|
+    if(Ndef.all[server.name].notNil) {
+      Ndef.all[server.name].keysValuesDo { |key, ndef|
+        if(key.asString.beginsWith("out_").not) { func.value(ndef) };
+      };
+    };
   }
 
   status {
