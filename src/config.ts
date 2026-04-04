@@ -18,8 +18,17 @@ export class SclangConfig {
     this.path = this.findSclangPath()
     this.bootTimeout = parseInt(process.env.SC_BOOT_TIMEOUT || "10000", 10)
     this.execTimeout = parseInt(process.env.SC_EXEC_TIMEOUT || "2000", 10)
-    this.samplesPath = process.env.CC_SAMPLES_PATH || join(DEFAULT_CC_DIR, "samples")
+    this.samplesPath = this.buildSamplesPath()
     this.recordingsPath = process.env.CC_RECORDINGS_PATH || join(DEFAULT_CC_DIR, "recordings")
+  }
+
+  private buildSamplesPath(): string {
+    const defaultDir = join(DEFAULT_CC_DIR, "samples")
+    const localDir = join(process.cwd(), "samples")
+    if (process.env.CC_SAMPLES_PATH) {
+      return process.env.CC_SAMPLES_PATH
+    }
+    return [localDir, defaultDir].join(":")
   }
 
   private findSclangPath(): string {

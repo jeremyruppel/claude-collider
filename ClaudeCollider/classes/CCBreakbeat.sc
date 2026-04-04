@@ -73,10 +73,18 @@ CCBreakbeat {
     );
   }
 
-  // Quick-play: wraps pattern in a Pdef
+  // Quantization value: total loop length in beats
+  quant { |order|
+    var dur = sliceDur ?? { this.computeSliceDur };
+    ^(order.size * dur);
+  }
+
+  // Quick-play: wraps pattern in a Pdef with quantization
   play { |order, name=\break|
     order = order ?? { (0..numSlices-1) };
-    Pdef(name, this.pattern(order)).play;
+    Pdef(name, this.pattern(order));
+    Pdef(name).quant_(this.quant(order));
+    Pdef(name).play;
     ^Pdef(name);
   }
 

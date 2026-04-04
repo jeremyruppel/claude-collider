@@ -168,6 +168,23 @@ CCBreakbeatTest : UnitTest {
     this.assertFloatEquals(events[1][\rate], -1.5, "Negative index negates array rate");
   }
 
+  // ========== quant tests ==========
+
+  test_quant_fullOrder {
+    var b = CCBreakbeat((duration: 4.0), 8).bars(1);
+    this.assertFloatEquals(b.quant((0..7)), 4.0, "8 slices * 0.5 dur = 4 beats");
+  }
+
+  test_quant_partialOrder {
+    var b = CCBreakbeat((duration: 4.0), 8).bars(1);
+    this.assertFloatEquals(b.quant([0, 1, 2, 3]), 2.0, "4 slices * 0.5 dur = 2 beats");
+  }
+
+  test_quant_twoBars {
+    var b = CCBreakbeat((duration: 4.0), 16).bars(2);
+    this.assertFloatEquals(b.quant((0..15)), 8.0, "16 slices * 0.5 dur = 8 beats");
+  }
+
   // ========== pattern loops ==========
 
   test_pattern_loops {

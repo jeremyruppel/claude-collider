@@ -4,35 +4,43 @@ CCSamples {
   var <cc;
   var <paths;    // name (String) -> file path (String)
   var <buffers;  // name (String) -> Buffer
-  var <samplesDir;
+  var <samplesDirs;  // Array of directory paths
 
-  *new { |cc, samplesDir|
-    ^super.new.init(cc, samplesDir);
+  *new { |cc, samplesPath|
+    ^super.new.init(cc, samplesPath);
   }
 
-  init { |argCC, argSamplesDir|
+  init { |argCC, argSamplesPath|
     cc = argCC;
     paths = Dictionary.new;
     buffers = Dictionary.new;
-    samplesDir = argSamplesDir;
+    samplesDirs = if(argSamplesPath.notNil) {
+      argSamplesPath.split($:).reject { |s| s.isEmpty };
+    } {
+      [];
+    };
   }
 
-  // Scan samples directory and store file paths (fast, sync)
+  // Scan all sample directories and store file paths (fast, sync)
   // Buffers are loaded lazily on first access
+  // First directory in path wins on name conflicts
   loadAll {
-    var path = PathName(samplesDir);
-    var audioFiles;
+    samplesDirs.do { |dir|
+      var path = PathName(dir);
+      var audioFiles;
 
-    if(path.isFolder.not) {
-      File.mkdir(samplesDir);
-    };
+      if(path.isFolder) {
+        audioFiles = path.files.select { |f|
+          #["wav", "aiff", "aif", "mp3"].includesEqual(f.extension.toLower)
+        };
 
-    audioFiles = path.files.select { |f|
-      #["wav", "aiff", "aif"].includesEqual(f.extension.toLower)
-    };
-
-    audioFiles.do { |file|
-      paths.put(file.fileNameWithoutExtension, file.fullPath);
+        audioFiles.do { |file|
+          var name = file.fileNameWithoutExtension;
+          if(paths.at(name).isNil) {
+            paths.put(name, file.fullPath);
+          };
+        };
+      };
     };
   }
 
@@ -109,7 +117,7 @@ CCSamples {
     buffers.clear;
   }
 
-  // Reload samples directory (discovers new files, keeps loaded buffers)
+  // Reload all sample directories (discovers new files, keeps loaded buffers)
   reload {
     var oldPaths = paths.copy;
     var newCount = 0;

@@ -5,7 +5,7 @@ CCSamplesTest : UnitTest {
 
   setUp {
     mockCC = this.createMockCC;
-    samples = CCSamples(mockCC, "/tmp/test_samples");
+    samples = CCSamples(mockCC, "/tmp/test_samples_a:/tmp/test_samples_b");
   }
 
   tearDown {
@@ -25,6 +25,27 @@ CCSamplesTest : UnitTest {
       numChannels: numChannels,
       sampleRate: sampleRate
     );
+  }
+
+  // ========== samplesDirs tests ==========
+
+  test_samplesDirs_parsesColonSeparatedPath {
+    var s = CCSamples(mockCC, "/dir/a:/dir/b:/dir/c");
+    this.assertEquals(s.samplesDirs.size, 3, "should parse 3 directories");
+    this.assertEquals(s.samplesDirs[0], "/dir/a", "first dir");
+    this.assertEquals(s.samplesDirs[1], "/dir/b", "second dir");
+    this.assertEquals(s.samplesDirs[2], "/dir/c", "third dir");
+  }
+
+  test_samplesDirs_singleDir {
+    var s = CCSamples(mockCC, "/dir/only");
+    this.assertEquals(s.samplesDirs.size, 1, "should parse single directory");
+    this.assertEquals(s.samplesDirs[0], "/dir/only", "single dir");
+  }
+
+  test_samplesDirs_rejectsEmpty {
+    var s = CCSamples(mockCC, "/dir/a::/dir/b:");
+    this.assertEquals(s.samplesDirs.size, 2, "should reject empty segments");
   }
 
   // ========== describe tests ==========
