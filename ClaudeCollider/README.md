@@ -29,7 +29,7 @@ Then recompile the class library (Cmd+Shift+L in the IDE).
 ~cc.synths.play(\pad, \freq, 220, \amp, 0.3);
 ```
 
-## Classes
+## API Reference
 
 ### CC
 
@@ -44,11 +44,6 @@ CC.boot(server, device, numOutputs, onComplete)  // Boot and initialize
 ~cc.stop                              // Stop all Pdefs/Ndefs
 ~cc.clear                             // Stop and clear everything
 ~cc.status                            // Get formatted status string
-
-// Convenience accessors
-~cc.outputs                           // CCOutputs instance (via fx.outputs)
-~cc.router                            // CCRouter instance (via fx.router)
-~cc.sidechains                        // CCSidechain instance (via fx.sidechains)
 ```
 
 ### CCSynths
@@ -63,9 +58,10 @@ Pre-built SynthDefs with `cc_` prefix. All synths are auto-loaded on boot.
 ~cc.synths.describe         // Print all synths with descriptions and params
 ```
 
-**Available synths**:
+**Note**: When using drum synths with Pbind, explicitly set `\freq` to avoid SuperCollider's default pitch conversion overriding the synth's default frequency.
 
-_Drums_:
+#### Drums
+
 | Name | Description | Params |
 |------|-------------|--------|
 | kick | Punchy kick drum with sub bass | out, freq, amp, decay |
@@ -78,7 +74,8 @@ _Drums_:
 | shaker | Shaker / maraca | out, amp, decay, color |
 | cowbell | 808-style cowbell | out, amp, decay |
 
-_Bass_:
+#### Bass
+
 | Name | Description | Params |
 |------|-------------|--------|
 | bass | Simple sub bass with harmonics | out, freq, amp, decay, gate |
@@ -87,7 +84,8 @@ _Bass_:
 | reese | Detuned saw bass (DnB/dubstep) | out, freq, amp, detune, cutoff, gate |
 | fmbass | FM bass for growly tones | out, freq, amp, index, ratio, gate |
 
-_Leads & Melodic_:
+#### Leads & Melodic
+
 | Name | Description | Params |
 |------|-------------|--------|
 | lead | Detuned saw lead with filter | out, freq, amp, pan, gate, att, rel, cutoff, res |
@@ -96,7 +94,8 @@ _Leads & Melodic_:
 | keys | Electric piano / Rhodes-ish | out, freq, amp, attack, release, brightness, gate |
 | strings | String ensemble pad | out, freq, amp, attack, release, detune, gate |
 
-_Pads & Textural_:
+#### Pads & Textural
+
 | Name | Description | Params |
 |------|-------------|--------|
 | pad | Soft ambient pad | out, freq, amp, attack, release, gate |
@@ -104,7 +103,8 @@ _Pads & Textural_:
 | drone | Evolving ambient texture | out, freq, amp, spread, movement, gate |
 | riser | Tension building sweep | out, amp, duration, startFreq, endFreq |
 
-_Utility_:
+#### Utility
+
 | Name | Description | Params |
 |------|-------------|--------|
 | click | Metronome click | out, amp, freq |
@@ -112,39 +112,9 @@ _Utility_:
 | sampler | Basic sample playback | out, buf, amp, rate, start |
 | grains | Granular sample playback | out, buf, amp, pos, posSpeed, grainSize, grainRate, pitch, spread, gate |
 
-**Note**: When using drum synths with Pbind, explicitly set `\freq` to avoid SuperCollider's default pitch conversion overriding the synth's default frequency.
-
-### CCSamples
-
-Sample management with lazy loading from `~/.claudecollider/samples`.
-
-Place WAV or AIFF files in the samples directory. On boot, file paths are scanned but buffers are only loaded on first use.
-
-```supercollider
-// Access via ~cc.samples
-
-~cc.samples.list              // List available sample names
-~cc.samples.at(\kick)         // Get buffer by name (nil if not loaded)
-~cc.samples.load(\kick)       // Explicitly load buffer (for use in patterns)
-~cc.samples.play(\kick)       // One-shot playback (lazy loads buffer)
-~cc.samples.play(\snare, 0.5, 0.8)  // With rate and amp
-
-// Use in patterns (load first to avoid latency on first trigger)
-~cc.samples.load(\kick);
-Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1).play
-
-// Memory management
-~cc.samples.free(\kick)       // Free single sample buffer
-~cc.samples.freeAll           // Free all loaded buffers
-~cc.samples.reload            // Rescan directory for new samples
-~cc.samples.describe          // Print sample status (loaded/unloaded)
-```
-
-**Note**: Call `~cc.samples.load(\name)` to pre-load a buffer before using `at(\name)` in Pbind.
-
 ### CCFX
 
-Ndef-based effects system with routing and chaining.
+Ndef-based effects system with routing, chaining, and sidechaining.
 
 ```supercollider
 // Load single effect (creates fx_<name> slot)
@@ -157,11 +127,11 @@ Ndef-based effects system with routing and chaining.
 // Route sources to effects
 ~cc.fx.route(\kickPattern, \fx_reverb)
 
-// Connect effects in series (effect → effect)
+// Connect effects in series (effect -> effect)
 ~cc.fx.load(\distortion, \fx_dist)
 ~cc.fx.load(\reverb, \fx_verb)
-~cc.fx.connect(\fx_dist, \fx_verb)  // distortion → reverb → main out
-~cc.fx.route(\bass, \fx_dist)       // bass → distortion → reverb → main out
+~cc.fx.connect(\fx_dist, \fx_verb)  // distortion -> reverb -> main out
+~cc.fx.route(\bass, \fx_dist)       // bass -> distortion -> reverb -> main out
 
 // Sidechain compression
 ~cc.fx.sidechain(\bassDuck, threshold: 0.1, ratio: 4, attack: 0.01, release: 0.1)
@@ -178,7 +148,7 @@ Ndef-based effects system with routing and chaining.
 ~cc.fx.status               // Get loaded effects, sidechains, connections
 ```
 
-**Available effects**:
+#### Available Effects
 
 | Category   | Effects                          |
 | ---------- | -------------------------------- |
@@ -194,8 +164,6 @@ Ndef-based effects system with routing and chaining.
 Manages hardware output routing with per-output limiters. Sources can be routed to specific outputs or stereo pairs.
 
 ```supercollider
-// Access via ~cc.outputs or ~cc.fx.outputs
-
 // Route sources to specific hardware outputs
 ~cc.fx.routeToOutput(\drums, [7, 8])    // Route drums to stereo outputs 7-8
 ~cc.fx.routeToOutput(\kick, 1)          // Route kick to mono output 1
@@ -240,15 +208,13 @@ output.statusString                     // "out_3_4 -> hw 3-4 (active)"
 Manages effect-to-effect connections, effect chains, and source-to-effect routing.
 
 ```supercollider
-// Access via ~cc.router or ~cc.fx.router
-
-// Effect connections (effect → effect)
+// Effect connections (effect -> effect)
 ~cc.fx.connect(\fx_dist, \fx_reverb)    // Connect distortion output to reverb input
 
 // Effect chains (named groups)
 ~cc.fx.registerChain(\drums, [\fx_comp, \fx_reverb])
 
-// Source routing (pattern/Ndef → effect)
+// Source routing (pattern/Ndef -> effect)
 ~cc.fx.route(\kickPattern, \fx_comp)
 
 // Status
@@ -263,8 +229,6 @@ Manages effect-to-effect connections, effect chains, and source-to-effect routin
 Manages sidechain compressors for ducking effects.
 
 ```supercollider
-// Access via ~cc.sidechains or ~cc.fx.sidechains
-
 // Create sidechain compressor
 ~cc.fx.sidechain(\bassDuck, threshold: 0.1, ratio: 4, attack: 0.01, release: 0.1)
 
@@ -284,7 +248,7 @@ Manages sidechain compressors for ducking effects.
 
 ### CCMIDI
 
-MIDI device connection and synth playback.
+MIDI device connection and synth playback. Supports multiple simultaneous synths, polyphonic/monophonic mapping, and CC-to-parameter mapping.
 
 ```supercollider
 // Device connection
@@ -302,25 +266,67 @@ MIDI device connection and synth playback.
 
 // Play with CC mappings
 ~cc.midi.play(\acid, ccMappings: Dictionary[
-  1 -> \cutoff,                   // Simple: CC 1 → cutoff (0-1)
+  1 -> \cutoff,                   // Simple: CC 1 -> cutoff (0-1)
   74 -> (param: \res, range: [0.1, 0.9], curve: \lin)  // Full spec
 ])
 
 // Stop MIDI playback
-~cc.midi.stop
+~cc.midi.stop                     // Stop all synths
+~cc.midi.stop(\lead)              // Stop specific synth
 
 // Clear everything
 ~cc.midi.clear                    // Stop synth and disconnect devices
 ~cc.midi.status                   // Get MIDI status
 ```
 
+### CCMIDIClock
+
+Sends MIDI clock (24 ppqn) synchronized to TempoClock. When enabled, CCArrangement automatically starts/stops the clock on play/stop.
+
+```supercollider
+// Enable clock output with a MIDIOut instance
+~cc.midi.connect("My Device", \out);
+CCMIDIClock.enable(~cc.midi.output);
+
+// Manual control (usually automatic via CCArrangement)
+CCMIDIClock.start;
+CCMIDIClock.stop;
+
+// Disable
+CCMIDIClock.disable;
+```
+
+### CCSamples
+
+Sample management with lazy loading from `~/.claudecollider/samples`.
+
+Place WAV or AIFF files in the samples directory. On boot, file paths are scanned but buffers are only loaded on first use.
+
+```supercollider
+~cc.samples.list              // List available sample names
+~cc.samples.at(\kick)         // Get buffer by name (nil if not loaded)
+~cc.samples.load(\kick)       // Explicitly load buffer (for use in patterns)
+~cc.samples.play(\kick)       // One-shot playback (lazy loads buffer)
+~cc.samples.play(\snare, 0.5, 0.8)  // With rate and amp
+
+// Use in patterns (load first to avoid latency on first trigger)
+~cc.samples.load(\kick);
+Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1).play
+
+// Memory management
+~cc.samples.free(\kick)       // Free single sample buffer
+~cc.samples.freeAll           // Free all loaded buffers
+~cc.samples.reload            // Rescan directory for new samples
+~cc.samples.describe          // Print sample status (loaded/unloaded)
+```
+
+**Note**: Call `~cc.samples.load(\name)` to pre-load a buffer before using `at(\name)` in Pbind.
+
 ### CCRecorder
 
 Audio recording to WAV files in `~/.claudecollider/recordings/`.
 
 ```supercollider
-// Access via ~cc.recorder
-
 ~cc.recorder.start                    // Start recording with auto-generated filename
 ~cc.recorder.start("mysong.wav")      // Start with custom filename
 ~cc.recorder.stop                     // Stop recording and save file
@@ -333,7 +339,7 @@ Recordings are saved as 16-bit WAV files. Auto-generated filenames use the forma
 
 ### CCState
 
-Bus and state management.
+Bus and state management. Named control/audio buses stored in the current environment.
 
 ```supercollider
 ~cc.state.bus(\cutoff)             // Get or create control bus (also sets ~cutoff)
@@ -363,6 +369,100 @@ Status formatting and routing debug visualization.
 ~cc.formatter.playingPdefs         // Array of playing Pdef names
 ~cc.formatter.playingNdefs         // Array of playing Ndef names
 ```
+
+### CCArrangement
+
+Declarative song arrangement sequencer. Defines sections as `[name, bars, elements]` arrays, handles Pdef/Ndef start/stop diffing, and uses drift-free scheduling via `TempoClock.schedAbs`.
+
+```supercollider
+// Define an arrangement
+a = CCArrangement([
+    [\intro, 8, [\kick, \hat]],
+    [\build, 8, [\kick, \hat, \bass, \rim]],
+    [\drop, 16, [\kick, \hat, \bass, \rim, \lead, \pad]],
+    [\break, 8, [\hat, \pad]],
+]);
+
+// Play
+a.play;
+
+// Jump to a section by name
+a.goto(\drop);
+
+// Check status
+a.status;       // "Arrangement: drop (bar 3/16)"
+a.sectionBar;   // 3
+
+// Stop
+a.stop;
+
+// Get the currently playing arrangement
+CCArrangement.current;
+```
+
+#### Section Format
+
+Each section is a 3 or 4 element array:
+
+```supercollider
+[name, bars, elements]           // Basic section
+[name, bars, elements, action]   // With per-section callback
+```
+
+- `name` (Symbol) — Section identifier, posted to console on transition
+- `bars` (Integer) — Duration in bars
+- `elements` (Array) — Pdefs/Ndefs active during this section
+- `action` (Function, optional) — Runs at the start of the section
+
+List all active elements in each section. The arrangement diffs between sections automatically — elements not in the next section are stopped, new elements are started.
+
+```supercollider
+CCArrangement([
+    [\intro, 8, [\kick, \hat]],
+    [\drop, 16, [\kick, \hat, \bass, \lead], { ~cc.fx.set(\fx_reverb, \mix, 0.8) }],
+]).play;
+```
+
+#### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `sections` | Array | Section definitions |
+| `beatsPerBar` | Integer | Beats per bar (default 4) |
+| `sectionIndex` | Integer | Current section index |
+| `sectionName` | Symbol | Current section name |
+| `sectionBars` | Integer | Total bars in current section |
+| `sectionBar` | Integer | Current bar within section (1-based) |
+| `isPlaying` | Boolean | True if arrangement is active |
+| `activeElements` | Set | Currently playing Pdefs/Ndefs |
+
+### CCBreakbeat
+
+Breakbeat slice sequencer. Divides a buffer into equal slices for pattern-based beat rearrangement. Standalone object, not a CC subsystem.
+
+```supercollider
+// Load a sample and create a slicer
+~cc.samples.load(\amen);
+b = CCBreakbeat(\break, ~cc.samples.at(\amen), 8).bars(1);
+
+// Assign a slice pattern and play
+b.pattern([0, 0, 3, 2, 7, 6, 5, 4]);
+Pdef(\break).play;
+
+// Hot-swap the pattern while playing
+b.pattern([0, 1, -2, 3, 4, 5, -6, 7]);
+```
+
+| Method | Description |
+|--------|-------------|
+| `*new(name, buffer, numSlices=8)` | Create slicer bound to a Pdef name |
+| `bars(numBars, beatsPerBar=4)` | Set slice duration from bar count (chainable) |
+| `dur_(beats)` | Set explicit slice duration in beats |
+| `sliceStart(index)` | Normalized start position (0-1) |
+| `sliceEnd(index)` | Normalized end position (0-1) |
+| `pattern(order, rate, amp)` | Assign slice pattern to the Pdef, returns Pdef |
+
+Negative indices reverse that slice's playback. Per-slice rates via array.
 
 ## Tests
 

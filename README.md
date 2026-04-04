@@ -4,11 +4,31 @@ An MCP (Model Context Protocol) server that enables Claude to generate and play 
 
 [![YouTube Playlist](https://i.ytimg.com/vi/b2v-pr3SIvY/hqdefault.jpg?sqp=-oaymwExCOADEI4CSFryq4qpAyMIARUAAIhCGAHwAQH4AaIJgALQBYoCDAgAEAEYSyBVKGUwDw==&rs=AOn4CLBxIV7qDHDQUvoZa3EZxFZQlRIbXQ)](https://youtube.com/playlist?list=PLCSMRjzD98qXnSt50X4tvjvftlwIS-s7r&si=zdckQfASr4E81IGg)
 
+## What It Can Do
+
+**9 MCP tools** give Claude control over SuperCollider:
+
+| Tool           | Description                                                                  |
+| -------------- | ---------------------------------------------------------------------------- |
+| `cc_execute`   | Execute SuperCollider code (auto-boots on first use)                         |
+| `cc_status`    | Show status, routing debug, available synths, or available effects           |
+| `cc_reboot`    | Reboot the audio server or list audio devices                                |
+| `cc_control`   | Control playback: stop all sounds, clear everything, or get/set tempo        |
+| `cc_fx`        | Effects operations: load, set params, bypass, remove, wire, sidechain, chain |
+| `cc_midi`      | MIDI operations: list devices, connect, play synth, or stop                  |
+| `cc_sample`    | Sample operations: inspect, load, play, free, or reload directory            |
+| `cc_recording` | Recording operations: start, stop, or check status                           |
+| `cc_output`    | Hardware output routing: route to outputs, unroute, or show status           |
+
+**27+ built-in synths** across drums, bass, leads, pads, and utility categories. **18 built-in effects** including filters, reverb, delay, modulation, distortion, dynamics, and stereo processing.
+
+See the [ClaudeCollider API reference](ClaudeCollider/README.md) for the full list of synths, effects, and class documentation.
+
 ## Requirements
 
 - [SuperCollider](https://supercollider.github.io/) installed on your system
 - Node.js 18+
-- Claude Desktop
+- Claude Code, Claude Desktop, or any other MCP client
 
 ## Installation
 
@@ -22,7 +42,7 @@ npm test
 
 ## ClaudeCollider Quark
 
-Symlink or copy the ClaudeCollider folder to your Extensions directory:
+Symlink or copy the `ClaudeCollider/` folder to your Extensions directory:
 
 ```bash
 ln -s /path/to/claude-collider/ClaudeCollider ~/Library/Application\ Support/SuperCollider/Extensions/ClaudeCollider
@@ -49,78 +69,64 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 The `env` block is optional - paths default to `~/.claudecollider/samples` and `~/.claudecollider/recordings`.
 
-Restart Claude Desktop after updating the config.
+Restart your MCP client after updating the config.
 
-## Available Tools (9 total)
+## Songwriting
 
-| Tool           | Description                                                              |
-| -------------- | ------------------------------------------------------------------------ |
-| `cc_execute`   | Execute SuperCollider code (auto-boots on first use)                     |
-| `cc_status`    | Show status, routing debug, available synths, or available effects       |
-| `cc_reboot`    | Reboot the audio server or list audio devices                            |
-| `cc_control`   | Control playback: stop all sounds, clear everything, or get/set tempo    |
-| `cc_fx`        | Effects operations: load, set params, bypass, remove, wire, sidechain, chain |
-| `cc_midi`      | MIDI operations: list devices, connect, play synth, or stop              |
-| `cc_sample`    | Sample operations: inspect, load, play, free, or reload directory        |
-| `cc_recording` | Recording operations: start, stop, or check status                       |
-| `cc_output`    | Hardware output routing: route to outputs, unroute, or show status       |
+The `/songwriting` skill is a built-in music theory reference that Claude loads when composing or improving individual parts. It covers:
 
-## Pre-built SynthDefs
+- **Bass** — Bass line theory, patterns, and genre conventions
+- **Breakbeats** — CCBreakbeat slicing, rearrangement, and genre applications
+- **Chords** — Voicing, voice leading, progressions, and extensions
+- **Melody** — Contour, motif development, phrasing, tension and resolution
+- **Rhythm** — Drum patterns, swing, ghost notes, and genre grooves
+- **Scales** — Scales, modes, when to use each, and SuperCollider usage
 
-All synths are automatically loaded on first tool use. Use them with the `\cc_` prefix:
+The skill enforces principles like register separation (keeping bass, chords, and melody in distinct octave ranges), complementary rhythms (if one part is on-beat, another syncopates), and repetition with variation. Ask Claude to use it when you want more musically intentional results:
 
-**Drums**:
+- "Use the songwriting skill to write a better bass line for this tape"
+- "The melody feels flat — can you improve it?"
 
-- **cc_kick** - Punchy kick drum with sub bass
-- **cc_snare** - Snare drum with noise burst
-- **cc_hihat** - Closed hi-hat
-- **cc_openhat** - Open hi-hat with longer decay
-- **cc_clap** - Hand clap with layered noise
-- **cc_tom** - Tunable tom drum for fills
-- **cc_rim** - Rimshot / sidestick
-- **cc_shaker** - Shaker / maraca
-- **cc_cowbell** - 808-style cowbell
+## Tapes
 
-**Bass**:
+Tapes are Claude Collider's session format — a paired `.md` and `.scd` file that capture a complete musical idea. The `tapes/` directory contains saved sessions you can play back or use as starting points.
 
-- **cc_bass** - Simple sub bass with harmonics
-- **cc_acid** - Resonant 303-style filter bass
-- **cc_sub** - Pure sub bass for layering
-- **cc_reese** - Detuned saw bass (DnB/dubstep)
-- **cc_fmbass** - FM bass for growly tones
+A tape consists of:
 
-**Leads & Melodic**:
+- **`<name>.md`** — Metadata and documentation: tempo, key, element descriptions, arrangement overview, and musical notes. Has YAML frontmatter linking to its `.scd` file.
+- **`<name>.scd`** — Executable SuperCollider code defining all Pdefs, Ndefs, effects, and routing. Elements are defined but not played — playback is controlled separately.
+- **`<name>-arrangement.scd`** (optional) — A `CCArrangement` that orchestrates when elements enter and exit across sections.
 
-- **cc_lead** - Detuned saw lead with filter
-- **cc_pluck** - Karplus-Strong plucked string
-- **cc_bell** - FM bell / glassy tone
-- **cc_keys** - Electric piano / Rhodes-ish
-- **cc_strings** - String ensemble pad
+### Playing a Tape
 
-**Pads & Textural**:
+Ask Claude to play a tape by name:
 
-- **cc_pad** - Soft ambient pad with detuned oscillators
-- **cc_noise** - Filtered noise source
-- **cc_drone** - Evolving ambient texture
-- **cc_riser** - Tension building sweep
+- "Play the chopped-break tape"
+- "Load up floor-burner"
+- "Play night-drive in jam mode"
 
-**Utility**:
+There are two playback modes:
 
-- **cc_click** - Metronome click
-- **cc_sine** - Pure sine tone
-- **cc_sampler** - Basic sample playback
-- **cc_grains** - Granular sample playback
+- **Arrangement mode** (default if an arrangement file exists) — Loads the tape's elements and effects, then runs the arrangement which brings elements in and out over time with section transitions.
+- **Jam mode** — Loads everything and starts all elements at once. Good for improvising on top of an existing tape.
 
-## Pre-built Effects
+### Recording a Tape
 
-Load effects with `cc_fx`:
+After a live session, ask Claude to save it:
 
-- **Filters**: lpf, hpf, bpf
-- **Time-based**: reverb, delay, pingpong
-- **Modulation**: chorus, flanger, phaser, tremolo
-- **Distortion**: distortion, bitcrush, wavefold
-- **Dynamics**: compressor, limiter, gate
-- **Stereo**: widener, autopan
+- "Record this session as a tape called midnight-groove"
+- "Save what we've been playing as a tape"
+
+Claude captures the current tempo, patterns, effects, and routing into a new `.md`/`.scd` pair in `tapes/`.
+
+### Arranging a Tape
+
+You can also ask Claude to compose an arrangement for an existing tape:
+
+- "Arrange the floor-burner tape"
+- "Write an arrangement for night-drive with a long build"
+
+This generates a `<name>-arrangement.scd` file with a `CCArrangement` that structures the tape's elements into intro, build, drop, break, and outro sections.
 
 ## Example Prompts
 
