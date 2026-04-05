@@ -101,7 +101,7 @@ CC {
   stop {
     if(CCArrangement.current.notNil) { CCArrangement.current.stop };
     Pdef.all.do(_.stop);
-    this.eachNdef(_.stop);
+    this.eachNdef(_.stop, includeEffects: false);
   }
 
   clear {
@@ -116,10 +116,18 @@ CC {
     state.clear;
   }
 
-  eachNdef { |func|
+  eachNdef { |func, includeEffects=true|
     if(Ndef.all[server.name].notNil) {
       Ndef.all[server.name].keysValuesDo { |key, ndef|
-        if(key.asString.beginsWith("out_").not) { func.value(ndef) };
+        var keyStr = key.asString;
+        if(keyStr.beginsWith(CCOutputs.prefix).not) {
+          if(includeEffects or: {
+            keyStr.beginsWith(CCFX.prefix).not
+            and: { keyStr.beginsWith(CCSidechain.prefix).not }
+          }) {
+            func.value(ndef);
+          };
+        };
       };
     };
   }

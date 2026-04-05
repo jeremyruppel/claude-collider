@@ -338,7 +338,7 @@ CCFormatter {
 
   appendDebugPlayingSources { |lines|
     var playingPdefs = this.playingPdefs;
-    var playingNdefs = this.playingNdefs.reject { |key| key.asString.beginsWith("out_") };
+    var playingNdefs = this.playingNdefs.reject { |key| key.asString.beginsWith(CCOutputs.prefix) };
 
     if(playingPdefs.size == 0 && playingNdefs.size == 0) { ^lines };
 

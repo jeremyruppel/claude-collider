@@ -1,6 +1,8 @@
 // CCSidechain - Sidechain compressor management
 
 CCSidechain {
+  classvar <prefix = "sidechain_";
+
   var <cc;
   var <sidechains;  // Dictionary: name -> (inBus, triggerBus, slot, triggerRoutes)
 
@@ -25,7 +27,7 @@ CCSidechain {
 
     inBus = Bus.audio(cc.server, 2);
     triggerBus = Bus.audio(cc.server, 2);
-    slotName = ("sidechain_" ++ name).asSymbol;
+    slotName = (prefix ++ name).asSymbol;
 
     Ndef(slotName, { |in, trigger, thresh=0.1, rat=4, att=0.01, rel=0.1|
       var sig = In.ar(in, 2);

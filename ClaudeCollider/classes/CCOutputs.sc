@@ -1,6 +1,8 @@
 // CCOutputs - Manages collection of CCOutput instances
 
 CCOutputs {
+  classvar <prefix = "out_";
+
   var <cc;
   var <outputs;  // Dictionary: key -> CCOutput
   var <routes;   // Dictionary: source -> CCOutput
@@ -23,11 +25,11 @@ CCOutputs {
     var key, numChannels, hwOut, inBus, ndef, output;
 
     if(channels.isArray) {
-      key = ("out_" ++ channels[0] ++ "_" ++ channels[1]).asSymbol;
+      key = (prefix ++ channels[0] ++ "_" ++ channels[1]).asSymbol;
       numChannels = 2;
       hwOut = channels[0] - 1;
     } {
-      key = ("out_" ++ channels).asSymbol;
+      key = (prefix ++ channels).asSymbol;
       numChannels = 1;
       hwOut = channels - 1;
     };
@@ -159,9 +161,9 @@ CCOutputs {
 
   remove { |channels|
     var key = if(channels.isArray) {
-      ("out_" ++ channels[0] ++ "_" ++ channels[1]).asSymbol;
+      (prefix ++ channels[0] ++ "_" ++ channels[1]).asSymbol;
     } {
-      ("out_" ++ channels).asSymbol;
+      (prefix ++ channels).asSymbol;
     };
     var output = outputs[key];
 

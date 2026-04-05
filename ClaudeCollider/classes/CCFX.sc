@@ -1,6 +1,8 @@
 // CCFX - Effects loading and management for ClaudeCollider
 
 CCFX {
+  classvar <prefix = "fx_";
+
   var <cc;
   var <defs;
   var <loaded;       // slot -> (name, ndef, inBus, params)
@@ -238,7 +240,7 @@ CCFX {
       ^nil;
     };
 
-    slotName = slot ?? ("fx_" ++ name);
+    slotName = slot ?? (prefix ++ name);
     inBus = Bus.audio(cc.server, 2);
     func = def[\func];
     paramPairs = def[\params].clump(2);
