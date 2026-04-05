@@ -65,6 +65,14 @@ export class OutputParser {
     return this.buffer.includes("ERROR:")
   }
 
+  hasPrompt(): boolean {
+    return this.buffer.includes(OutputParser.SCLANG_PROMPT)
+  }
+
+  hasSyntaxError(): boolean {
+    return this.buffer.includes("syntax error,")
+  }
+
   parseError(): ScError | null {
     if (!this.hasError()) {
       return null
@@ -118,8 +126,47 @@ export class OutputParser {
     return error
   }
 
+  /**
+   * Parse sclang compile-time syntax errors. These bypass the try/catch wrapper
+   * entirely, so no END_MARKER is emitted. Format:
+   *   line N char M:
+   *     <code line>
+   *           ^
+   *   syntax error, unexpected TOKEN[, expecting TOKEN]
+   */
+  parseSyntaxError(): ScError | null {
+    if (!this.hasSyntaxError()) {
+      return null
+    }
+
+    const syntaxMatch = this.buffer.match(
+      /syntax error,\s*(.+?)(?:\n|$)/
+    )
+    if (!syntaxMatch) {
+      return null
+    }
+
+    const error: ScError = {
+      type: "syntax",
+      message: `syntax error, ${syntaxMatch[1].trim()}`,
+    }
+
+    const posMatch = this.buffer.match(/line\s+(\d+)\s+char\s+(\d+)/)
+    if (posMatch) {
+      error.line = parseInt(posMatch[1], 10)
+      error.char = parseInt(posMatch[2], 10)
+    }
+
+    const contextMatch = this.buffer.match(/:\s+(.+)\n\s*\^/)
+    if (contextMatch) {
+      error.context = contextMatch[1].trim()
+    }
+
+    return error
+  }
+
   formatError(): string | null {
-    const error = this.parseError()
+    const error = this.parseError() || this.parseSyntaxError()
     if (!error) {
       return null
     }

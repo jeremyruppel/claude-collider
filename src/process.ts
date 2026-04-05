@@ -123,6 +123,19 @@ export class SclangProcess extends EventEmitter {
       } else {
         this.emit("exec-result", result)
       }
+      return
+    }
+
+    // Fallback: syntax errors are compile-time and bypass the try/catch wrapper,
+    // so no END_MARKER is emitted. Detect them by checking for the sclang prompt
+    // (which appears after every command) combined with a syntax error in the buffer.
+    if (this.parser.hasPrompt() && !this.errorEmitted) {
+      const error = this.parser.formatError()
+      if (error) {
+        this.errorEmitted = true
+        this.emit("exec-error", new Error(error))
+        return
+      }
     }
 
     if (this.parser.hasError() && !this.errorEmitted) {
