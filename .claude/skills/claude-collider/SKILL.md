@@ -27,3 +27,4 @@ This skill enables live music synthesis using SuperCollider via the ClaudeCollid
 
 - [ClaudeCollider README](../../../ClaudeCollider/README.md) — Full ~cc API reference with usage examples
 - [synths.md](synths.md) — All prebuilt synths with type, description, and key params
+- [patterns.md](patterns.md) — CCMotif, CCPhrase, CCMelody, CCArrangement, CCBreakbeat
