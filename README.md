@@ -58,6 +58,29 @@ Symlink or copy the `ClaudeCollider/` folder to your Extensions directory:
 ln -s /path/to/claude-collider/ClaudeCollider ~/Library/Application\ Support/SuperCollider/Extensions/ClaudeCollider
 ```
 
+## Claude Code Configuration
+
+Add the MCP server to your project scope (recommended when live coding from this repo):
+
+```bash
+claude mcp add -t stdio -s project claude-collider -- node /path/to/claude-collider/dist/index.js
+```
+
+Or add it globally so it's available in all projects:
+
+```bash
+claude mcp add -t stdio -s user claude-collider -- node /path/to/claude-collider/dist/index.js
+```
+
+To configure optional environment variables for sample and recording paths:
+
+```bash
+claude mcp add -t stdio -s project \
+  -e CC_SAMPLES_PATH=/path/to/your/samples \
+  -e CC_RECORDINGS_PATH=/path/to/your/recordings \
+  claude-collider -- node /path/to/claude-collider/dist/index.js
+```
+
 ## Claude Desktop Configuration
 
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
@@ -77,7 +100,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-The `env` block is optional - paths default to `~/.claudecollider/samples` and `~/.claudecollider/recordings`.
+The `env` block is optional in all configurations — paths default to `~/.claudecollider/samples` and `~/.claudecollider/recordings`.
 
 Restart your MCP client after updating the config.
 
