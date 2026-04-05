@@ -2,7 +2,9 @@
 
 An MCP (Model Context Protocol) server that enables Claude to generate and play music through SuperCollider. Describe the sounds you want, and Claude will write and execute SuperCollider code in real-time.
 
-[![YouTube Playlist](https://i.ytimg.com/vi/b2v-pr3SIvY/hqdefault.jpg?sqp=-oaymwExCOADEI4CSFryq4qpAyMIARUAAIhCGAHwAQH4AaIJgALQBYoCDAgAEAEYSyBVKGUwDw==&rs=AOn4CLBxIV7qDHDQUvoZa3EZxFZQlRIbXQ)](https://youtube.com/playlist?list=PLCSMRjzD98qXnSt50X4tvjvftlwIS-s7r&si=zdckQfASr4E81IGg)
+<a href="https://youtube.com/playlist?list=PLCSMRjzD98qXnSt50X4tvjvftlwIS-s7r&si=zdckQfASr4E81IGg" target="_blank">
+  <img width="100%" alt="Claude Collider" src="https://github.com/user-attachments/assets/cfd56bcd-5f9b-4d39-9077-9386074b1579" />
+</a>
 
 ## What It Can Do
 
