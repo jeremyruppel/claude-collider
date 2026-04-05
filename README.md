@@ -23,19 +23,16 @@ See the [ClaudeCollider API reference](ClaudeCollider/README.md) for the full li
 
 ### Example Prompts
 
-- "Boot SuperCollider and play a simple sine wave"
-- "Load the kick and snare synths and make a basic beat"
-- "Create an ambient pad that slowly evolves"
-- "Make a 303-style acid bassline"
-- "Set the tempo to 120 BPM"
-- "Connect my MIDI keyboard and let me play the pad synth"
-- "Use CC 1 (mod wheel) to control the filter cutoff"
-- "Show me the server status"
-- "Add some reverb to the drums"
-- "Create an effect chain with filter, distortion, and delay for the bass"
-- "Set up sidechain compression so the kick ducks the bass"
-- "Start recording my jam"
-- "Stop recording and save the file"
+- "Boot SuperCollider and make a four-on-the-floor beat with a deep kick and shaker"
+- "Make a 303-style acid bass with a resonant filter sweep, run it through distortion and delay"
+- "Set up sidechain compression so the kick ducks the bass and the pad"
+- "Load the amen break sample, slice it into 16, and rearrange it into a choppy DnB pattern"
+- "Write a lead melody using motif development — start with a short phrase, then transpose and invert it"
+- "Compose a full arrangement with an intro, two builds, two drops, a breakdown, and an outro"
+- "Record this session as a tape called late-night-acid, then play it back with the arrangement"
+- "The bass line is boring — use the songwriting skill to rewrite it with approach notes and octave jumps"
+- "Connect my MIDI keyboard to the pad synth with mod wheel controlling the filter cutoff, and sync MIDI clock to the arrangement"
+- "Build a granular texture from the vocal sample, layer a polymetric 5-beat kick under it, and arrange the whole thing into a slow build"
 
 ## Requirements
 
