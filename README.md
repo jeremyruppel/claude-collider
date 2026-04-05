@@ -1,6 +1,8 @@
 # Claude Collider
 
-An MCP (Model Context Protocol) server that enables Claude to generate and play music through SuperCollider. Describe the sounds you want, and Claude will write and execute SuperCollider code in real-time.
+An MCP (Model Context Protocol) server that enables your LLM to generate and play music through SuperCollider. Describe the sounds you want, and your LLM will write and execute SuperCollider code in real-time. 
+
+Live coding from inside this repository is recommended but completely optional. This repo contains Claude-specific instructions (CLAUDE.md, skills) that make Claude the best songwriter out there, but the MCP server should work with any MCP client.
 
 <a href="https://youtube.com/playlist?list=PLCSMRjzD98qXnSt50X4tvjvftlwIS-s7r&si=zdckQfASr4E81IGg" target="_blank">
   <img width="100%" alt="Claude Collider" src="https://github.com/user-attachments/assets/cfd56bcd-5f9b-4d39-9077-9386074b1579" />
@@ -8,23 +10,32 @@ An MCP (Model Context Protocol) server that enables Claude to generate and play 
 
 ## What It Can Do
 
-**9 MCP tools** give Claude control over SuperCollider:
+### Major Features
 
-| Tool           | Description                                                                  |
-| -------------- | ---------------------------------------------------------------------------- |
-| `cc_execute`   | Execute SuperCollider code (auto-boots on first use)                         |
-| `cc_status`    | Show status, routing debug, available synths, or available effects           |
-| `cc_reboot`    | Reboot the audio server or list audio devices                                |
-| `cc_control`   | Control playback: stop all sounds, clear everything, or get/set tempo        |
-| `cc_fx`        | Effects operations: load, set params, bypass, remove, wire, sidechain, chain |
-| `cc_midi`      | MIDI operations: list devices, connect, play synth, or stop                  |
-| `cc_sample`    | Sample operations: inspect, load, play, free, or reload directory            |
-| `cc_recording` | Recording operations: start, stop, or check status                           |
-| `cc_output`    | Hardware output routing: route to outputs, unroute, or show status           |
-
-**27+ built-in synths** across drums, bass, leads, pads, and utility categories. **18 built-in effects** including filters, reverb, delay, modulation, distortion, dynamics, and stereo processing.
+- Auto-boots SuperCollider within your LLM session and exposes 9 MCP tools to interact with it
+- Music theory LLM skill and utility SuperColloder classes for arrangement, melody development, and a breakbeat mangler
+- Sampler with support for auto-loading samples from user directories
+- "Tape" format for recording and playing back songs across LLM sessions
+- **27+ built-in synths** across drums, bass, leads, pads, and utility categories
+- **18+ built-in effects** including dynamics, sidechain, filters, reverb, delay, modulation, distortion, and stereo processing
 
 See the [ClaudeCollider API reference](ClaudeCollider/README.md) for the full list of synths, effects, and class documentation.
+
+### Example Prompts
+
+- "Boot SuperCollider and play a simple sine wave"
+- "Load the kick and snare synths and make a basic beat"
+- "Create an ambient pad that slowly evolves"
+- "Make a 303-style acid bassline"
+- "Set the tempo to 120 BPM"
+- "Connect my MIDI keyboard and let me play the pad synth"
+- "Use CC 1 (mod wheel) to control the filter cutoff"
+- "Show me the server status"
+- "Add some reverb to the drums"
+- "Create an effect chain with filter, distortion, and delay for the bass"
+- "Set up sidechain compression so the kick ducks the bass"
+- "Start recording my jam"
+- "Stop recording and save the file"
 
 ## Requirements
 
@@ -73,7 +84,25 @@ The `env` block is optional - paths default to `~/.claudecollider/samples` and `
 
 Restart your MCP client after updating the config.
 
-## Songwriting
+## MCP Tools
+
+**9 MCP tools** give Claude control over SuperCollider:
+
+| Tool           | Description                                                                  |
+| -------------- | ---------------------------------------------------------------------------- |
+| `cc_execute`   | Execute SuperCollider code (auto-boots on first use)                         |
+| `cc_status`    | Show status, routing debug, available synths, or available effects           |
+| `cc_reboot`    | Reboot the audio server or list audio devices                                |
+| `cc_control`   | Control playback: stop all sounds, clear everything, or get/set tempo        |
+| `cc_fx`        | Effects operations: load, set params, bypass, remove, wire, sidechain, chain |
+| `cc_midi`      | MIDI operations: list devices, connect, play synth, or stop                  |
+| `cc_sample`    | Sample operations: inspect, load, play, free, or reload directory            |
+| `cc_recording` | Recording operations: start, stop, or check status                           |
+| `cc_output`    | Hardware output routing: route to outputs, unroute, or show status           |
+
+## Skills
+
+### Songwriting
 
 The `/songwriting` skill is a built-in music theory reference that Claude loads when composing or improving individual parts. It covers:
 
@@ -129,22 +158,6 @@ You can also ask Claude to compose an arrangement for an existing tape:
 - "Write an arrangement for night-drive with a long build"
 
 This generates a `<name>-arrangement.scd` file with a `CCArrangement` that structures the tape's elements into intro, build, drop, break, and outro sections.
-
-## Example Prompts
-
-- "Boot SuperCollider and play a simple sine wave"
-- "Load the kick and snare synths and make a basic beat"
-- "Create an ambient pad that slowly evolves"
-- "Make a 303-style acid bassline"
-- "Set the tempo to 120 BPM"
-- "Connect my MIDI keyboard and let me play the pad synth"
-- "Use CC 1 (mod wheel) to control the filter cutoff"
-- "Show me the server status"
-- "Add some reverb to the drums"
-- "Create an effect chain with filter, distortion, and delay for the bass"
-- "Set up sidechain compression so the kick ducks the bass"
-- "Start recording my jam"
-- "Stop recording and save the file"
 
 ## Debug Mode
 
