@@ -165,6 +165,18 @@ export class OutputParser {
     return error
   }
 
+  /**
+   * Extract raw error content from the buffer when the prompt appeared
+   * but no END_MARKER was emitted and no specific error pattern matched.
+   * Strips the prompt and wrapper code noise, returns whatever sclang said.
+   */
+  extractRawError(): string | null {
+    const cleaned = this.buffer
+      .replace(/sc3> /g, "")
+      .trim()
+    return cleaned || null
+  }
+
   formatError(): string | null {
     const error = this.parseError() || this.parseSyntaxError()
     if (!error) {

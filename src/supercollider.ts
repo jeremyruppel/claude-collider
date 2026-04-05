@@ -96,7 +96,8 @@ export class SuperCollider extends EventEmitter {
 
     return new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error("Execution timed out"))
+        const bufferError = this.process.getBufferError()
+        reject(new Error(bufferError || "Execution timed out"))
       }, this.config.execTimeout)
 
       const cleanup = () => {

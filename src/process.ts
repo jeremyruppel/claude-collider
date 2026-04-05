@@ -49,6 +49,10 @@ export class SclangProcess extends EventEmitter {
     this.send(OutputParser.wrapCode(code))
   }
 
+  getBufferError(): string | null {
+    return this.parser.formatError() || this.parser.extractRawError()
+  }
+
   async kill(): Promise<void> {
     if (!this.process) return
 
@@ -126,9 +130,11 @@ export class SclangProcess extends EventEmitter {
       return
     }
 
-    // Fallback: syntax errors are compile-time and bypass the try/catch wrapper,
+    // Fallback: compile-time errors bypass the try/catch wrapper entirely,
     // so no END_MARKER is emitted. Detect them by checking for the sclang prompt
-    // (which appears after every command) combined with a syntax error in the buffer.
+    // (which appears after every command) combined with a recognized error pattern.
+    // Only use formatError() here (not raw buffer) to avoid false positives from
+    // async informational output that arrives before the END_MARKER.
     if (this.parser.hasPrompt() && !this.errorEmitted) {
       const error = this.parser.formatError()
       if (error) {
