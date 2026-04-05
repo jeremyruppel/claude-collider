@@ -9,7 +9,7 @@
 \degree, Pseq([0, 2, 4, Rest(), 2, 4, 5, Rest(), 3, 4, 2, 0, Rest(), Rest(), Rest(), Rest()], inf)
 
 // GOOD: motif with structured development
-var m = CCMotif([0, 2, 4, Rest()]);
+m = CCMotif([0, 2, 4, Rest()]);
 \degree, CCPhrase(m, [\state, \state, \transpose, 2, \invert])
 ```
 
@@ -18,7 +18,7 @@ var m = CCMotif([0, 2, 4, Rest()]);
 A CCMotif wraps a short degree array (2–6 notes + rests) and provides transformations. Each transformation returns a new CCMotif. Since it's a Pattern subclass, it works directly in Pseq and Pn.
 
 ```supercollider
-var m = CCMotif([0, 2, 4, Rest()]);
+m = CCMotif([0, 2, 4, Rest()]);
 
 m.transpose(2)    // [2, 4, 6, Rest()]
 m.transpose(-1)   // [-1, 1, 3, Rest()]
@@ -46,7 +46,7 @@ CCPhrase takes a motif and a development plan, producing a structured phrase tha
 - `\extend, [degrees]` — play with extra notes appended
 
 ```supercollider
-var m = CCMotif([0, 2, 4, Rest()]);
+m = CCMotif([0, 2, 4, Rest()]);
 
 // State it, repeat it, vary it, resolve it
 \degree, CCPhrase(m, [
@@ -63,8 +63,8 @@ Convenience factory methods for standard melodic forms.
 
 ### Call and response
 ```supercollider
-var call = CCMotif([0, 2, 4, 5, Rest(), Rest()]);
-var resp = CCMotif([4, 3, 2, 0, Rest(), Rest()]);
+call = CCMotif([0, 2, 4, 5, Rest(), Rest()]);
+resp = CCMotif([4, 3, 2, 0, Rest(), Rest()]);
 \degree, CCMelody.callAndResponse(call, resp)
 ```
 
@@ -99,8 +99,8 @@ End motifs with `Rest()`. The silence is anticipation, not emptiness.
 ### Call and response
 First phrase asks (ends on tension — degree 3, 4, or 5). Second phrase answers (resolves to 0 or 2):
 ```supercollider
-var call = CCMotif([0, 2, 4, 5, Rest(), Rest()]);   // tension
-var resp = CCMotif([4, 3, 2, 0, Rest(), Rest()]);   // resolve
+call = CCMotif([0, 2, 4, 5, Rest(), Rest()]);   // tension
+resp = CCMotif([4, 3, 2, 0, Rest(), Rest()]);   // resolve
 \degree, CCMelody.callAndResponse(call, resp)
 ```
 
@@ -115,7 +115,7 @@ Electronic melodies are different from pop/rock. They need to:
 ## Full Example
 
 ```supercollider
-var m = CCMotif([0, 2, 4, Rest()]);
+m = CCMotif([0, 2, 4, Rest()]);
 
 Pdef(\lead, Pbind(
     \instrument, \cc_lead,
@@ -136,7 +136,7 @@ Pdef(\lead, Pbind(
 
 Same motif, shifted by a 16th — instant variation:
 ```supercollider
-var m = CCMotif([0, 2, 4, Rest()]);
+m = CCMotif([0, 2, 4, Rest()]);
 // Displace by adding a rest at the start
-var displaced = CCMotif([Rest()]).extend(m.degrees);
+displaced = CCMotif([Rest()]).extend(m.degrees);
 ```
