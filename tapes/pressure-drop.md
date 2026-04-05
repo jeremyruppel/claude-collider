@@ -10,7 +10,7 @@ arrangement: pressure-drop-arrangement.scd
 
 # Pressure Drop
 
-Tech house jam at 126 BPM in F Dorian with intricate drums, a driving acid sequencer bassline, and layered pads and stabs.
+Tech house jam at 126 BPM in F Dorian with intricate drums, a punchy scoop-EQ kick, driving acid bass, bandpass-filtered stabs, and layered pads and drone.
 
 ## Chord Progression
 
@@ -18,7 +18,7 @@ Fm7 | Fm7 | Bbm7 | Bbm7 (16 bars)
 
 ## Elements
 
-- **Kick** (cc_kick) - Four on the floor, steady anchor
+- **Kick** (cc_kick_scoop) - Four on the floor, custom SynthDef with scoop EQ: boosted sub at 80Hz, -8dB cut at 400Hz, boosted click at 4kHz, with drive
 - **Hi-hats** (cc_hihat) - Intricate 16ths with ghost notes, open hat on the "and" of 4
 - **Clap** (cc_clap) - Backbeat on 4
 - **Shaker** (cc_shaker) - Subtle 16th-note texture layer
@@ -31,11 +31,15 @@ Fm7 | Fm7 | Bbm7 | Bbm7 (16 bars)
 ## Effects
 
 - **Reverb** on pad (mix 0.45, room 0.7, damp 0.6)
-- **Delay** on stabs (mix 0.3, time 0.375, feedback 0.35)
+- **BPF** on stabs (freq 1200, bw 0.5)
 
 ## Sidechain
 
-- **kick_duck** — threshold 0.08, ratio 6, attack 0.005, release 0.15 -> bass, trigger: kick
+- **kick_duck** — threshold 0.08, ratio 6, attack 0.005, release 0.15 -> bass, pad, drone; trigger: kick
+
+## Notes
+
+Hi-hat pattern uses a 16-step sequence with varied decay times for open/closed feel. Bass uses chromatic approach note (-1 degree) at end of the second bar for forward motion. Stab voicings alternate between Fm and Eb/F inversions. The kick uses a custom SynthDef (cc_kick_scoop) that bakes in a 3-band scoop EQ for a punchy, scooped sound. Sidechain ducks bass, pad, and drone against the kick.
 
 ## Arrangement (~2:17)
 
@@ -48,10 +52,6 @@ Fm7 | Fm7 | Bbm7 | Bbm7 (16 bars)
 7. **Break 2** (4 bars) - Pad + stabs + drone
 8. **Final Push** (12 bars) - Full energy + drone
 9. **Outro** (8 bars) - Elements peel away, drone fades with hats, kick last
-
-## Notes
-
-Hi-hat pattern uses a 16-step sequence with varied decay times for open/closed feel. Bass uses chromatic approach note (-1 degree) at end of the second bar for forward motion. Stab voicings alternate between Fm and Eb/F inversions.
 
 ## Playback
 

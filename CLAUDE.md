@@ -45,7 +45,7 @@ Main entry point stored in `~cc`. Access subsystems via `~cc.synths`, `~cc.fx`, 
 
 ## ~cc.synths - Synth Definitions
 
-27+ pre-built synths with `cc_` prefix.
+30 pre-built synths with `cc_` prefix.
 
 | Method | Description |
 | --- | --- |

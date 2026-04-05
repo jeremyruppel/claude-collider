@@ -66,7 +66,7 @@ Pdef(\<name>, Pbind(
 - Always start with `~cc.clear` and `~cc.tempo`
 - Number each block with a comment: `// 1.`, `// 2.`, etc.
 - Use `play(quant: 4)` on Pdefs for aligned playback
-- **NO sample loading or `cc_sampler` usage** — use built-in synths as default voices. Samples are a playback-time decision.
+- **Repo samples OK** — samples from the `samples/` directory (committed to the repo) can be loaded and used. System-specific sample paths are still not allowed.
 - **NO MIDI setup** — playback-time decision
 - **NO hardware output routing** (`routeToOutput`) — system-specific
 - **NO server boot/reboot commands** — handled by playback
@@ -129,14 +129,14 @@ Execute each block from `<name>.scd` verbatim via `cc_execute`. Run blocks in or
 - Omit the Effects section if there are none (note this in Notes instead)
 - Omit the Sidechain section if there is none
 - Element descriptions should focus on musical role, not implementation details
-- Do NOT include sample names — describe the sound role instead (e.g., "Kick - four on the floor, punchy and deep")
+- Repo sample names (from `samples/`) can be mentioned in element descriptions. Do NOT include system-specific sample names.
 - The synth in parentheses is the default voice used in the .scd, not a requirement
 
 ## What NOT to record
 
 These are **playback-time decisions**, not part of the tape:
 
-- **Samples** — which samples to use (or whether to use samples at all)
+- **System-specific samples** — samples outside the repo's `samples/` directory
 - **MIDI routing** — which devices, channels, CC mappings
 - **Audio device / hardware output routing** — system-specific
 - **Server boot configuration** — device, num outputs, etc.
@@ -145,7 +145,7 @@ These are **playback-time decisions**, not part of the tape:
 ## Fixing existing tapes
 
 If asked to fix or update an existing tape, apply these same rules. Common fixes:
-- Remove sample references (replace `cc_sampler` + buffer with a built-in synth like `cc_kick`, `cc_snare`)
-- Remove hardcoded sample names from the `.md` element list
+- Remove system-specific sample references (replace with built-in synths or repo samples)
+- Remove system-specific sample names from the `.md` element list (repo `samples/` names are OK)
 - Add missing `key` to frontmatter (use `atonal` if appropriate)
 - Remove any device/routing setup

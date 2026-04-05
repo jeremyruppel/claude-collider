@@ -110,6 +110,21 @@ CCSynths {
         }
       ),
 
+      cc_fmtom: (
+        description: "FM tom. Sine carrier with ratio sweep from ratioStart to ratioEnd over sweep time for harmonic attack. Index controls FM depth. Default 120Hz, 300ms decay. One-shot.",
+        def: {
+          SynthDef(\cc_fmtom, { |out=0, freq=120, amp=0.5, decay=0.3, index=1.5, ratioStart=2, ratioEnd=1, sweep=0.3|
+            var sig, mod, env, ratio;
+            env = EnvGen.kr(Env.perc(0.01, decay), doneAction: 2);
+            ratio = EnvGen.kr(Env([ratioStart, ratioEnd], [sweep], \exp));
+            mod = SinOsc.ar(freq * ratio) * index * freq;
+            sig = SinOsc.ar(freq + mod);
+            sig = sig * env * amp;
+            Out.ar(out, sig ! 2);
+          })
+        }
+      ),
+
       cc_rim: (
         description: "Rimshot/sidestick. Tight BPF noise (Q=0.02) at 1700Hz default + 1200Hz sine click on attack. Fixed 30ms decay, very percussive. One-shot.",
         def: {
@@ -226,6 +241,20 @@ CCSynths {
             var sig, mod, env;
             env = EnvGen.kr(Env.adsr(0.01, 0.15, 0.7, 0.2), gate, doneAction: 2);
             // Simple 2-op FM: modulator -> carrier
+            mod = SinOsc.ar(freq * ratio) * index * freq;
+            sig = SinOsc.ar(freq + mod);
+            sig = sig * env * amp;
+            Out.ar(out, sig ! 2);
+          })
+        }
+      ),
+
+      cc_fmsub: (
+        description: "FM sub bass. Sine carrier with sine modulator for subtle harmonics. Short sustain (0.3), medium release (500ms). Index controls FM depth. Gate-controlled.",
+        def: {
+          SynthDef(\cc_fmsub, { |out=0, freq=55, amp=0.4, index=1, ratio=1, attack=0.01, sustain=0.3, release=0.5, gate=1|
+            var sig, mod, env;
+            env = EnvGen.kr(Env.adsr(attack, 0.1, sustain, release), gate, doneAction: 2);
             mod = SinOsc.ar(freq * ratio) * index * freq;
             sig = SinOsc.ar(freq + mod);
             sig = sig * env * amp;

@@ -1,7 +1,7 @@
 ---
 name: Chopped Break
 tempo: 142
-key: Fm
+key: Em
 scd: chopped-break.scd
 ---
 
@@ -9,28 +9,35 @@ scd: chopped-break.scd
 
 # Chopped Break
 
-Breakbeat chops with acid bass and stabby lead at 142 BPM in F minor.
+Haunting harmonic minor melody over chopped breakbeats at 142 BPM in Em.
 
 ## Elements
 
-- **Break** (CCBreakbeat + drum_break_142bpm_4_bar) - 4-bar break sliced into 16, rearranged with reversed slices for a choppy feel
-- **Bass** (cc_acid) - Syncopated 2-bar bass in Fm, long root notes with double-time hits and octave jump in bar 2
-- **Lead** (cc_keys) - Rhodes melody in Fm, 2-bar phrase with dotted eighth delay
+- **Break** (cc_breakbeat) - 4-bar break sliced into 16, rearranged with reversed slices, half-time repeats, and stutter patterns across sections
+- **Bass** (cc_bass) - 2-bar CCMotif riff on root/4th/3rd in Em harmonic minor
+- **Melody** (cc_pluck) - Descending pluck motif with CCPhrase development (state, transpose +3, invert), dark and sparse
 
-## Arrangement (~0:41)
+## Effects
 
-1. **Intro** (8 bars) - Original break in sequence
-2. **Build** (8 bars) - Acid bass enters
-3. **Drop** (8 bars) - Full stack, chopped break pattern
-4. **Break** (4 bars) - Lead melody solo
-5. **Drop 2** (8 bars) - Everything back, second chop pattern
-6. **Outro** (8 bars) - Back to original sequence
+- **Delay** on melody (mix 0.15, dotted eighth 0.375s, decay 2)
+- **Reverb** chained from delay (mix 0.55, room 0.9, damp 0.7)
+
+## Arrangement (~3:47)
+
+1. **Intro** (4 bars) - Melody alone with reverb wash
+2. **Build** (4 bars) - Straight break enters
+3. **Chop 1** (8 bars) - Full stack, rearranged slices with reversed hits
+4. **Halftime** (4 bars) - Bass and break only, repeated slices at half rate
+5. **Chop 2** (8 bars) - Full stack, fully reversed slice order
+6. **Stutter** (4 bars) - Melody and break, stutter pattern at double rate
+7. **Outro** (4 bars) - Melody alone
 
 ## Notes
 
 - The break uses `drum_break_142bpm_4_bar` from the repo's `samples/` directory
-- Delay on keys (dotted eighth, 0.375s, feedback 0.4)
-- No chord progression; all parts are riff-based over Fm
+- Delay chains into reverb for extra depth on the pluck melody
+- No chord progression; all parts are riff-based over Em harmonic minor
+- CCBreakbeat showcase: straight, chopped, halftime, reversed, and stutter patterns
 
 ## Playback
 

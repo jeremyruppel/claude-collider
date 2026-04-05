@@ -96,6 +96,7 @@ CC {
     } {
       ^TempoClock.default.tempo * 60;
     };
+    CCMIDIClock.start;
   }
 
   stop {

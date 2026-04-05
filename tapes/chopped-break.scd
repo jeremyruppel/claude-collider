@@ -1,53 +1,77 @@
-// Chopped Break - breakbeat chops with acid bass and keys at 142 BPM in Fm
-// Fm (no progression, riff-based)
+// Chopped Break - haunting harmonic minor melody with breakbeat chops at 142 BPM in Em
+// Em harmonic minor (no progression, riff-based)
 
 // 1. Clear and set tempo
 ~cc.clear;
 ~cc.tempo(142);
 
-// 2. Break - chopped breakbeat from 4-bar sample
+// 2. Break - 4-bar breakbeat sliced into 16
 ~cc.samples.load(\drum_break_142bpm_4_bar);
 b = CCBreakbeat(\break, ~cc.samples.at(\drum_break_142bpm_4_bar), 16).bars(4);
-b.pattern((0..15), amp: 0.6);
+b.pattern((0..15), amp: 0.5);
 Pdef(\break).play(quant: 4);
 
-// 3. Bass - syncopated acid bass in Fm with octave jump
+// 3. Bass - 2-bar root/4th/3rd riff in Em harmonic minor
+m = CCMotif([0, 0, Rest(), 0, 3, 3, Rest(), 2]);
 Pdef(\bass, Pbind(
-    \instrument, \cc_acid,
-    \scale, Scale.minor,
-    \root, 5,
+    \instrument, \cc_bass,
+    \scale, Scale.harmonicMinor,
+    \root, 4,
     \octave, 3,
-    \degree, Pseq([
-        0, \rest, 0, 0, 2, \rest, 0, \rest,
-        0, \rest, 0, 7, \rest, 2, 0, \rest
-    ], inf).collect { |n| if(n == \rest) { Rest() } { n } },
-    \dur, Pseq([
-        1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.25, 0.25,
-        0.5, 0.5, 0.5, 1, 0.5, 0.5, 0.25, 0.25
-    ], inf),
-    \amp, 0.4,
-    \cutoff, 800,
-    \res, 0.6,
-    \decay, 0.2
-)).play(quant: 4);
-
-// 4. Lead - Rhodes melody in Fm
-Pdef(\lead, Pbind(
-    \instrument, \cc_keys,
-    \scale, Scale.minor,
-    \root, 5,
-    \octave, 5,
-    \degree, Pseq([
-        0, \rest, 2, 4, \rest, 3, 2, \rest,
-        0, -1, \rest, 0, 2, \rest, 3, \rest
-    ], inf).collect { |n| if(n == \rest) { Rest() } { n } },
+    \degree, Pn(m),
     \dur, 0.5,
-    \amp, 0.25,
-    \brightness, 0.6,
-    \release, 0.3
+    \amp, 0.5,
+    \legato, 0.6
 )).play(quant: 4);
 
-// 5. Effects
+// 4. Melody - haunting pluck in Em harmonic minor
+m2 = CCMotif([4, 3, Rest(), 2, 0, Rest(), -1, 0]);
+Pdef(\melody, Pbind(
+    \instrument, \cc_pluck,
+    \scale, Scale.harmonicMinor,
+    \root, 4,
+    \octave, 5,
+    \degree, CCPhrase(m2, [
+        \state,
+        \state,
+        \transpose, 3,
+        \invert
+    ]),
+    \dur, 0.5,
+    \decay, 3,
+    \color, 0.3,
+    \amp, 0.35
+)).play(quant: 4);
+
+// 5. Effects - delay into reverb on melody
 ~cc.fx.load(\delay);
-~cc.fx.set(\fx_delay, \mix, 0.3, \time, 0.375, \feedback, 0.4);
-~cc.fx.route(\lead, \fx_delay);
+~cc.fx.set(\fx_delay, \mix, 0.15, \time, 0.375, \decay, 2);
+~cc.fx.route(\melody, \fx_delay);
+~cc.fx.load(\reverb);
+~cc.fx.set(\fx_reverb, \mix, 0.55, \room, 0.9, \damp, 0.7);
+~cc.fx.connect(\fx_delay, \fx_reverb);
+
+// 6. Arrangement
+CCArrangement([
+    [\intro, 4, [\melody], {
+        b.pattern((0..15));
+    }],
+    [\build, 4, [\melody, \break], {
+        b.pattern((0..15));
+    }],
+    [\chop1, 8, [\melody, \bass, \break], {
+        b.pattern([0, 0, 3, 2, -7, 6, 5, 4, 0, 1, -2, 3, 8, 9, -14, 15]);
+    }],
+    [\halftime, 4, [\bass, \break], {
+        b.pattern([0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12], 0.5);
+    }],
+    [\chop2, 8, [\melody, \bass, \break], {
+        b.pattern([15, 14, -13, 12, 3, 2, -1, 0, 7, 6, -5, 4, 11, 10, -9, 8]);
+    }],
+    [\stutter, 4, [\melody, \break], {
+        b.pattern([0, 0, 0, 1, 4, 4, 4, 5, 0, 0, -7, -7, 14, 14, 15, 15], 2);
+    }],
+    [\outro, 4, [\melody], {
+        b.pattern((0..15));
+    }]
+]).play;
