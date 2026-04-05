@@ -38,11 +38,10 @@ CCOutputs {
 
     ndef = Ndef(key, {
       var sig = InFeedback.ar(\in.kr(0), numChannels);
-      sig = Limiter.ar(sig, 0.95);
-      Out.ar(\hwOut.kr(hwOut), sig);
+      Limiter.ar(sig, 0.95);
     });
-    ndef.set(\in, inBus.index, \hwOut, hwOut);
-    ndef.play;
+    ndef.set(\in, inBus.index);
+    ndef.play(out: hwOut);
 
     output = CCOutput(cc, key, ndef, inBus, channels, hwOut);
     outputs[key] = output;
@@ -60,11 +59,10 @@ CCOutputs {
 
     ndef = Ndef(\out_main, {
       var sig = InFeedback.ar(\in.kr(0), 2);
-      sig = Limiter.ar(sig, 0.95);
-      Out.ar(\hwOut.kr(0), sig);
+      Limiter.ar(sig, 0.95);
     });
-    ndef.set(\in, mainBus.index, \hwOut, 0);
-    ndef.play;
+    ndef.set(\in, mainBus.index);
+    ndef.play(out: 0);
 
     output = CCOutput(cc, \out_main, ndef, mainBus, [1, 2], 0);
     outputs[\out_main] = output;
@@ -168,8 +166,8 @@ CCOutputs {
     var output = outputs[key];
 
     if(output.notNil) {
-      routes.keysValuesDo { |src, out|
-        if(out === output) { routes.removeAt(src) };
+      routes.keys.do { |src|
+        if(routes[src] === output) { routes.removeAt(src) };
       };
       output.free;
       outputs.removeAt(key);
@@ -182,7 +180,7 @@ CCOutputs {
     outputs.do(_.free);
     outputs.clear;
     routes.clear;
-    if(mainBus.notNil) { mainBus.free; mainBus = nil };
+    mainBus = nil;  // Already freed by CCOutput.free
   }
 
   // ========== Status ==========

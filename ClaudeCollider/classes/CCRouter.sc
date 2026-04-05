@@ -44,6 +44,11 @@ CCRouter {
       ^nil;
     };
 
+    // Clean up existing connection from this source
+    if(connections[from.asSymbol].notNil) {
+      connections[from.asSymbol].routeSynth.free;
+    };
+
     routeSynth = Synth(\cc_bus_copy, [\in, fromInfo.ndef.bus.index, \out, toInfo.inBus.index]);
 
     connections[from.asSymbol] = (
@@ -162,16 +167,18 @@ CCRouter {
       connections.removeAt(slot.asSymbol);
     };
 
-    // Remove connections to this effect
-    connections.keysValuesDo { |from, conn|
+    // Remove connections to this effect (snapshot keys to avoid mutation during iteration)
+    connections.keys.do { |from|
+      var conn = connections[from];
       if(conn.to == slot.asSymbol) {
         conn.routeSynth.free;
         connections.removeAt(from);
       };
     };
 
-    // Remove routes to this effect
-    routes.keysValuesDo { |source, info|
+    // Remove routes to this effect (snapshot keys to avoid mutation during iteration)
+    routes.keys.do { |source|
+      var info = routes[source];
       if(info.target == slot.asSymbol) {
         if(info.routeSynth.notNil) { info.routeSynth.free };
         if(Pdef.all[source].notNil) { Pdef(source).set(\out, 0) };

@@ -4,7 +4,7 @@ CCOutput {
   var <cc;
   var <key;          // Symbol: \out_main, \out_3, \out_3_4
   var <ndef;
-  var <inBus;        // Bus - nil for main output (uses bus 0)
+  var <inBus;        // Bus - mainBus for main output, dedicated bus for aux
   var <channels;     // Integer or Array: 3 or [3, 4] (1-indexed)
   var <hwOut;        // Integer: hardware output index (0-indexed)
   var <routeSynths;  // Dictionary: source -> Synth
@@ -26,7 +26,7 @@ CCOutput {
   // ========== Properties ==========
 
   isMain {
-    ^inBus.isNil;
+    ^key == \out_main;
   }
 
   isPlaying {
@@ -46,7 +46,7 @@ CCOutput {
   }
 
   inputBusIndex {
-    ^if(this.isMain) { 0 } { inBus.index };
+    ^inBus.index;
   }
 
   // ========== Routing ==========
@@ -64,12 +64,9 @@ CCOutput {
     if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server][srcSym].notNil }) {
       var srcNdef = Ndef(srcSym);
       this.unrouteNdef(srcSym);
-      if(this.isMain) {
-        srcNdef.set(\out, 0);
-      } {
-        routeSynths[srcSym] = Synth(\cc_bus_copy,
-          [\in, srcNdef.bus.index, \out, inBus.index]);
-      };
+      routeSynths[srcSym] = Synth(
+        if(srcNdef.numChannels == 1) { \cc_bus_copy_mono } { \cc_bus_copy },
+        [\in, srcNdef.bus.index, \out, inBus.index]);
       ^true;
     };
 
@@ -115,7 +112,7 @@ CCOutput {
 
   setHwOut { |out|
     hwOut = out;
-    ndef.set(\hwOut, out);
+    ndef.play(out: out);
   }
 
   // ========== Cleanup ==========

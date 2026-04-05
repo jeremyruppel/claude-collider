@@ -1,11 +1,12 @@
 // CCOutputTest - Unit tests for CCOutput
 
 CCOutputTest : UnitTest {
-  var output, mockCC, mockInBus;
+  var output, mockCC, mockInBus, mockMainBus;
 
   setUp {
     mockCC = this.createMockCC;
     mockInBus = this.createMockInBus;
+    mockMainBus = this.createMockMainBus;
   }
 
   tearDown {
@@ -31,6 +32,13 @@ CCOutputTest : UnitTest {
     );
   }
 
+  createMockMainBus {
+    ^(
+      index: 4,
+      free: {}
+    );
+  }
+
   createTestNdef { |name|
     ^Ndef(name, { Silent.ar(2) });
   }
@@ -43,8 +51,8 @@ CCOutputTest : UnitTest {
 
   test_isMain_true {
     var ndef = this.createTestNdef(\testOutput1);
-    output = CCOutput(mockCC, \out_main, ndef, nil, [1, 2], 0);
-    this.assert(output.isMain, "Output with nil inBus should be main");
+    output = CCOutput(mockCC, \out_main, ndef, mockMainBus, [1, 2], 0);
+    this.assert(output.isMain, "Output with key out_main should be main");
   }
 
   test_isMain_false {
@@ -85,8 +93,8 @@ CCOutputTest : UnitTest {
 
   test_inputBusIndex_main {
     var ndef = this.createTestNdef(\testOutput1);
-    output = CCOutput(mockCC, \out_main, ndef, nil, [1, 2], 0);
-    this.assertEquals(output.inputBusIndex, 0, "Main output should use bus 0");
+    output = CCOutput(mockCC, \out_main, ndef, mockMainBus, [1, 2], 0);
+    this.assertEquals(output.inputBusIndex, 4, "Main output should use mainBus index");
   }
 
   test_inputBusIndex_other {
@@ -99,7 +107,7 @@ CCOutputTest : UnitTest {
 
   test_isPlaying_false {
     var ndef = this.createEmptyNdef(\testOutput1);
-    output = CCOutput(mockCC, \out_main, ndef, nil, [1, 2], 0);
+    output = CCOutput(mockCC, \out_main, ndef, mockMainBus, [1, 2], 0);
     this.assert(output.isPlaying.not, "Should report not playing when ndef is stopped");
   }
 
@@ -119,7 +127,7 @@ CCOutputTest : UnitTest {
 
   test_status_returnsEvent {
     var ndef = this.createTestNdef(\testOutput1);
-    output = CCOutput(mockCC, \out_main, ndef, nil, [1, 2], 0);
+    output = CCOutput(mockCC, \out_main, ndef, mockMainBus, [1, 2], 0);
     this.assertEquals(output.status.key, \out_main, "Status should include key");
     this.assertEquals(output.status.channels, [1, 2], "Status should include channels");
     this.assertEquals(output.status.hwOut, 0, "Status should include hwOut");
@@ -130,7 +138,7 @@ CCOutputTest : UnitTest {
 
   test_sources_empty {
     var ndef = this.createTestNdef(\testOutput1);
-    output = CCOutput(mockCC, \out_main, ndef, nil, [1, 2], 0);
+    output = CCOutput(mockCC, \out_main, ndef, mockMainBus, [1, 2], 0);
     this.assertEquals(output.sources, [], "Sources should be empty initially");
   }
 
@@ -138,7 +146,7 @@ CCOutputTest : UnitTest {
 
   test_setHwOut_updatesHwOut {
     var ndef = this.createTestNdef(\testOutput1);
-    output = CCOutput(mockCC, \out_main, ndef, nil, [1, 2], 0);
+    output = CCOutput(mockCC, \out_main, ndef, mockMainBus, [1, 2], 0);
     output.setHwOut(6);
     this.assertEquals(output.hwOut, 6, "hwOut should be updated");
   }
