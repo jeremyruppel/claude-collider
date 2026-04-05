@@ -23,8 +23,7 @@ This skill enables live music synthesis using SuperCollider via the ClaudeCollid
 5. **Semicolons between statements** — no trailing semicolon
 6. **NEVER Synth() inside Ndef** — causes infinite spawning
 
-The full ~cc API reference is in the root CLAUDE.md, which is always loaded.
-
 ## Reference Docs
 
+- [ClaudeCollider README](../../../ClaudeCollider/README.md) — Full ~cc API reference with usage examples
 - [synths.md](synths.md) — All prebuilt synths with type, description, and key params
