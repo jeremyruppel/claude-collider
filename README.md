@@ -122,6 +122,18 @@ Restart your MCP client after updating the config.
 
 ## Skills
 
+When you live code from inside this repo, Claude has access to a set of skills — packaged instructions that teach it how to perform specific musical tasks well. Some load automatically when relevant; you can also invoke any of them explicitly with a `/` command.
+
+| Skill              | Invoke with       | What it does                                                                 |
+| ------------------ | ----------------- | --------------------------------------------------------------------------- |
+| `claude-collider`  | `/claude-collider`| Core live-coding workflow — synths, patterns, effects, and MCP tool usage   |
+| `songwriting`      | `/songwriting`    | Music theory reference for composing better parts (see below)               |
+| `play-tape`        | `/play-tape`      | Load and play a saved tape's patterns, effects, and arrangement             |
+| `record-tape`      | `/record-tape`    | Capture the current live session as a new tape (`.md` + `.scd` pair)        |
+| `arrange-tape`     | `/arrange-tape`   | Compose a `CCArrangement` that structures a tape's elements over time       |
+
+The tape skills (`play-tape`, `record-tape`, `arrange-tape`) are described in more detail in the [Tapes](#tapes) section below.
+
 ### Songwriting
 
 The `/songwriting` skill is a built-in music theory reference that Claude loads when composing or improving individual parts. It covers:
