@@ -60,7 +60,14 @@ ln -s /path/to/claude-collider/ClaudeCollider ~/Library/Application\ Support/Sup
 
 ## Claude Code Configuration
 
-Add the MCP server to your project scope (recommended when live coding from this repo):
+This repo includes a `.mcp.json` that registers the server for anyone running Claude Code from the repo root. Build first, then start Claude Code and approve the `claude-collider` server when prompted:
+
+```bash
+npm install && npm run build
+claude
+```
+
+To use it from another project, add it to that project's scope:
 
 ```bash
 claude mcp add -t stdio -s project claude-collider -- node /path/to/claude-collider/dist/index.js
