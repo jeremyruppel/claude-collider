@@ -15,7 +15,16 @@ m = CCMotif([0, 2, 4, Rest()]);
 
 ## CCMotif — Transformable Melodic Fragment
 
-A CCMotif wraps a short degree array (2–6 notes + rests) and provides transformations. Each transformation returns a new CCMotif. Since it's a Pattern subclass, it works directly in Pseq and Pn.
+A CCMotif wraps a short degree array (2–6 notes + rests) and provides transformations. Each transformation returns a new, immutable CCMotif, and rests are preserved through all of them. Since it's a Pattern subclass, it works directly in Pseq and Pn.
+
+| Method | Args | Description |
+|---|---|---|
+| `*new` | `degrees` | Create from array of scale degrees |
+| `transpose` | `n` | Shift all degrees by n |
+| `invert` | | Mirror around first non-rest degree |
+| `retrograde` | | Reverse the sequence |
+| `extend` | `extraDegrees` | Append degrees |
+| `truncate` | `n` | Keep first n degrees |
 
 ```supercollider
 m = CCMotif([0, 2, 4, Rest()]);
@@ -36,7 +45,7 @@ m.transpose(2).invert   // [2, 0, -2, Rest()]
 
 ## CCPhrase — Motif Development Sequencer
 
-CCPhrase takes a motif and a development plan, producing a structured phrase that loops.
+CCPhrase takes a motif and a development plan, producing a structured phrase that loops. Each step applies its operation to the **original motif**, not cumulatively.
 
 **Operations:**
 - `\state` — play motif as-is
@@ -44,6 +53,7 @@ CCPhrase takes a motif and a development plan, producing a structured phrase tha
 - `\invert` — play mirrored around first note
 - `\retrograde` — play reversed
 - `\extend, [degrees]` — play with extra notes appended
+- `\truncate, n` — play only the first n degrees
 
 ```supercollider
 m = CCMotif([0, 2, 4, Rest()]);
@@ -59,7 +69,12 @@ m = CCMotif([0, 2, 4, Rest()]);
 
 ## CCMelody — Common Structures
 
-Convenience factory methods for standard melodic forms.
+Convenience factory methods for standard melodic forms. Both return Patterns.
+
+| Method | Args | Description |
+|---|---|---|
+| `*callAndResponse` | `call, response, repeats=inf` | Alternates two motifs |
+| `*develop` | `motif, repeats=inf` | Standard development: state ×2, transpose +2, resolve |
 
 ### Call and response
 ```supercollider
@@ -91,7 +106,7 @@ Every motif has a shape. Choose one intentionally:
 ## Phrasing
 
 ### Phrase length
-Motifs should be 2–6 notes. Phrases (via CCPhrase) should total **1 or 2 bars** — 4 bars is too long to register as repeating. Count your beats: motif notes × dur × number of development steps must equal the target bar count × beatsPerBar. Always verify the math before playing.
+Motifs should be 2–6 notes. Phrases (via CCPhrase) should total **1 to 4 bars** — longer than 4 is too long to register as repeating. Count your beats: motif notes × dur × number of development steps must equal the target bar count × beatsPerBar. Always verify the math before playing.
 
 ### Leave gaps
 End motifs with `Rest()`. The silence is anticipation, not emptiness.

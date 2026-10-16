@@ -23,8 +23,15 @@ This skill enables live music synthesis using SuperCollider via the ClaudeCollid
 5. **Semicolons between statements** — no trailing semicolon
 6. **NEVER Synth() inside Ndef** — causes infinite spawning
 
+## Composition Rules
+
+1. **Melodies use CCMotif + CCPhrase** — never a flat pitch Pseq longer than 8 steps. Motifs are 2–6 notes; phrases are 1–4 bars. See [songwriting/melody.md](../songwriting/melody.md).
+2. **Songwriting files by part** — bass → `bass.md`, chords/stabs/pads → `chords.md`, melody/hook/lead → `melody.md`, drums → `rhythm.md`, breaks → `breakbeats.md`.
+3. **Song structure uses CCArrangement** — see [patterns.md](patterns.md).
+
 ## Reference Docs
 
 - [ClaudeCollider README](../../../ClaudeCollider/README.md) — Full ~cc API reference with usage examples
 - [synths.md](synths.md) — All prebuilt synths with type, description, and key params
-- [patterns.md](patterns.md) — CCMotif, CCPhrase, CCMelody, CCArrangement, CCBreakbeat
+- [songwriting/melody.md](../songwriting/melody.md) — CCMotif, CCPhrase, CCMelody
+- [patterns.md](patterns.md) — CCArrangement, CCBreakbeat

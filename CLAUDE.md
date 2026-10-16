@@ -27,6 +27,12 @@ Use `cc_execute` only for things the tools don't cover: Pdef/Ndef definitions, c
 5. **Semicolons between statements** — no trailing semicolon
 6. **NEVER Synth() inside Ndef** — causes infinite spawning
 
+## Composition Rules
+
+1. **Melodies use CCMotif + CCPhrase** — never a flat pitch Pseq longer than 8 steps. Motifs are 2–6 notes; phrases are 1–4 bars. See `.claude/skills/songwriting/melody.md`.
+2. **Songwriting files by part** — bass, chords, melody, rhythm, breakbeats each have their own file in `.claude/skills/songwriting/`.
+3. **Song structure uses CCArrangement.**
+
 ---
 
 # CC API Reference
