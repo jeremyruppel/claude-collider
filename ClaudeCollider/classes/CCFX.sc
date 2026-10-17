@@ -248,11 +248,13 @@ CCFX {
     // Ensure main output is ready so we can route to mainBus
     outputs.playMain;
 
-    ndef = Ndef(slotName.asSymbol, { |in|
+    ndef = Ndef(slotName.asSymbol, { |in, bypass=0|
       var params = paramPairs.collect { |pair|
         NamedControl.kr(pair[0], pair[1]);
       };
-      func.valueArray([in] ++ params);
+      var wet = func.valueArray([in] ++ params);
+      // Bypassed effects pass their input straight through
+      XFade2.ar(wet, InFeedback.ar(in, 2), Lag.kr(bypass, 0.05) * 2 - 1);
     });
     ndef.set(\in, inBus.index);
     ndef.play(out: outputs.mainBus.index);
@@ -281,11 +283,7 @@ CCFX {
   bypass { |slot, shouldBypass=true|
     var info = loaded[slot.asSymbol];
     if(info.notNil) {
-      if(shouldBypass) {
-        info.ndef.stop;
-      } {
-        info.ndef.play(out: outputs.mainBus.index);
-      };
+      info.ndef.set(\bypass, if(shouldBypass) { 1 } { 0 });
       ^true;
     };
     ^false;
