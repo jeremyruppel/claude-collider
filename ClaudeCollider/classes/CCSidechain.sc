@@ -29,13 +29,13 @@ CCSidechain {
     triggerBus = Bus.audio(cc.server, 2);
     slotName = (prefix ++ name).asSymbol;
 
-    Ndef(slotName, { |in, trigger, thresh=0.1, rat=4, att=0.01, rel=0.1|
+    Ndef(slotName, { |in, trigger, threshold=0.1, ratio=4, attack=0.01, release=0.1|
       var sig = In.ar(in, 2);
       var trig = In.ar(trigger, 2);
-      Compander.ar(sig, trig, thresh, 1, rat.reciprocal, att, rel);
+      Compander.ar(sig, trig, threshold, 1, ratio.reciprocal, attack, release);
     });
     Ndef(slotName).set(\in, inBus.index, \trigger, triggerBus.index);
-    Ndef(slotName).set(\thresh, threshold, \rat, ratio, \att, attack, \rel, release);
+    Ndef(slotName).set(\threshold, threshold, \ratio, ratio, \attack, attack, \release, release);
     Ndef(slotName).play;
 
     sidechains[name.asSymbol] = (

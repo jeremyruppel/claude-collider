@@ -271,13 +271,17 @@ CCFX {
 
   set { |slot ...args|
     var info = loaded[slot.asSymbol];
+    var sc = sidechains.at(slot.asSymbol);
     if(info.notNil) {
       info.ndef.set(*args);
       ^true;
-    } {
-      "CCFX: slot '%' not loaded".format(slot).warn;
-      ^false;
     };
+    if(sc.notNil) {
+      Ndef(sc.slot).set(*args);
+      ^true;
+    };
+    "CCFX: slot '%' not loaded".format(slot).warn;
+    ^false;
   }
 
   bypass { |slot, shouldBypass=true|
