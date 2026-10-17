@@ -2,7 +2,7 @@
 
 CCRouter {
   var <fx;           // Reference to parent CCFX
-  var <connections;  // Dictionary: from -> (to, routeSynth)
+  var <connections;  // Dictionary: from -> (to)
   var <chains;       // Dictionary: name -> [slots]
   var <routes;       // Dictionary: source -> (target, routeSynth)
 
@@ -19,8 +19,9 @@ CCRouter {
 
   // ========== Effect-to-Effect Connections ==========
 
+  // Send an effect's output to another effect or a sidechain instead of main
   connect { |from, to|
-    var fromInfo, toInfo, routeSynth;
+    var fromInfo, toBus;
 
     fromInfo = fx.loaded[from.asSymbol];
     if(fromInfo.isNil) {
@@ -28,9 +29,9 @@ CCRouter {
       ^nil;
     };
 
-    toInfo = fx.loaded[to.asSymbol];
-    if(toInfo.isNil) {
-      "CCRouter: destination effect '%' not found".format(to).warn;
+    toBus = this.inputBus(to);
+    if(toBus.isNil) {
+      "CCRouter: destination '%' not found".format(to).warn;
       ^nil;
     };
 
@@ -44,19 +45,16 @@ CCRouter {
       ^nil;
     };
 
-    // Clean up existing connection from this source
-    if(connections[from.asSymbol].notNil) {
-      connections[from.asSymbol].routeSynth.free;
-    };
-
-    routeSynth = Synth(\cc_bus_copy, [\in, fromInfo.ndef.bus.index, \out, toInfo.inBus.index]);
-
-    connections[from.asSymbol] = (
-      to: to.asSymbol,
-      routeSynth: routeSynth
-    );
+    fromInfo.ndef.play(out: toBus.index);
+    connections[from.asSymbol] = (to: to.asSymbol);
 
     ^true;
+  }
+
+  // Input bus of a loaded effect or a sidechain
+  inputBus { |name|
+    var info = fx.loaded[name.asSymbol] ?? { fx.sidechains.at(name.asSymbol) };
+    ^info !? { info.inBus };
   }
 
   wouldCreateCycle { |from, to|
@@ -71,11 +69,16 @@ CCRouter {
   disconnect { |from|
     var connInfo = connections[from.asSymbol];
     if(connInfo.notNil) {
-      connInfo.routeSynth.free;
       connections.removeAt(from.asSymbol);
+      this.playToMain(from);
       ^true;
     };
     ^false;
+  }
+
+  // Point an effect's output back at main
+  playToMain { |slot|
+    fx.loaded[slot.asSymbol] !? { |info| info.ndef.play(out: fx.outputs.mainBus.index) };
   }
 
   // ========== Chains ==========
@@ -161,18 +164,13 @@ CCRouter {
 
   removeEffect { |slot|
     // Remove connections from this effect
-    var connInfo = connections[slot.asSymbol];
-    if(connInfo.notNil) {
-      connInfo.routeSynth.free;
-      connections.removeAt(slot.asSymbol);
-    };
+    connections.removeAt(slot.asSymbol);
 
-    // Remove connections to this effect (snapshot keys to avoid mutation during iteration)
+    // Effects feeding this one go back to main (snapshot keys to avoid mutation during iteration)
     connections.keys.do { |from|
-      var conn = connections[from];
-      if(conn.to == slot.asSymbol) {
-        conn.routeSynth.free;
+      if(connections[from].to == slot.asSymbol) {
         connections.removeAt(from);
+        this.playToMain(from);
       };
     };
 
@@ -188,9 +186,6 @@ CCRouter {
   }
 
   clear {
-    connections.keysValuesDo { |from, conn|
-      conn.routeSynth.free;
-    };
     connections.clear;
 
     routes.keysValuesDo { |source, info|
