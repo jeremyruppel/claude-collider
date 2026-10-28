@@ -19,7 +19,7 @@
     "music",
     "live-coding"
   ],
-  "author": "",
+  "author": "Jeremy Ruppel",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1"
