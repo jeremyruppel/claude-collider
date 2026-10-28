@@ -8,11 +8,28 @@ Live coding from inside this repository is recommended but completely optional. 
   <img width="100%" alt="Claude Collider" src="https://github.com/user-attachments/assets/cfd56bcd-5f9b-4d39-9077-9386074b1579" />
 </a>
 
+## Requirements
+
+- [SuperCollider](https://supercollider.github.io/) installed on your system
+- Node.js 18+
+- Claude Code, Claude Desktop, or any other MCP client
+
+## Installation
+
+```bash
+git clone https://github.com/jeremyruppel/claude-collider.git
+cd claude-collider
+npm run setup
+claude
+```
+
+It's easiest to work from the Claude Collider directory. There, you can take advantage of the agent documentation and skills that make Claude musically inclined.
+
 ## What It Can Do
 
 ### Major Features
 
-- Auto-boots SuperCollider within your LLM session and exposes 9 MCP tools to interact with it
+- Auto-boots SuperCollider within your LLM session and exposes MCP tools to interact with it
 - Music theory LLM skill and utility SuperColloder classes for arrangement, melody development, and a breakbeat mangler
 - Sampler with support for auto-loading samples from user directories
 - "Tape" format for recording and playing back songs across LLM sessions
@@ -33,30 +50,6 @@ See the [ClaudeCollider API reference](ClaudeCollider/README.md) for the full li
 - "The bass line is boring — use the songwriting skill to rewrite it with approach notes and octave jumps"
 - "Connect my MIDI keyboard to the pad synth with mod wheel controlling the filter cutoff, and sync MIDI clock to the arrangement"
 - "Build a granular texture from the vocal sample, layer a polymetric 5-beat kick under it, and arrange the whole thing into a slow build"
-
-## Requirements
-
-- [SuperCollider](https://supercollider.github.io/) installed on your system
-- Node.js 18+
-- Claude Code, Claude Desktop, or any other MCP client
-
-## Installation
-
-```bash
-git clone https://github.com/jeremyruppel/claude-collider.git
-cd claude-collider
-npm install
-npm run build
-npm test
-```
-
-## ClaudeCollider Quark
-
-Symlink or copy the `ClaudeCollider/` folder to your Extensions directory:
-
-```bash
-ln -s /path/to/claude-collider/ClaudeCollider ~/Library/Application\ Support/SuperCollider/Extensions/ClaudeCollider
-```
 
 ## Claude Code Configuration
 
