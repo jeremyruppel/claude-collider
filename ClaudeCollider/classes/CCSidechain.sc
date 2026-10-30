@@ -36,7 +36,7 @@ CCSidechain {
     });
     Ndef(slotName).set(\in, inBus.index, \trigger, triggerBus.index);
     Ndef(slotName).set(\threshold, threshold, \ratio, ratio, \attack, attack, \release, release);
-    Ndef(slotName).play;
+    Ndef(slotName).play(out: this.mainOut);
 
     sidechains[name.asSymbol] = (
       inBus: inBus,
@@ -62,35 +62,55 @@ CCSidechain {
     ^sidechains.keys.asArray;
   }
 
+  // Main mix bus (goes through the main limiter). Falls back to hardware bus 0
+  // when there is no output system, e.g. in unit tests.
+  mainOut {
+    var outputs = cc.tryPerform(\fx) !? { |fx| fx.outputs };
+    if(outputs.isNil) { ^0 };
+    outputs.playMain;
+    ^outputs.mainBus.index;
+  }
+
+  // Where a Pdef currently sends audio: its routed bus, or main if unrouted
+  currentOut { |srcSym|
+    var out = Pdef(srcSym).envir !? { |e| e[\out] };
+    if(out.isNil) { ^this.mainOut };
+    ^out.tryPerform(\index) ?? out;
+  }
+
   // ========== Trigger Routing ==========
 
   routeTrigger { |source, sidechainName, passthrough=true|
     var sc = sidechains[sidechainName.asSymbol];
     var srcSym = source.asSymbol;
-    var routeBus, triggerSynth, srcNdef;
+    var routeBus, triggerSynth, passSynth, restoreOut, srcNdef;
 
     if(sc.isNil) {
       "CCSidechain: sidechain '%' not found".format(sidechainName).warn;
       ^false;
     };
 
+    // Clearing first restores any earlier output, so currentOut sees the real destination
     this.clearTriggerRoute(sc, srcSym);
 
     // Route Pdef source
     if(Pdef.all[srcSym].notNil) {
+      restoreOut = this.currentOut(srcSym);
       routeBus = Bus.audio(cc.server, 2);
       Pdef(srcSym).set(\out, routeBus);
       triggerSynth = Synth(\cc_bus_copy, [\in, routeBus.index, \out, sc.triggerBus.index]);
 
+      // Passthrough keeps the source going where it went before (an effect or main)
       if(passthrough) {
-        Ndef((source ++ "_passthrough").asSymbol, { |in|
-          In.ar(in, 2);
-        });
-        Ndef((source ++ "_passthrough").asSymbol).set(\in, routeBus.index);
-        Ndef((source ++ "_passthrough").asSymbol).play(0);
+        passSynth = Synth.after(triggerSynth, \cc_bus_copy, [\in, routeBus.index, \out, restoreOut]);
       };
 
-      sc.triggerRoutes[srcSym] = (routeBus: routeBus, triggerSynth: triggerSynth);
+      sc.triggerRoutes[srcSym] = (
+        routeBus: routeBus,
+        triggerSynth: triggerSynth,
+        passSynth: passSynth,
+        restoreOut: restoreOut
+      );
       ^true;
     };
 
@@ -115,23 +135,25 @@ CCSidechain {
     ^false;
   }
 
+  // Free a trigger route's synths and bus, and point a Pdef source back where it
+  // went before the trigger was set up
+  freeTriggerRoute { |source, routeInfo, restoreOutput=true|
+    if(routeInfo.triggerSynth.notNil) { routeInfo.triggerSynth.free };
+    if(routeInfo.passSynth.notNil) { routeInfo.passSynth.free };
+    if(routeInfo.routeBus.notNil) { routeInfo.routeBus.free };
+    if(restoreOutput && Pdef.all[source].notNil && routeInfo.routeBus.notNil) {
+      Pdef(source).set(\out, routeInfo.restoreOut ?? { this.mainOut });
+    };
+  }
+
   clearTriggerRoute { |sc, srcSym|
-    var routeInfo;
+    var routeInfo = sc.triggerRoutes !? { |r| r[srcSym] };
 
-    Ndef((srcSym ++ "_passthrough").asSymbol).clear;
-
-    if(sc.triggerRoutes.notNil) {
-      routeInfo = sc.triggerRoutes[srcSym];
-      if(routeInfo.notNil) {
-        if(routeInfo.triggerSynth.notNil) { routeInfo.triggerSynth.free };
-        if(routeInfo.routeBus.notNil) { routeInfo.routeBus.free };
-        sc.triggerRoutes.removeAt(srcSym);
-      };
+    if(routeInfo.notNil) {
+      this.freeTriggerRoute(srcSym, routeInfo);
+      sc.triggerRoutes.removeAt(srcSym);
     };
 
-    if(Pdef.all[srcSym].notNil) {
-      Pdef(srcSym).set(\out, 0);
-    };
     if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server].at(srcSym).notNil }) {
       Ndef(srcSym).play;
     };
@@ -140,12 +162,7 @@ CCSidechain {
   cleanupTriggerRoutes { |scInfo, restoreOutput=true|
     if(scInfo.triggerRoutes.notNil) {
       scInfo.triggerRoutes.keysValuesDo { |source, routeInfo|
-        Ndef((source ++ "_passthrough").asSymbol).clear;
-        if(routeInfo.triggerSynth.notNil) { routeInfo.triggerSynth.free };
-        if(routeInfo.routeBus.notNil) { routeInfo.routeBus.free };
-        if(restoreOutput && Pdef.all[source].notNil) {
-          Pdef(source).set(\out, 0);
-        };
+        this.freeTriggerRoute(source, routeInfo, restoreOutput);
       };
     };
   }

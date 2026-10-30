@@ -76,6 +76,15 @@ CCRouter {
     ^false;
   }
 
+  // Main mix bus (goes through the main limiter). Falls back to hardware bus 0
+  // when there is no output system, e.g. in unit tests.
+  mainOut {
+    var outputs = fx.tryPerform(\outputs);
+    if(outputs.isNil) { ^0 };
+    outputs.playMain;
+    ^outputs.mainBus.index;
+  }
+
   // Point an effect's output back at main
   playToMain { |slot|
     fx.loaded[slot.asSymbol] !? { |info| info.ndef.play(out: fx.outputs.mainBus.index) };
@@ -152,7 +161,7 @@ CCRouter {
     if(routeInfo.notNil) {
       if(routeInfo.routeSynth.notNil) { routeInfo.routeSynth.free };
       if(Pdef.all[source.asSymbol].notNil) {
-        Pdef(source.asSymbol).set(\out, 0);
+        Pdef(source.asSymbol).set(\out, this.mainOut);
       };
       routes.removeAt(source.asSymbol);
       ^true;
@@ -179,7 +188,7 @@ CCRouter {
       var info = routes[source];
       if(info.target == slot.asSymbol) {
         if(info.routeSynth.notNil) { info.routeSynth.free };
-        if(Pdef.all[source].notNil) { Pdef(source).set(\out, 0) };
+        if(Pdef.all[source].notNil) { Pdef(source).set(\out, this.mainOut) };
         routes.removeAt(source);
       };
     };
@@ -190,7 +199,7 @@ CCRouter {
 
     routes.keysValuesDo { |source, info|
       if(info.routeSynth.notNil) { info.routeSynth.free };
-      if(Pdef.all[source].notNil) { Pdef(source).set(\out, 0) };
+      if(Pdef.all[source].notNil) { Pdef(source).set(\out, this.mainOut) };
     };
     routes.clear;
 

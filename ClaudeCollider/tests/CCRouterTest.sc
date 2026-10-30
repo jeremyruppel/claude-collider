@@ -98,6 +98,19 @@ CCRouterTest : UnitTest {
 
   // ========== unroute tests ==========
 
+  test_mainOut_fallsBackToZeroWithoutOutputs {
+    this.assertEquals(router.mainOut, 0, "Should fall back to bus 0 when there is no output system");
+  }
+
+  test_unroute_sendsPdefToMain {
+    Pdef(\cc_test_router_unroute, Pbind());
+    Pdef(\cc_test_router_unroute).set(\out, 42);
+    router.routes[\cc_test_router_unroute] = (target: \fx_test);
+    router.unroute(\cc_test_router_unroute);
+    this.assertEquals(Pdef(\cc_test_router_unroute).envir[\out], router.mainOut, "Unrouted Pdef should go to main");
+    Pdef(\cc_test_router_unroute).clear;
+  }
+
   test_unroute_notRouted {
     this.assert(router.unroute(\nonexistent).not, "Should return false when not routed");
   }
