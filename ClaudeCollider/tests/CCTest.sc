@@ -64,7 +64,7 @@ CCTest : CCUnitTest {
   }
 
   test_stop_stopsPdefs {
-    Pdef(\testStop, Pbind(\dur, 1)).play;
+    Pdef(\testStop, Pbind(\type, \rest, \dur, 1)).play;
     0.1.wait;
     cc.stop;
     this.assert(Pdef(\testStop).isPlaying.not, "stop should stop Pdefs");

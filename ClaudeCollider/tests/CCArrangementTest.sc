@@ -100,7 +100,7 @@ CCArrangementTest : CCUnitTest {
   test_startElement_pdef {
     this.bootServer;
     arr = CCArrangement([]);
-    Pdef(\testStart, Pbind(\dur, 1));
+    Pdef(\testStart, Pbind(\type, \rest, \dur, 1));
     arr.startElement(\testStart);
     0.1.wait;
     this.assert(Pdef(\testStart).isPlaying, "Should start the Pdef");
@@ -153,7 +153,7 @@ CCArrangementTest : CCUnitTest {
   test_stopElement_pdef {
     this.bootServer;
     arr = CCArrangement([]);
-    Pdef(\testStop, Pbind(\dur, 1)).play;
+    Pdef(\testStop, Pbind(\type, \rest, \dur, 1)).play;
     0.1.wait;
     arr.stopElement(\testStop);
     this.assert(Pdef(\testStop).isPlaying.not, "Should stop the Pdef");
@@ -191,7 +191,7 @@ CCArrangementTest : CCUnitTest {
   test_stop_stopsActiveElements {
     this.bootServer;
     arr = CCArrangement([[\intro, 4, [\testActive]]]);
-    Pdef(\testActive, Pbind(\dur, 1));
+    Pdef(\testActive, Pbind(\type, \rest, \dur, 1));
     arr.play;
     0.5.wait;
     arr.stop;

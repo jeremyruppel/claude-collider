@@ -51,6 +51,8 @@ CCOutputsTest : CCUnitTest {
 
     this.bootServer;
     outputs.createMain;
+    // Keep the test signal off the speakers; the limiter still writes to its own bus
+    outputs.stopMain;
 
     early = { Out.ar(outputs.mainBus, DC.ar(0).dup) }.play(server.defaultGroup, addAction: \addToHead);
     late = { Out.ar(outputs.mainBus, DC.ar(0.5).dup) }.play(server.defaultGroup, addAction: \addToTail);
