@@ -138,8 +138,8 @@ Pdef(\stinger, Ppar([
     [\lab, 4, [\drone, \beep, \arp, \pad]],
 
     // BUILD - bass and hats enter, riser sweeps up over 4 bars
-    [\build, 4, [\beep, \arp, \pad, \bass, \hats], {
-        ~cc.synths.play(\cc_riser, \duration, 8.5, \amp, 0.25)
+    [\build, 4, [\beep, \arp, \pad, \bass, \hats], { |beat|
+        if(beat == 0) { ~cc.synths.play(\cc_riser, \duration, 8.5, \amp, 0.25) }
     }],
 
     // THEME - full band with the fanfare

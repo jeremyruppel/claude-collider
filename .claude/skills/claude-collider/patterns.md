@@ -15,7 +15,7 @@ Declarative section sequencer. Diffs elements between sections — starts new on
 | `status` | | Current section name and bar position |
 | `sectionBar` | | Current bar within section |
 
-Sections are `[name, bars, elements, action]` arrays. `action` is an optional function.
+Sections are `[name, bars, elements, action]` arrays. `action` is an optional function that runs on every beat of the section as `{ |beat, arrangement| }`, with `beat` counting from 0. Use `if(beat == 0)` for things that should happen once when the section starts. Put a `CCFade` in the action slot (`CCFade.in`, `CCFade.out`, `CCFade(1, 0.5)`) to fade the master volume across the section.
 
 ```supercollider
 // Define patterns first, then arrange them
@@ -27,7 +27,7 @@ CCArrangement([
 ]).play
 ```
 
-Elements can be Pdef or Ndef names. The arrangement auto-starts/stops them at section boundaries using `TempoClock.schedAbs` for drift-free timing.
+Elements can be Pdef or Ndef names. The arrangement auto-starts/stops them at section boundaries, from a single Routine on `TempoClock.default` (drift-free logical time).
 
 `CCArrangement.current` holds the playing arrangement (or nil). Auto-starts/stops CCMIDIClock if enabled.
 

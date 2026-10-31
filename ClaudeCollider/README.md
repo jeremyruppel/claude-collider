@@ -372,7 +372,7 @@ Status formatting and routing debug visualization.
 
 ### CCArrangement
 
-Declarative song arrangement sequencer. Defines sections as `[name, bars, elements]` arrays, handles Pdef/Ndef start/stop diffing, and uses drift-free scheduling via `TempoClock.schedAbs`.
+Declarative song arrangement sequencer. Defines sections as `[name, bars, elements]` arrays, handles Pdef/Ndef start/stop diffing, and runs one Routine on `TempoClock.default` for drift-free timing.
 
 ```supercollider
 // Define an arrangement
@@ -406,21 +406,41 @@ Each section is a 3 or 4 element array:
 
 ```supercollider
 [name, bars, elements]           // Basic section
-[name, bars, elements, action]   // With per-section callback
+[name, bars, elements, action]   // With per-beat callback
 ```
 
 - `name` (Symbol) — Section identifier, posted to console on transition
 - `bars` (Integer) — Duration in bars
 - `elements` (Array) — Pdefs/Ndefs active during this section
-- `action` (Function, optional) — Runs at the start of the section
+- `action` (Function or CCFade, optional) — Runs on every beat of the section as `{ |beat, arrangement| }`, with `beat` counting from 0. Use `if(beat == 0)` for one-shots
 
 List all active elements in each section. The arrangement diffs between sections automatically — elements not in the next section are stopped, new elements are started.
 
 ```supercollider
 CCArrangement([
-    [\intro, 8, [\kick, \hat]],
-    [\drop, 16, [\kick, \hat, \bass, \lead], { ~cc.fx.set(\fx_reverb, \mix, 0.8) }],
+    // Fade the master in over 8 bars
+    [\intro, 8, [\kick, \hat], CCFade.in],
+    // Once, when the drop starts
+    [\drop, 16, [\kick, \hat, \bass, \lead], { |beat| if(beat == 0) { ~cc.fx.set(\fx_reverb, \mix, 0.8) } }],
+    // Fade out
+    [\outro, 8, [\kick], CCFade.out(\lin)],
 ]).play;
+```
+
+The master volume is recorded on `play` and restored on `stop` and when the last section ends, so fades never leave it changed. `fade(level, lag)` sets it to `level` (0–1) of that starting volume.
+
+### CCFade
+
+Eases the master volume across one arrangement section. Drop it into a section's action slot. Levels are 0–1, relative to the volume when the arrangement started.
+
+```supercollider
+CCFade.in               // 0 → 1, \sin curve
+CCFade.out(\lin)        // 1 → 0, linear
+CCFade(1, 0.5, \sqr)    // any from/to, any Env curve
+CCFade.in.at(0.5)       // eased level halfway through
+
+// Inside another action
+{ |beat, arr| CCFade.in.value(beat, arr) }
 ```
 
 #### Properties

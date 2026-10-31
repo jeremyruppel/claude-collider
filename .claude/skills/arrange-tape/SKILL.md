@@ -11,7 +11,7 @@ This skill composes an **arrangement** for a tape — the performance plan for h
 
 A tape's `.scd` defines all the musical elements (Pdefs, Ndefs, effects, sidechains). An arrangement defines *when* each element plays and stops, turning a static loop into a track with structure.
 
-Arrangements use `CCArrangement` — a declarative class where you list sections as `[name, bars, elements]` arrays. The class handles all Pdef/Ndef start/stop diffing and uses `TempoClock.schedAbs` for drift-free timing.
+Arrangements use `CCArrangement` — a declarative class where you list sections as `[name, bars, elements]` arrays. The class handles all Pdef/Ndef start/stop diffing and runs one Routine on `TempoClock.default` for drift-free timing.
 
 ## Process
 
@@ -70,11 +70,33 @@ Each section is `[name, bars, elements]`:
 
 The class automatically diffs element lists between sections — elements not in the next section are stopped, new elements are started. You never need to manually call `.play` or `.stop` on individual Pdefs.
 
-**Optional action function:** Add a 4th element for custom per-section logic (effect changes, parameter tweaks):
+**Optional action function:** Add a 4th element for custom per-section logic. It runs on **every beat** of the section as `{ |beat, arrangement| }`, with `beat` counting from 0 within the section. Wrap anything that should happen once in `if(beat == 0)`, or it fires on every beat:
 
 ```supercollider
-[\drop, 16, [\kick, \hat, \bass, \lead], { ~cc.fx.route(\lead, \delay) }]
+// Once, when the section starts
+[\drop, 16, [\kick, \hat, \bass, \lead], { |beat|
+    if(beat == 0) { ~cc.fx.route(\lead, \fx_delay) }
+}]
+
+// On the last bar only: a fill
+[\build, 8, [\kick, \hat], { |beat|
+    if(beat == 28) { Pdef(\fill).play }
+}]
 ```
+
+**Fades:** put a `CCFade` in the action slot to ease the master volume across the section. Levels are 0–1, relative to the volume when the arrangement started, and the arrangement puts the volume back when it stops or finishes. The curve is any Env curve (default `\sin`).
+
+```supercollider
+[\intro, 8, [\kick, \hat], CCFade.in],                    // silence → full
+[\dip, 4, [\pad], CCFade(1, 0.5)],                         // full → half
+[\outro1, 4, [\kick, \hat], CCFade(1, 0.5, \lin)],         // chain fades across
+[\outro2, 4, [\kick], CCFade(0.5, 0, \lin)],               // several sections
+
+// Combine with other per-beat logic
+[\intro, 8, [\kick], { |beat, arr| CCFade.in.value(beat, arr); if(beat == 0) { ... } }]
+```
+
+Don't fade by hand with `s.volume` or `Ndef(\out_main)`: `out_main` misses unrouted patterns, and a raw `s.volume` fade isn't restored on stop.
 
 **Rules:**
 

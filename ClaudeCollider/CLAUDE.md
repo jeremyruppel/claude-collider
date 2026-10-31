@@ -33,5 +33,6 @@ SuperCollider backend providing the live coding toolkit classes.
 - **CCOutput** — Single hardware output destination (mono or stereo pair) with limiter
 - **CCRouter** — Effect-to-effect connections, named chains, source-to-effect routing
 - **CCSidechain** — Sidechain compressor management for ducking effects
-- **CCArrangement** — Declarative song arrangement sequencer. Sections as `[name, bars, elements]` arrays, Pdef/Ndef start/stop diffing, drift-free scheduling via `TempoClock.schedAbs`, live `goto` for jumping sections
+- **CCArrangement** — Declarative song arrangement sequencer. Sections as `[name, bars, elements, action]` arrays, Pdef/Ndef start/stop diffing, one drift-free Routine on `TempoClock.default`, per-beat actions `{ |beat, arrangement| }`, live `goto` for jumping sections. Restores the master volume on stop/finish
+- **CCFade** — Master volume fade across one arrangement section, used in the action slot: `CCFade.in`, `CCFade.out`, `CCFade(from, to, curve)`
 - **CCBreakbeat** — Breakbeat slice sequencer. Constructor takes `(name, buffer, numSlices)` binding to a Pdef name. `pattern(order)` assigns the slice pattern to that Pdef. Negative indices reverse individual slices. Use `bars` to set timing

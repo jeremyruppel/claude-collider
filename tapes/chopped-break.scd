@@ -107,25 +107,25 @@ Ndef(\grains, {
 
 // 7. Arrangement - play with ~arrangement.play
 ~arrangement = CCArrangement([
-    [\intro, 8, [\melody, \grains], {
-        b.pattern((0..15));
+    [\intro, 8, [\melody, \grains], { |beat|
+        if(beat == 0) { b.pattern((0..15)) };
     }],
-    [\build, 8, [\melody, \break, \grains], {
-        b.pattern((0..15));
+    [\build, 8, [\melody, \break, \grains], { |beat|
+        if(beat == 0) { b.pattern((0..15)) };
     }],
-    [\chop1, 8, [\melody, \bass, \break], {
-        b.pattern([0, 0, 3, 2, -7, 6, 5, 4, 0, 1, -2, 3, 8, 9, -14, 15]);
+    [\chop1, 8, [\melody, \bass, \break], { |beat|
+        if(beat == 0) { b.pattern([0, 0, 3, 2, -7, 6, 5, 4, 0, 1, -2, 3, 8, 9, -14, 15]) };
     }],
-    [\halftime, 8, [\bass, \break, \grains], {
-        b.pattern([0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12], 0.5);
+    [\halftime, 8, [\bass, \break, \grains], { |beat|
+        if(beat == 0) { b.pattern([0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12], 0.5) };
     }],
-    [\chop2, 8, [\melody, \bass, \break], {
-        b.pattern([15, 14, -13, 12, 3, 2, -1, 0, 7, 6, -5, 4, 11, 10, -9, 8]);
+    [\chop2, 8, [\melody, \bass, \break], { |beat|
+        if(beat == 0) { b.pattern([15, 14, -13, 12, 3, 2, -1, 0, 7, 6, -5, 4, 11, 10, -9, 8]) };
     }],
-    [\stutter, 4, [\melody, \break], {
-        b.pattern([0, 0, 0, 1, 4, 4, 4, 5, 0, 0, -7, -7, 14, 14, 15, 15], 2);
+    [\stutter, 4, [\melody, \break], { |beat|
+        if(beat == 0) { b.pattern([0, 0, 0, 1, 4, 4, 4, 5, 0, 0, -7, -7, 14, 14, 15, 15], 2) };
     }],
-    [\outro, 4, [\melody, \grains], {
-        b.pattern((0..15));
+    [\outro, 4, [\melody, \grains], { |beat|
+        if(beat == 0) { b.pattern((0..15)) };
     }]
 ]);

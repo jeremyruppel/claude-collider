@@ -212,6 +212,156 @@ CCArrangementTest : CCUnitTest {
     arr2.stop;
   }
 
+  // ========== action tests ==========
+  // Run the clock fast so a few beats pass quickly
+
+  withFastClock { |func|
+    var tempo = TempoClock.default.tempo;
+    TempoClock.default.tempo = 20;
+    protect(func) { TempoClock.default.tempo = tempo };
+  }
+
+  // Waits in seconds even when the test runs on the sped-up TempoClock.default
+  waitSeconds { |seconds|
+    if(thisThread.clock === TempoClock.default) {
+      (seconds * TempoClock.default.tempo).wait;
+    } {
+      seconds.wait;
+    };
+  }
+
+  test_action_runsEveryBeat {
+    var beats = List[];
+    this.withFastClock {
+      arr = CCArrangement([[\a, 3, [], { |beat| beats.add(beat) }]], beatsPerBar: 1);
+      arr.play;
+      this.waitSeconds(0.5);
+    };
+    this.assertEquals(beats.asArray, [0, 1, 2], "Action should run on each beat, counting from 0");
+  }
+
+  test_action_beatResetsEachSection {
+    var calls = List[];
+    this.withFastClock {
+      arr = CCArrangement([
+        [\a, 2, [], { |beat| calls.add([\a, beat]) }],
+        [\b, 2, [], { |beat| calls.add([\b, beat]) }]
+      ], beatsPerBar: 1);
+      arr.play;
+      this.waitSeconds(0.5);
+    };
+    this.assertEquals(calls.asArray, [[\a, 0], [\a, 1], [\b, 0], [\b, 1]], "Beat should restart at 0 in each section");
+  }
+
+  test_action_receivesArrangement {
+    var received;
+    this.withFastClock {
+      arr = CCArrangement([[\a, 1, [], { |beat, a| received = a }]], beatsPerBar: 1);
+      arr.play;
+      this.waitSeconds(0.3);
+    };
+    this.assert(received === arr, "Action should receive the arrangement");
+  }
+
+  test_finish_afterLastSection {
+    this.withFastClock {
+      arr = CCArrangement([[\a, 2, []]], beatsPerBar: 1);
+      arr.play;
+      this.waitSeconds(0.5);
+    };
+    this.assert(arr.isPlaying.not, "Should stop playing after the last section");
+  }
+
+  test_goto_stopsOldTimeline {
+    var calls = List[];
+    this.withFastClock {
+      arr = CCArrangement([
+        [\a, 8, [], { |beat| calls.add(\a) }],
+        [\b, 8, [], { |beat| calls.add(\b) }]
+      ], beatsPerBar: 1);
+      arr.play;
+      this.waitSeconds(0.15);
+      arr.goto(\b);
+      calls.clear;
+      this.waitSeconds(0.3);
+      arr.stop;
+    };
+    this.assert(calls.includes(\a).not, "After goto, the old section's action should stop running");
+    this.assert(calls.includes(\b), "After goto, the new section's action should run");
+  }
+
+  // ========== volume tests ==========
+
+  withVolume { |db, func|
+    var vol = Server.default.volume;
+    vol.volume = db;
+    protect(func) { vol.lag = 0.1; vol.volume = 0 };
+  }
+
+  test_fade_isRelativeToStartVolume {
+    this.bootServer;
+    this.withVolume(-6) {
+      arr = CCArrangement([[\a, 8, []]]);
+      arr.play;
+      arr.fade(0.5);
+      this.assertFloatEquals(Server.default.volume.volume, -6 + 0.5.ampdb, "Fade should be relative to the starting volume", 0.01);
+      arr.stop;
+    };
+  }
+
+  test_stop_restoresVolume {
+    this.bootServer;
+    this.withVolume(-6) {
+      arr = CCArrangement([[\a, 8, []]]);
+      arr.play;
+      arr.fade(0.1);
+      arr.stop;
+      this.assertFloatEquals(Server.default.volume.volume, -6, "stop should put the volume back", 0.01);
+    };
+  }
+
+  test_finish_restoresVolume {
+    this.bootServer;
+    this.withVolume(-6) {
+      this.withFastClock {
+        arr = CCArrangement([[\a, 2, [], CCFade.out]], beatsPerBar: 1);
+        arr.play;
+        this.waitSeconds(0.5);
+      };
+      this.assertFloatEquals(Server.default.volume.volume, -6, "Finishing should put the volume back after a fade out", 0.01);
+    };
+  }
+
+  test_goto_afterFinish_startsUp {
+    this.bootServer;
+    this.withVolume(-6) {
+      this.withFastClock {
+        arr = CCArrangement([[\a, 1, []], [\b, 8, [], CCFade.out]], beatsPerBar: 1);
+        arr.play;
+        this.waitSeconds(0.1);
+        arr.stop;
+        arr.goto(\b);
+        this.waitSeconds(0.3);
+        this.assertEquals(CCArrangement.current, arr, "goto on a stopped arrangement should make it current");
+        this.assert(Server.default.volume.volume < -6.5, "goto on a stopped arrangement should still fade");
+        arr.stop;
+      };
+      this.assertFloatEquals(Server.default.volume.volume, -6, "stop should put the volume back", 0.01);
+    };
+  }
+
+  test_goto_undoesFade {
+    this.bootServer;
+    this.withVolume(-6) {
+      arr = CCArrangement([[\a, 8, []], [\b, 8, []]]);
+      arr.play;
+      arr.fade(0.2);
+      arr.goto(\b);
+      this.assertFloatEquals(Server.default.volume.volume, -6, "goto should undo a fade in progress", 0.01);
+      arr.stop;
+    };
+  }
+
   // ========== goto tests ==========
 
   test_goto_invalidSection {
