@@ -356,19 +356,44 @@ CCSynths {
       ),
 
       cc_bell: (
-        description: "FM bell. Inharmonic FM ratios (2.4x, 3.1x, 5.2x) for metallic/glassy timbre. Brightness (default 3) controls FM index. Long 4s default decay. One-shot.",
+        description: "Soft-mallet bell. By default a near-sine pluck with a soft hum an octave below; sounds great under heavy reverb. Built from bell partials (hum 0.5x, prime, tierce, quint, nominal, upper partials), each with its own decay: upper partials die first, the hum rings longest. Metal (0-1, default 0.15) brings in the inharmonic partials for a real bell. Each partial has a slightly detuned twin opposite it in stereo for slow beating (warble, spread). Hardness (0-1, default 0) sets mallet softness: attack time, how much the upper partials ring, and felt thump vs click. Brightness (default 3) tilts the upper partials, vel adds a little hardness. Decay (default 4s) sets ring time, shorter for higher notes. One-shot.",
         def: {
-          SynthDef(\cc_bell, { |out=0, freq=440, amp=0.3, decay=4, brightness=3|
-            var sig, mod1, mod2, env;
-            env = EnvGen.kr(Env.perc(0.001, decay), doneAction: 2);
-            // FM with inharmonic ratios for bell character
-            mod1 = SinOsc.ar(freq * 2.4) * brightness * freq;
-            mod2 = SinOsc.ar(freq * 3.1) * brightness * freq * 0.5;
-            sig = SinOsc.ar(freq + mod1 + mod2);
-            // Add shimmer with higher partial
-            sig = sig + (SinOsc.ar(freq * 5.2) * 0.1 * env);
-            sig = sig * env * amp;
-            Out.ar(out, sig ! 2);
+          SynthDef(\cc_bell, { |out=0, freq=440, amp=0.3, decay=4, brightness=3, vel=0.7,
+                              hardness=0, metal=0.15, warble=0.5, spread=0.6, pan=0|
+            var sig, v, h, tilt, mallet, attack, ringTime, ratios, amps, decays, hit, inharmonic;
+            v = vel.clip(0, 1);
+            h = hardness.clip(0, 1);
+            ratios = [0.5, 1, 1.183, 1.506, 2, 2.514, 2.662, 3.011, 4.166, 5.433, 6.79];
+            // Inharmonic partials are what make it sound metallic; metal scales them
+            inharmonic = [0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1];
+            amps = [0.35, 1, 0.35, 0.4, 0.7, 0.3, 0.25, 0.35, 0.2, 0.15, 0.1]
+              * inharmonic.collect { |isInharmonic| if(isInharmonic == 1) { metal.clip(0, 1) } { 1 } };
+            decays = [1, 0.8, 0.6, 0.5, 0.45, 0.3, 0.3, 0.25, 0.15, 0.1, 0.08];
+            // Brightness tilts the upper partials
+            tilt = (brightness / 3).clip(0.05, 3);
+            // A soft mallet barely excites the upper partials; harder mallets and hits reach more of them
+            mallet = (0.25 + (h * 0.75) + (v * 0.2)).min(1.2);
+            // Soft mallets take a few ms to fully contact the bar
+            attack = 0.001 + ((1 - h) * 0.008);
+            // Higher bells ring shorter
+            ringTime = decay * ((freq / 440) ** -0.3).clip(0.3, 2);
+            sig = ratios.collect { |ratio, i|
+              var f = freq * ratio;
+              var level = amps[i] * (tilt ** ratio.log2) * (mallet ** ratio.log2.max(0)) * (f < 18000);
+              var env = EnvGen.ar(Env.perc(attack, ringTime * decays[i], 1, -4));
+              var side = Rand(-1, 1) * spread;
+              // Each partial plus a slightly detuned twin opposite it, for beating
+              (Pan2.ar(SinOsc.ar(f, Rand(0, 2pi)), side, level)
+                + Pan2.ar(SinOsc.ar(f + (Rand(0.3, 1.5) * warble), Rand(0, 2pi)), side.neg, level * warble * 0.6)) * env
+            }.sum / 1.5;
+            // Felt thump, plus a click that only comes in with harder mallets
+            hit = LPF.ar(WhiteNoise.ar, (freq * 2).clip(300, 4000)) * EnvGen.ar(Env.perc(0.002, 0.015)) * v * (0.03 + (h * 0.12));
+            hit = hit + (HPF.ar(WhiteNoise.ar, 4000) * EnvGen.ar(Env.perc(0.0002, 0.005)) * v * h.squared * 0.15);
+            sig = sig + hit;
+            // Peaks matched to the old cc_bell; the tail is softer
+            sig = Balance2.ar(sig[0], sig[1], pan) * amp * 2;
+            Line.kr(0, 1, ringTime + 0.05, doneAction: 2);
+            Out.ar(out, sig);
           })
         }
       ),
