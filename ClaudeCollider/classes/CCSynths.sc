@@ -250,15 +250,28 @@ CCSynths {
       ),
 
       cc_fmbass: (
-        description: "FM bass. 2-operator FM: sine modulator at freq*ratio into sine carrier. Index (default 3) controls growl/aggression. Ratio=1 for harmonic, try 0.5 or 2 for different timbres. Gate-controlled.",
+        description: "Funky FM electric bass (DX7-style). Phase modulation whose depth bites hard on the attack and settles (index, default 3). Ratio=1 for harmonic, try 0.5 or 2 for different timbres. Slap adds a short high-ratio pop on the attack, growl adds modulator feedback for a saw-like edge. Sine sub (sub), finger thump, attack pitch blip, gentle saturation (drive). Vel scales bite, slap and level. Decay sets amp decay to sustain. Glide for Pmono. Gate-controlled.",
         def: {
-          SynthDef(\cc_fmbass, { |out=0, freq=55, amp=0.4, index=3, ratio=1, gate=1|
-            var sig, mod, env;
-            env = EnvGen.kr(Env.adsr(0.01, 0.15, 0.7, 0.2), gate, doneAction: 2);
-            // Simple 2-op FM: modulator -> carrier
-            mod = SinOsc.ar(freq * ratio) * index * freq;
-            sig = SinOsc.ar(freq + mod);
-            sig = sig * env * amp;
+          SynthDef(\cc_fmbass, { |out=0, freq=55, amp=0.4, index=3, ratio=1, gate=1, vel=0.7,
+                                decay=0.3, release=0.15, slap=0.4, growl=0.3, sub=0.4, drive=0.3, glide=0|
+            var sig, env, v, f, depth, mod, pop, thump;
+            v = vel.clip(0, 1);
+            env = EnvGen.kr(Env.adsr(0.002, decay, 0.55, release, curve: -4), gate, doneAction: 2);
+            // Glide, plus a small pitch blip on the attack
+            f = Lag.kr(freq, glide) * EnvGen.kr(Env([1.02, 1], [0.012]));
+            // Modulation depth bites on the attack, then settles
+            depth = EnvGen.kr(Env([2, 1, 0.5], [0.04, decay * 1.5], -4)) * index * (v * 0.7 + 0.5);
+            mod = SinOscFB.ar(f * ratio, growl * 1.5) * depth;
+            // Slap: short high-ratio pop
+            pop = SinOsc.ar(f * 7) * EnvGen.kr(Env.perc(0.001, 0.025)) * slap * v * 6;
+            sig = SinOsc.ar(f, mod + pop) + (SinOsc.ar(f) * sub);
+            // Finger thump
+            thump = LPF.ar(WhiteNoise.ar, 600) * EnvGen.kr(Env.perc(0.001, 0.02)) * v * 0.2;
+            sig = sig + thump;
+            sig = (sig * (1 + (drive * 2))).tanh / (1 + (drive * 0.5));
+            sig = LPF.ar(sig, (f * 24).clip(800, 12000));
+            // Gain matched to the old cc_fmbass
+            sig = LeakDC.ar(sig) * env * amp * (v * 0.5 + 0.65) * 1.5;
             Out.ar(out, sig ! 2);
           })
         }

@@ -24,7 +24,7 @@
 | `cc_bass` | gate | Warm analog bass: saw/square into Moog ladder with pluck env, clean sine sub, attack punch | cutoff(700), res(0.6, lower = more resonant), vel(0.7), fenv(2), fdecay(150ms), shape(0.3, saw→square), sub(0.6), drive(0.3), decay(0.5), glide(0, use with Pmono) |
 | `cc_sub` | gate | Pure sub sine with tanh saturation | freq, decay |
 | `cc_acid` | gate | 303-style saw through resonant LPF with filter envelope | cutoff(1000), res(0.3), decay(300ms) |
-| `cc_fmbass` | gate | 2-op FM bass, index controls growl | index(3), ratio(1) |
+| `cc_fmbass` | gate | Funky DX7-style electric bass: FM bite that settles, slap pop, feedback growl, sub | index(3), ratio(1), vel(0.7), slap(0.4), growl(0.3), sub(0.4), drive(0.3), decay(0.3), glide(0, use with Pmono) |
 | `cc_reese` | gate | Reese bass, three saws with phasing | detune(0.5), cutoff(800) |
 
 ## Melodic / Tonal
