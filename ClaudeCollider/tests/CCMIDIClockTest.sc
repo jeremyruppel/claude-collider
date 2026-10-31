@@ -2,13 +2,15 @@
 
 // Proper mock class — Event's stop method shadows doesNotUnderstand,
 // so an Event-based mock won't dispatch stop to its function slot.
+// Records each call as [type, ...args]; a tick carries the clock beat it was
+// scheduled on.
 CCMIDIClockMockMidiOut {
   var messages;
   *new { |messages| ^super.new.init(messages) }
   init { |argMessages| messages = argMessages }
-  start { messages.add(\start) }
-  stop { messages.add(\stop) }
-  midiClock { messages.add(\tick) }
+  start { messages.add([\start]) }
+  stop { messages.add([\stop]) }
+  midiClock { messages.add([\tick, TempoClock.default.beats]) }
 }
 
 CCMIDIClockTest : CCUnitTest {
@@ -22,6 +24,14 @@ CCMIDIClockTest : CCUnitTest {
 
   tearDown {
     CCMIDIClock.disable;
+  }
+
+  types {
+    ^messages.collect(_.first);
+  }
+
+  tickBeats {
+    ^messages.select { |m| m.first == \tick }.collect(_[1]);
   }
 
   // ========== enable/disable tests ==========
@@ -45,7 +55,7 @@ CCMIDIClockTest : CCUnitTest {
     CCMIDIClock.enable(mockMidiOut);
     CCMIDIClock.current.start;
     CCMIDIClock.enable(mockMidiOut);
-    this.assert(messages.includes(\stop), "Should stop previous clock on re-enable");
+    this.assert(this.types.includes(\stop), "Should stop previous clock on re-enable");
   }
 
   test_disable_clearsCurrent {
@@ -74,7 +84,7 @@ CCMIDIClockTest : CCUnitTest {
   test_classStart_delegatesToCurrent {
     CCMIDIClock.enable(mockMidiOut);
     CCMIDIClock.start;
-    this.assert(messages.includes(\start), "Should send start via class method");
+    this.assert(this.types.includes(\start), "Should send start via class method");
   }
 
   test_classStop_delegatesToCurrent {
@@ -82,7 +92,7 @@ CCMIDIClockTest : CCUnitTest {
     CCMIDIClock.current.start;
     messages.clear;
     CCMIDIClock.stop;
-    this.assert(messages.includes(\stop), "Should send stop via class method");
+    this.assert(this.types.includes(\stop), "Should send stop via class method");
   }
 
   // ========== instance start/stop tests ==========
@@ -90,7 +100,7 @@ CCMIDIClockTest : CCUnitTest {
   test_start_sendsStartMessage {
     CCMIDIClock.enable(mockMidiOut);
     CCMIDIClock.current.start;
-    this.assertEquals(messages.first, \start, "Should send MIDI start");
+    this.assertEquals(this.types.first, \start, "Should send MIDI start");
   }
 
   test_start_setsRunning {
@@ -104,7 +114,7 @@ CCMIDIClockTest : CCUnitTest {
     CCMIDIClock.current.start;
     messages.clear;
     CCMIDIClock.current.stop;
-    this.assertEquals(messages.first, \stop, "Should send MIDI stop");
+    this.assertEquals(this.types.first, \stop, "Should send MIDI stop");
   }
 
   test_stop_clearsRunning {
@@ -119,34 +129,45 @@ CCMIDIClockTest : CCUnitTest {
     CCMIDIClock.current.start;
     messages.clear;
     CCMIDIClock.current.start;
-    this.assertEquals(messages[0], \stop, "Should stop before restarting");
-    this.assertEquals(messages[1], \start, "Should start again");
+    this.assertEquals(this.types[0], \stop, "Should stop before restarting");
+    this.assertEquals(this.types[1], \start, "Should start again");
   }
 
   // ========== tick scheduling tests ==========
 
-  test_start_schedulesTicks {
+  // Checks the beats ticks are scheduled on rather than counting ticks over a
+  // wait, so the result doesn't depend on where in the beat the test starts
+  test_start_ticksAt24PerBeat {
+    var firstTick = TempoClock.default.nextTimeOnGrid(1);
+    var beats;
     CCMIDIClock.enable(mockMidiOut);
     CCMIDIClock.current.start;
-    // Wait one beat — should produce 24 ticks
-    1.1.wait;
+    // Wait until a few ticks have landed
+    (firstTick - TempoClock.default.beats + (3.5 / 24)).wait;
     CCMIDIClock.current.stop;
-    this.assert(messages.includes(\tick), "Should have sent clock ticks");
-    this.assert(
-      messages.select({ |m| m == \tick }).size >= 20,
-      "Should send approximately 24 ticks per beat"
-    );
+    beats = this.tickBeats;
+
+    this.assert(beats.size >= 3, "Should have sent several ticks (got %)".format(beats.size));
+    this.assertFloatEquals(beats.first, firstTick, "First tick should land on the next whole beat");
+    beats.differentiate.drop(1).do { |gap|
+      this.assertFloatEquals(gap, 1/24, "Ticks should be 1/24 beat apart (24 ppqn)");
+    };
   }
 
+  // Stops after ticks have started, so it can't pass by stopping before the
+  // first tick
   test_stop_haltsTicks {
+    var firstTick = TempoClock.default.nextTimeOnGrid(1);
     var countAtStop, countAfter;
     CCMIDIClock.enable(mockMidiOut);
     CCMIDIClock.current.start;
-    0.2.wait;
+    (firstTick - TempoClock.default.beats + (2.5 / 24)).wait;
     CCMIDIClock.current.stop;
-    countAtStop = messages.select({ |m| m == \tick }).size;
-    0.5.wait;
-    countAfter = messages.select({ |m| m == \tick }).size;
-    this.assertEquals(countAtStop, countAfter, "Should not send ticks after stop");
+    countAtStop = this.tickBeats.size;
+    // Several tick intervals: any tick still scheduled would have landed
+    (4 / 24).wait;
+    countAfter = this.tickBeats.size;
+    this.assert(countAtStop > 0, "Should have sent ticks before stop (got %)".format(countAtStop));
+    this.assertEquals(countAfter, countAtStop, "Should not send ticks after stop");
   }
 }
