@@ -100,9 +100,20 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-The `env` block is optional in all configurations. By default, put your own samples in `user/samples/` and recordings are saved to `user/recordings/` (both inside this repo and ignored by git). Your samples take priority over the bundled ones in `samples/`. The old `~/.claudecollider/samples` folder is still searched last.
+The `env` block is optional in all configurations. Without it, samples and recordings live in the [`user/` directory](#your-samples-and-recordings).
 
 Restart your MCP client after updating the config.
+
+## Your Samples and Recordings
+
+The `user/` directory holds your own files. Git ignores everything in it except the READMEs, so nothing you add there gets committed.
+
+| Folder             | What goes there                                                        |
+| ------------------ | ---------------------------------------------------------------------- |
+| `user/samples/`    | Your own WAV/AIFF/MP3 samples, loaded by name (`\kick` for `kick.wav`) |
+| `user/recordings/` | Audio recorded with `cc_recording`, saved with timestamped filenames  |
+
+Your samples take priority over the bundled ones in `samples/` when names match. The old `~/.claudecollider/samples` folder is still searched last. Ask Claude to reload samples after adding files mid-session. To use different folders, set `CC_SAMPLES_PATH` or `CC_RECORDINGS_PATH` (see [Environment Variables](#environment-variables)).
 
 ## MCP Tools
 
