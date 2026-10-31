@@ -19,43 +19,57 @@ CCSynths {
     ^(
       // ========== DRUMS ==========
       cc_kick: (
-        description: "Punchy kick drum. Sine wave with pitch sweep from 2x to 1x freq over 20ms, plus sub layer. Default 48Hz (~G1), 300ms decay. One-shot.",
+        description: "Punchy kick drum. Sine body with a fast pitch drop for punch plus a slower drop for boom (punch 0-1), starting at the waveform peak for snap. Short hold then decay. Click transient (click), saturation (drive). Default 48Hz (~G1), 300ms decay. One-shot.",
         def: {
-          SynthDef(\cc_kick, { |out=0, freq=48, amp=0.5, decay=0.3|
-            var sig, env;
-            env = EnvGen.kr(Env.perc(0.001, decay), doneAction: 2);
-            sig = SinOsc.ar(freq * EnvGen.kr(Env([2, 1], [0.02])));
-            sig = sig + (SinOsc.ar(freq) * 0.5);
-            sig = sig * env * amp;
-            Out.ar(out, sig ! 2);
+          SynthDef(\cc_kick, { |out=0, freq=48, amp=0.5, decay=0.3, punch=0.7, click=0.7, drive=0.5|
+            var sig, env, pitch, transient;
+            env = EnvGen.ar(Env([0, 1, 1, 0], [0.0005, 0.03, decay], [0, 0, -4]), doneAction: 2);
+            // Sharp, big drop for punch, slower drop for boom
+            pitch = freq * (1
+              + (punch * 14 * EnvGen.ar(Env.perc(0.0005, 0.03, 1, -8)))
+              + (punch * 0.8 * EnvGen.ar(Env.perc(0.0005, 0.15, 1, -4))));
+            // Start at the peak of the wave for a sharp front edge
+            sig = SinOsc.ar(pitch, 0.5pi) * env;
+            transient = BPF.ar(WhiteNoise.ar, 4000, 1.5) * EnvGen.ar(Env.perc(0.0003, 0.008)) * 0.8;
+            transient = transient + (SinOsc.ar(freq * 30) * EnvGen.ar(Env.perc(0.0002, 0.004)) * 0.5);
+            sig = sig + (transient * click);
+            sig = (sig * (1 + (drive * 4))).tanh / (1 + (drive * 0.3));
+            Out.ar(out, sig * amp * 0.75 ! 2);
           })
         }
       ),
 
       cc_snare: (
-        description: "Snare drum. 30% sine body (180Hz default, pitch sweep 1.5x-1x) + 70% HPF noise at 1kHz. Noise decays at half the main decay time. Default 200ms decay. One-shot.",
+        description: "909-style snare. Two triangle oscillators (tune, default 180Hz, and 1.83x; ignores freq so Pbind's default pitch can't detune it) with a quick pitch drop, plus band-limited noise as a short snap and a longer tail. Snappy (default 1) sets noise level, color (0-1, default 0.5) its brightness. Decay (default 200ms) sets the tail. One-shot.",
         def: {
-          SynthDef(\cc_snare, { |out=0, freq=180, amp=0.5, decay=0.2|
-            var sig, env, noise;
-            env = EnvGen.kr(Env.perc(0.001, decay), doneAction: 2);
-            sig = SinOsc.ar(freq * EnvGen.kr(Env([1.5, 1], [0.02])));
-            noise = HPF.ar(WhiteNoise.ar, 1000) * EnvGen.kr(Env.perc(0.001, decay * 0.5));
-            sig = (sig * 0.3) + (noise * 0.7);
-            sig = sig * env * amp;
-            Out.ar(out, sig ! 2);
+          SynthDef(\cc_snare, { |out=0, tune=180, amp=0.5, decay=0.2, snappy=1, color=0.5|
+            var body, noise, snap, tail, drop;
+            drop = EnvGen.ar(Env([1.3, 1], [0.015], -4));
+            body = (LFTri.ar(tune * drop) + (LFTri.ar(tune * 1.83 * drop) * 0.6))
+              * EnvGen.ar(Env.perc(0.0005, 0.11, 1, -5));
+            noise = LPF.ar(HPF.ar(WhiteNoise.ar, 900), (4000 + (color * 10000)).min(18000));
+            snap = noise * EnvGen.ar(Env.perc(0.0005, 0.04, 1, -4)) * 0.6;
+            tail = noise * EnvGen.ar(Env.perc(0.002, decay, 1, -5)) * 0.7;
+            // Free after whichever is longer, the body or the tail
+            Line.kr(0, 1, max(decay, 0.11) + 0.05, doneAction: 2);
+            // Level set slightly above the old cc_snare
+            Out.ar(out, ((body * 0.7) + ((snap + tail) * snappy)) * amp * 0.47 ! 2);
           })
         }
       ),
 
       cc_hihat: (
-        description: "Closed hi-hat. HPF white noise at 8kHz. Very short 50ms default decay for tight sound. Lower amp default (0.3). One-shot.",
+        description: "Closed hi-hat, 808-style. Six detuned square waves at 808 ratios band-passed into a metallic shimmer, blended with noise (noise 0-1). Tone scales the metal pitch (default 1). Very short 50ms default decay. Lower amp default (0.3). One-shot.",
         def: {
-          SynthDef(\cc_hihat, { |out=0, amp=0.3, decay=0.05|
-            var sig, env;
-            env = EnvGen.kr(Env.perc(0.001, decay), doneAction: 2);
-            sig = HPF.ar(WhiteNoise.ar, 8000);
-            sig = sig * env * amp;
-            Out.ar(out, sig ! 2);
+          SynthDef(\cc_hihat, { |out=0, amp=0.3, decay=0.05, tone=1, noise=0.3|
+            var sig, env, metal;
+            env = EnvGen.ar(Env.perc(0.0005, decay, 1, -6), doneAction: 2);
+            metal = Pulse.ar([205.3, 304.4, 369.6, 522.7, 540, 800] * tone * 1.7).sum;
+            metal = BPF.ar(metal, 10000, 0.6) + (HPF.ar(metal, 8000) * 0.5);
+            sig = XFade2.ar(metal, HPF.ar(WhiteNoise.ar, 8000), noise * 2 - 1);
+            sig = HPF.ar(sig, 6000);
+            // Gain matched to the old cc_hihat
+            Out.ar(out, sig * env * amp * 2.5 ! 2);
           })
         }
       ),

@@ -6,9 +6,9 @@
 
 | Synth | Type | Description | Key Params |
 |---|---|---|---|
-| `cc_kick` | one-shot | Punchy kick with pitch sweep | freq(48), decay(300ms) |
-| `cc_snare` | one-shot | Sine body + HPF noise | freq(180), decay(200ms) |
-| `cc_hihat` | one-shot | Closed hi-hat, HPF noise at 8kHz | decay(50ms) |
+| `cc_kick` | one-shot | Hard-hitting kick: big two-stage pitch drop, hold, click, saturation | freq(48), decay(300ms), punch(0.7), click(0.7), drive(0.5) |
+| `cc_snare` | one-shot | 909-style: two triangle oscillators + noise snap and tail. Tuned by `tune`, not freq | tune(180), decay(200ms), snappy(1), color(0.5) |
+| `cc_hihat` | one-shot | 808-style: six detuned squares band-passed, blended with noise | decay(50ms), tone(1), noise(0.3) |
 | `cc_openhat` | one-shot | Open hi-hat with metallic shimmer | decay(500ms) |
 | `cc_clap` | one-shot | Hand clap, two BPF noise layers | decay(150ms) |
 | `cc_rim` | one-shot | Rimshot/sidestick, tight BPF noise | freq(1700) |
