@@ -174,13 +174,28 @@ CCSynths {
 
       // ========== BASS ==========
       cc_bass: (
-        description: "Sub bass with harmonics. Fundamental + 2nd harmonic (0.3x) + 3rd harmonic (0.1x). ADSR envelope (10ms att, 100ms dec, 0.7 sus, 100ms rel). Default 55Hz (~A1). Gate-controlled.",
+        description: "Warm analog bass. Saw-to-square oscillator (shape 0-1) with a detuned second osc into a Moog ladder filter with a plucky, velocity-scaled envelope (cutoff, fenv amount, fdecay time). Res works like RLPF rq: lower = more resonant. Clean sine sub bypasses the filter (sub) so lows stay solid. Pitch blip on attack for punch, gentle saturation (drive). Decay sets amp decay to sustain. Glide for Pmono. Default 55Hz (~A1). Gate-controlled.",
         def: {
-          SynthDef(\cc_bass, { |out=0, freq=55, amp=0.5, decay=0.5, gate=1|
-            var sig, env;
-            env = EnvGen.kr(Env.adsr(0.01, 0.1, 0.7, 0.1), gate, doneAction: 2);
-            sig = SinOsc.ar(freq) + (SinOsc.ar(freq * 2) * 0.3) + (SinOsc.ar(freq * 3) * 0.1);
-            sig = sig * env * amp;
+          SynthDef(\cc_bass, { |out=0, freq=55, amp=0.5, decay=0.5, gate=1, rel=0.08, vel=0.7,
+                              cutoff=700, res=0.6, fenv=2, fdecay=0.15, shape=0.3, sub=0.6, drive=0.3, glide=0|
+            var sig, env, f, v, osc, fe, k, cut;
+            v = vel.clip(0, 1);
+            env = EnvGen.kr(Env.adsr(0.003, decay, 0.6, rel), gate, doneAction: 2);
+            // Glide, plus a small pitch blip on the attack for punch
+            f = Lag.kr(freq, glide) * EnvGen.kr(Env([1.03, 1], [0.015], -4));
+            // Saw-to-square, two slightly detuned oscillators
+            osc = [f, f * 1.004].collect { |ff| XFade2.ar(Saw.ar(ff), Pulse.ar(ff, 0.5), shape * 2 - 1) }.sum * 0.5;
+            // Plucky filter envelope, scaled by velocity, lightly key tracked
+            fe = EnvGen.kr(Env.perc(0.002, fdecay, 1, -4)) * fenv * (v * 0.8 + 0.2);
+            cut = (cutoff * ((freq / 55) ** 0.3) * (1 + fe)).clip(30, 12000);
+            k = (1 - res).clip(0, 1) * 3.2;
+            osc = MoogFF.ar(osc, cut, k) * (1 + (k * 0.9));
+            // Clean sub bypasses the filter
+            sig = osc + (SinOsc.ar(f) * sub);
+            sig = (sig * (1 + (drive * 2))).tanh / (1 + (drive * 0.5));
+            sig = LeakDC.ar(sig);
+            // Gain roughly matched to the old cc_bass (slightly hotter attack, similar body)
+            sig = sig * env * amp * (v * 0.5 + 0.65) * 1.3;
             Out.ar(out, sig ! 2);
           })
         }
@@ -265,15 +280,40 @@ CCSynths {
 
       // ========== LEADS ==========
       cc_lead: (
-        description: "Detuned saw lead. Two saws (1x and 1.005x freq) through resonant LPF. Default cutoff 4kHz, res 0.2. Pannable. ADSR with adjustable att/rel (default 10ms/300ms). Gate-controlled.",
+        description: "Analog-style poly lead. Three detuned saws (detune, in semitones) spread in stereo (spread), PWM pulse layer (pulse mix), sub octave (sub). Soft drive into a Moog ladder filter with key tracking and a velocity-scaled filter envelope (fenv amount, fdecay time). Res works like RLPF rq: lower = more resonant. Delayed-onset vibrato (vib semitones, vibRate) plus slow pitch drift. Glide (seconds) for Pmono lines. Vel (0-1) drives filter sweep and level. Gate-controlled.",
         def: {
           SynthDef(\cc_lead, { |out=0, freq=440, amp=0.5, pan=0, gate=1,
-                              att=0.01, rel=0.3, cutoff=4000, res=0.2|
-            var sig, env;
-            env = EnvGen.kr(Env.adsr(att, 0.1, 0.8, rel), gate, doneAction: 2);
-            sig = Saw.ar(freq) + Saw.ar(freq * 1.005);
-            sig = RLPF.ar(sig, cutoff, res);
-            Out.ar(out, Pan2.ar(sig * env * amp, pan));
+                              att=0.01, rel=0.3, cutoff=4000, res=0.2, vel=0.7,
+                              detune=0.1, spread=0.6, pulse=0.3, sub=0.25,
+                              fenv=1.5, fdecay=0.25, vib=0.12, vibRate=5.5, glide=0, drive=0.3|
+            var sig, env, f, v, vibEnv, saws, pw, filtFreq, fe, k;
+            v = vel.clip(0, 1);
+            env = EnvGen.kr(Env.adsr(att, 0.2, 0.75, rel), gate, doneAction: 2);
+            // Pitch: glide, slow analog drift, vibrato that fades in on held notes
+            vibEnv = EnvGen.kr(Env([0, 0, 1], [0.3, 0.6], [0, 2]));
+            f = Lag.kr(freq, glide);
+            f = f * (LFNoise1.kr(0.3).range(-0.03, 0.03)
+              + (SinOsc.kr(vibRate * LFNoise1.kr(0.5).range(0.95, 1.05)) * vib * vibEnv)).midiratio;
+            // Three detuned saws spread in stereo
+            saws = Saw.ar(f * ([-1, 0, 1] * detune).midiratio * Rand(0.999, 1.001 ! 3));
+            sig = Splay.ar(saws, spread) * 0.6;
+            // Pulse with slow width modulation
+            pw = LFTri.kr(Rand(0.2, 0.4)).range(0.2, 0.5);
+            sig = sig + (Pulse.ar(f * 1.002, pw) * pulse * 0.5);
+            // Sub an octave down, kept centered
+            sig = sig + (SinOsc.ar(f * 0.5) * sub);
+            // Soft drive into the filter
+            sig = (sig * (1 + (drive * 2))).tanh;
+            // Filter: key tracked, envelope sweep scaled by velocity
+            fe = EnvGen.kr(Env.perc(0.005, fdecay, 1, -4)) * fenv * (v * 0.8 + 0.2);
+            filtFreq = (cutoff * ((freq / 440) ** 0.5) * (1 + fe)).clip(40, 18000);
+            k = (1 - res).clip(0, 1) * 3.2;
+            sig = MoogFF.ar(sig, filtFreq, k);
+            sig = LeakDC.ar(sig);
+            // Makeup gain: the ladder loses level as resonance rises. Matched to the old cc_lead.
+            sig = sig * (1 + (k * 0.9)) * 1.75;
+            sig = sig * env * amp * (v * 0.5 + 0.65);
+            Out.ar(out, Balance2.ar(sig[0], sig[1], pan));
           })
         }
       ),
@@ -319,21 +359,42 @@ CCSynths {
       ),
 
       cc_keys: (
-        description: "Electric piano (Rhodes-style). FM with 2:1 ratio + 80ms bark envelope on attack for tine character. Brightness (0-1) controls both sustained FM index and attack bark intensity. Gate-controlled.",
+        description: "Electric piano (Rhodes-style). Two FM layers: 1:1 body whose index falls from bark to mellow, plus a 14:1 tine ping on the strike. Notes decay naturally while held (shorter in the upper register). Vel (0-1) drives brightness and bark. Asymmetric pickup saturation (drive) adds growl. Hammer noise, damper thump on release, and suitcase-style stereo tremolo (tremRate, tremDepth). Gate-controlled.",
         def: {
-          SynthDef(\cc_keys, { |out=0, freq=440, amp=0.4, attack=0.01, release=1, brightness=0.5, gate=1|
-            var sig, mod, env, bark;
-            env = EnvGen.kr(Env.adsr(attack, 0.2, 0.6, release), gate, doneAction: 2);
-            // FM with brightness-controlled index
-            mod = SinOsc.ar(freq * 2) * freq * (brightness * 3 + 0.5);
-            sig = SinOsc.ar(freq + mod);
-            // Add slight asymmetry for warmth
-            sig = sig + (SinOsc.ar(freq * 3) * 0.05);
-            // EP bark on attack (modulator envelope)
-            bark = EnvGen.kr(Env.perc(0.001, 0.08)) * brightness * 2;
-            sig = sig + (SinOsc.ar(freq + (SinOsc.ar(freq * 2) * freq * bark)) * 0.3 * bark);
-            sig = sig * env * amp;
-            Out.ar(out, sig ! 2);
+          SynthDef(\cc_keys, { |out=0, freq=440, amp=0.4, vel=0.7, attack=0.001, decay=4, release=0.5,
+                              brightness=0.5, drive=0.4, tremRate=4.5, tremDepth=0.3, pan=0, gate=1|
+            var sig, env, kt, f, v, decayT, idx, idxEnv, body, ping, hammer, thump, d;
+            v = vel.clip(0, 1);
+            // Octaves from middle C, for key tracking
+            kt = (freq / 261.63).log2.clip(-3, 3);
+            // Each tine is slightly out of tune
+            f = freq * (Rand(-2.0, 2.0) / 100).midiratio;
+            // Higher notes ring shorter
+            decayT = decay * (1.6 ** kt.neg);
+            // Decays while held; release damps from wherever it is
+            env = EnvGen.ar(Env([0, 1, 0, 0], [attack, decayT, release], [0, -5, -4], releaseNode: 2), gate, doneAction: 2);
+            // Body: 1:1 phase modulation, index falls from bark to mellow
+            idx = (brightness * 1.5 + 0.3) * (v * 0.8 + 0.4) * (1 - (kt * 0.15)).clip(0.3, 1.5);
+            idxEnv = EnvGen.kr(Env([2.5, 1, 0.4], [0.06, decayT * 0.6], -4));
+            body = SinOsc.ar(f, SinOsc.ar(f) * idx * idxEnv);
+            // Tine ping: high-ratio modulator burst on the strike
+            ping = SinOsc.ar(f, SinOsc.ar(f * 14) * (v * brightness * 2.5) * EnvGen.kr(Env.perc(0.0005, 0.04)));
+            ping = ping * EnvGen.kr(Env.perc(0.001, decayT * 0.15));
+            sig = body + (ping * 0.25);
+            // Asymmetric pickup saturation: even harmonics, more growl when played hard
+            d = drive * (0.5 + v);
+            sig = (((sig * (1 + (d * 3))) + (d * 0.3)).tanh - (d * 0.3).tanh) / (1 + d);
+            sig = LeakDC.ar(sig);
+            sig = LPF.ar(sig, (freq * (6 + (brightness * 20))).clip(800, 16000));
+            // Hammer noise on the strike
+            hammer = BPF.ar(WhiteNoise.ar, (freq * 3).clip(200, 8000), 0.5) * EnvGen.kr(Env.perc(0.0005, 0.01)) * v * 0.1;
+            sig = (sig + hammer) * env * (v * 0.6 + 0.4);
+            // Damper thump when the key comes up
+            thump = LPF.ar(PinkNoise.ar, 300 + freq) * EnvGen.kr(Env.perc(0.002, 0.06), 1 - gate) * 0.08;
+            // Gain matched so vel=0.7 is as loud as the old cc_keys
+            sig = (sig + thump) * amp * 1.6;
+            // Suitcase-style stereo tremolo
+            Out.ar(out, Pan2.ar(sig, (pan + (SinOsc.kr(tremRate) * tremDepth)).clip(-1, 1)));
           })
         }
       ),
@@ -361,16 +422,32 @@ CCSynths {
 
       // ========== PADS ==========
       cc_pad: (
-        description: "Soft ambient pad. Three slightly detuned sines (0.99x, 1x, 1.01x) + octave-down saw pair. LPF at 2kHz. Default freq 220Hz, 500ms attack, 1s release. Gate-controlled.",
+        description: "Lush evolving pad. Five detuned saws (detune, semitones), each drifting independently, spread in stereo (spread). Sine sub an octave down (sub). Resonant LPF opens as the note swells and breathes with a slow random LFO (cutoff, movement). Octave-up shimmer fades in after the attack (shimmer). Band-passed noise air layer (air). Sine-curve swells. Default 500ms attack, 1s release. Gate-controlled.",
         def: {
-          SynthDef(\cc_pad, { |out=0, freq=220, amp=0.3, attack=0.5, release=1, gate=1|
-            var sig, env;
-            env = EnvGen.kr(Env.adsr(attack, 0.2, 0.7, release), gate, doneAction: 2);
-            sig = SinOsc.ar(freq * [0.99, 1, 1.01]).sum / 3;
-            sig = sig + (Saw.ar(freq * [0.5, 0.501]) * 0.2).sum;
-            sig = LPF.ar(sig, 2000);
-            sig = sig * env * amp;
-            Out.ar(out, sig ! 2);
+          SynthDef(\cc_pad, { |out=0, freq=220, amp=0.3, attack=0.5, release=1, gate=1, pan=0,
+                             cutoff=2000, detune=0.15, spread=0.8, movement=0.5,
+                             sub=0.3, shimmer=0.2, air=0.15|
+            var sig, env, voices, breath, cut, shim, noise;
+            env = EnvGen.kr(Env.asr(attack, 1, release, \sin), gate, doneAction: 2);
+            // Five detuned saws, each drifting on its own
+            voices = Array.fill(5, { |i|
+              var offset = (i / 4 * 2 - 1) * detune;
+              var drift = LFNoise2.kr(movement * Rand(0.1, 0.3)) * detune * 0.3;
+              Saw.ar(freq * (offset + drift).midiratio);
+            });
+            sig = Splay.ar(voices, spread, center: pan);
+            sig = sig + (SinOsc.ar(freq * 0.5) * sub);
+            // Filter opens as the note swells and breathes slowly
+            breath = LFNoise2.kr(movement * Rand(0.05, 0.15)).range(0.7, 1.4);
+            cut = (cutoff * (0.4 + (env * 0.6)) * breath * ((freq / 220) ** 0.3)).clip(80, 16000);
+            sig = RLPF.ar(sig, cut, 0.6);
+            // Octave-up shimmer, fades in after the attack
+            shim = SinOsc.ar(freq * 2 * [1.003, 0.997])
+              * EnvGen.kr(Env([0, 0, 1], [attack * 0.5, attack * 1.5 + 1], \sin)) * shimmer * 0.3;
+            // Breathy air
+            noise = BPF.ar(PinkNoise.ar ! 2, (freq * 4).clip(500, 9000), 0.3) * air * breath;
+            sig = (sig + shim + noise) * env * amp;
+            Out.ar(out, sig);
           })
         }
       ),

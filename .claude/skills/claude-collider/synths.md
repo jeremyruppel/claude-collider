@@ -21,7 +21,7 @@
 
 | Synth | Type | Description | Key Params |
 |---|---|---|---|
-| `cc_bass` | gate | Sub bass with harmonics (fund + 2nd + 3rd) | freq(55), decay |
+| `cc_bass` | gate | Warm analog bass: saw/square into Moog ladder with pluck env, clean sine sub, attack punch | cutoff(700), res(0.6, lower = more resonant), vel(0.7), fenv(2), fdecay(150ms), shape(0.3, saw→square), sub(0.6), drive(0.3), decay(0.5), glide(0, use with Pmono) |
 | `cc_sub` | gate | Pure sub sine with tanh saturation | freq, decay |
 | `cc_acid` | gate | 303-style saw through resonant LPF with filter envelope | cutoff(1000), res(0.3), decay(300ms) |
 | `cc_fmbass` | gate | 2-op FM bass, index controls growl | index(3), ratio(1) |
@@ -31,8 +31,8 @@
 
 | Synth | Type | Description | Key Params |
 |---|---|---|---|
-| `cc_lead` | gate | Detuned saw lead through resonant LPF | cutoff(4000), res(0.2), att(10ms), rel(300ms) |
-| `cc_keys` | gate | Rhodes-style electric piano, FM + bark attack | brightness(0-1) |
+| `cc_lead` | gate | Analog lead: 3 detuned saws + PWM pulse + sub into Moog ladder, filter env, delayed vibrato, glide | cutoff(4000), res(0.2, lower = more resonant), vel(0.7), fenv(1.5), fdecay(250ms), detune(0.1 semi), pulse(0.3), sub(0.25), vib(0.12), glide(0, use with Pmono), att(10ms), rel(300ms) |
+| `cc_keys` | gate | Rhodes-style electric piano: FM body + tine ping, natural decay, pickup growl, stereo tremolo | vel(0.7), brightness(0.5), drive(0.4), decay(4s), release(0.5), tremRate(4.5), tremDepth(0.3) |
 | `cc_pluck` | one-shot | Karplus-Strong plucked string | decay(2s), color(0.5) |
 | `cc_bell` | one-shot | FM bell, inharmonic ratios for metallic timbre | decay(4s), brightness(3) |
 | `cc_sine` | gate | Pure sine tone | freq(440) |
@@ -41,7 +41,7 @@
 
 | Synth | Type | Description | Key Params |
 |---|---|---|---|
-| `cc_pad` | gate | Soft pad, three detuned sines + octave-down saw | attack(500ms), release(1s) |
+| `cc_pad` | gate | Lush pad: 5 drifting detuned saws + sub, breathing filter that opens with the swell, shimmer, air | attack(500ms), release(1s), cutoff(2000), detune(0.15 semi), movement(0.5), spread(0.8), sub(0.3), shimmer(0.2), air(0.15) |
 | `cc_strings` | gate | String ensemble, five detuned saws through LPF | attack(500ms), release(1s), detune |
 | `cc_drone` | gate | Evolving saw drone with drift + built-in reverb | spread, movement, filterLo, filterHi, room, mix |
 | `cc_noise` | gate | Filtered noise, switchable LPF/HPF/BPF | cutoff(2000), res(0.3), type(0=LPF,1=HPF,2=BPF) |
