@@ -400,22 +400,46 @@ CCSynths {
       ),
 
       cc_strings: (
-        description: "String ensemble. Five detuned saws spread +/- detune*1% around fundamental. LPF at 3kHz tames brightness. Slow 500ms default attack, 1s release. Gate-controlled.",
+        description: "Bowed string section. Four players per note, each with its own vibrato (vib semitones, vibRate) that fades in, spread +/- detune% and across stereo (spread). Brightness follows the bow swell and vel (cutoff). Wooden body resonances (body), bow noise strongest on the attack (bow), string-machine ensemble chorus (ensemble). Slow 500ms default attack, 1s release. Gate-controlled.",
         def: {
-          SynthDef(\cc_strings, { |out=0, freq=440, amp=0.3, attack=0.5, release=1, detune=0.3, gate=1|
-            var sig, env;
-            env = EnvGen.kr(Env.adsr(attack, 0.2, 0.8, release), gate, doneAction: 2);
-            // Multiple detuned saws for ensemble effect
-            sig = Saw.ar(freq * (1 - (detune * 0.01)));
-            sig = sig + Saw.ar(freq * (1 - (detune * 0.005)));
-            sig = sig + Saw.ar(freq);
-            sig = sig + Saw.ar(freq * (1 + (detune * 0.005)));
-            sig = sig + Saw.ar(freq * (1 + (detune * 0.01)));
-            sig = sig / 5;
-            // LPF to tame brightness
-            sig = LPF.ar(sig, 3000);
-            sig = sig * env * amp;
-            Out.ar(out, sig ! 2);
+          SynthDef(\cc_strings, { |out=0, freq=440, amp=0.3, attack=0.5, release=1, detune=0.3, gate=1, pan=0,
+                                 vel=0.7, cutoff=3000, vib=0.15, vibRate=5.5, spread=0.7,
+                                 body=0.5, bow=0.15, ensemble=0.5|
+            var sig, env, v, vibEnv, players, bright, resonances, noise, chorus;
+            v = vel.clip(0, 1);
+            env = EnvGen.kr(Env([0, 1, 0], [attack, release], [\sin, -3], 1), gate, doneAction: 2);
+            // Players settle into vibrato after the bow starts
+            vibEnv = EnvGen.kr(Env([0, 0, 1], [attack * 0.5, attack + 0.5], \sin));
+            players = Array.fill(4, { |i|
+              var offset = (i / 3 * 2 - 1) * detune * 0.01;
+              var vibrato = SinOsc.kr(vibRate * Rand(0.85, 1.15), Rand(0, 2pi)) * vib * vibEnv;
+              var drift = LFNoise1.kr(Rand(0.1, 0.3)) * 0.04;
+              Saw.ar(freq * (1 + offset) * (vibrato + drift).midiratio);
+            });
+            sig = Splay.ar(players, spread, center: pan);
+            // Brightness follows the bow
+            bright = (cutoff * (0.35 + (env * 0.65)) * (v * 0.6 + 0.6) * ((freq / 440) ** 0.3)).clip(200, 16000);
+            sig = LPF.ar(sig, bright);
+            // Wooden body resonances
+            resonances = sig.collect { |ch|
+              BPF.ar(ch, [280, 520, 1150, 2800], [0.4, 0.5, 0.6, 0.7], [1, 0.8, 0.6, 0.4]).sum
+            };
+            sig = (sig * (1 - (body * 0.5))) + (resonances * body);
+            // Bow noise, strongest on the attack
+            noise = BPF.ar(PinkNoise.ar ! 2, (freq * 2).clip(200, 8000), 0.4)
+              * (0.4 + (EnvGen.kr(Env.perc(0.01, 0.3)) * 1.5)) * bow * v;
+            // Gain matched to the old cc_strings
+            sig = (sig + noise) * env * amp * 0.5;
+            // String-machine ensemble: three slow+fast modulated delay taps per side
+            chorus = sig.collect { |ch, side|
+              Array.fill(3, { |j|
+                var t = 0.008 + (SinOsc.kr(0.6 + (j * 0.13), (side * 0.5) + (j * 2pi / 3)) * 0.003)
+                  + (SinOsc.kr(6.1 + (j * 0.4), j) * 0.0004);
+                DelayC.ar(ch, 0.03, t)
+              }).sum / 3
+            };
+            sig = XFade2.ar(sig, chorus, ensemble * 2 - 1);
+            Out.ar(out, sig);
           })
         }
       ),
