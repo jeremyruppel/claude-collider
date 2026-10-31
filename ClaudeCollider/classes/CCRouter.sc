@@ -137,7 +137,7 @@ CCRouter {
     };
 
     // Route Ndef source
-    if(Ndef.all[fx.cc.server].notNil and: { Ndef.all[fx.cc.server].at(source.asSymbol).notNil }) {
+    if(Ndef.all[fx.cc.server.name].notNil and: { Ndef.all[fx.cc.server.name].at(source.asSymbol).notNil }) {
       srcNdef = Ndef(source.asSymbol);
       if(srcNdef.bus.notNil) {
         routeSynth = Synth(

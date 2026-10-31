@@ -115,7 +115,7 @@ CCSidechain {
     };
 
     // Route Ndef source
-    if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server].at(srcSym).notNil }) {
+    if(Ndef.all[cc.server.name].notNil and: { Ndef.all[cc.server.name].at(srcSym).notNil }) {
       srcNdef = Ndef(srcSym);
       if(srcNdef.bus.notNil) {
         triggerSynth = Synth(
@@ -154,7 +154,7 @@ CCSidechain {
       sc.triggerRoutes.removeAt(srcSym);
     };
 
-    if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server].at(srcSym).notNil }) {
+    if(Ndef.all[cc.server.name].notNil and: { Ndef.all[cc.server.name].at(srcSym).notNil }) {
       Ndef(srcSym).play;
     };
   }

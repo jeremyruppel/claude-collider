@@ -17,7 +17,7 @@ CCFormatter {
 
   playingNdefs {
     var result = [];
-    var proxySpace = Ndef.all[cc.server];
+    var proxySpace = Ndef.all[cc.server.name];
     if(proxySpace.notNil) {
       proxySpace.keysValuesDo { |key, proxy|
         if(proxy.isPlaying) { result = result.add(key) };

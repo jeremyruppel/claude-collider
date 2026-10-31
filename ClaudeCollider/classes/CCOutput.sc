@@ -61,7 +61,7 @@ CCOutput {
     };
 
     // Handle Ndef
-    if(Ndef.all[cc.server].notNil and: { Ndef.all[cc.server][srcSym].notNil }) {
+    if(Ndef.all[cc.server.name].notNil and: { Ndef.all[cc.server.name][srcSym].notNil }) {
       var srcNdef = Ndef(srcSym);
       this.unrouteNdef(srcSym);
       routeSynths[srcSym] = Synth(

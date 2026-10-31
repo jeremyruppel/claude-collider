@@ -96,6 +96,17 @@ CCRouterTest : UnitTest {
     this.assert(result.not, "Should return false when target not found");
   }
 
+  test_route_findsNdefSource {
+    var result;
+    mockFX.loaded[\fx_test] = (inBus: (index: 16));
+    Ndef(\cc_test_router_ndef).ar(2);
+    result = router.route(\cc_test_router_ndef, \fx_test);
+    this.assert(result, "Should find an existing Ndef and route it");
+    this.assertEquals((router.routes[\cc_test_router_ndef] !? { |r| r[\target] }), \fx_test, "Should record the Ndef route");
+    router.unroute(\cc_test_router_ndef);
+    Ndef(\cc_test_router_ndef).clear;
+  }
+
   // ========== unroute tests ==========
 
   test_mainOut_fallsBackToZeroWithoutOutputs {
