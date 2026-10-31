@@ -129,7 +129,7 @@ When you live code from inside this repo, Claude has access to a set of skills �
 | `claude-collider`  | `/claude-collider`| Core live-coding workflow — synths, patterns, effects, and MCP tool usage   |
 | `songwriting`      | `/songwriting`    | Music theory reference for composing better parts (see below)               |
 | `play-tape`        | `/play-tape`      | Load and play a saved tape's patterns, effects, and arrangement             |
-| `record-tape`      | `/record-tape`    | Capture the current live session as a new tape (`.md` + `.scd` pair)        |
+| `record-tape`      | `/record-tape`    | Capture the current live session as a new tape (`.scd` file)                |
 | `arrange-tape`     | `/arrange-tape`   | Compose a `CCArrangement` that structures a tape's elements over time       |
 
 The tape skills (`play-tape`, `record-tape`, `arrange-tape`) are described in more detail in the [Tapes](#tapes) section below.
@@ -152,13 +152,13 @@ The skill enforces principles like register separation (keeping bass, chords, an
 
 ## Tapes
 
-Tapes are Claude Collider's session format — a paired `.md` and `.scd` file that capture a complete musical idea. The `tapes/` directory contains saved sessions you can play back or use as starting points.
+Tapes are Claude Collider's session format — a single `.scd` file that captures a complete musical idea. The `tapes/` directory contains saved sessions you can play back or use as starting points.
 
-A tape consists of:
+A tape (`tapes/<name>.scd`) has three parts:
 
-- **`<name>.md`** — Metadata and documentation: tempo, key, element descriptions, arrangement overview, and musical notes. Has YAML frontmatter linking to its `.scd` file.
-- **`<name>.scd`** — Executable SuperCollider code defining all Pdefs, Ndefs, effects, and routing. Elements are defined but not played — playback is controlled separately.
-- **`<name>-arrangement.scd`** (optional) — A `CCArrangement` that orchestrates when elements enter and exit across sections.
+- **Header comment** — A `/* ... */` block of Markdown docs: tempo, key, element descriptions, effects, arrangement overview, and musical notes.
+- **Definitions** — SuperCollider code defining all Pdefs, Ndefs, effects, and routing. Elements are defined but not played — running the file never starts playback.
+- **Arrangement** (optional) — `~arrangement = CCArrangement([...])`, which orchestrates when elements enter and exit across sections. Start it with `~arrangement.play`.
 
 ### Playing a Tape
 
@@ -170,7 +170,7 @@ Ask Claude to play a tape by name:
 
 There are two playback modes:
 
-- **Arrangement mode** (default if an arrangement file exists) — Loads the tape's elements and effects, then runs the arrangement which brings elements in and out over time with section transitions.
+- **Arrangement mode** (default if the tape defines `~arrangement`) — Loads the tape's elements and effects, then runs the arrangement which brings elements in and out over time with section transitions.
 - **Jam mode** — Loads everything and starts all elements at once. Good for improvising on top of an existing tape.
 
 ### Recording a Tape
@@ -180,7 +180,7 @@ After a live session, ask Claude to save it:
 - "Record this session as a tape called midnight-groove"
 - "Save what we've been playing as a tape"
 
-Claude captures the current tempo, patterns, effects, and routing into a new `.md`/`.scd` pair in `tapes/`.
+Claude captures the current tempo, patterns, effects, and routing into a new `.scd` file in `tapes/`.
 
 ### Arranging a Tape
 
@@ -189,7 +189,7 @@ You can also ask Claude to compose an arrangement for an existing tape:
 - "Arrange the floor-burner tape"
 - "Write an arrangement for night-drive with a long build"
 
-This generates a `<name>-arrangement.scd` file with a `CCArrangement` that structures the tape's elements into intro, build, drop, break, and outro sections.
+This adds an `~arrangement` block to the end of the tape — a `CCArrangement` that structures the tape's elements into intro, build, drop, break, and outro sections.
 
 ## Debug Mode
 

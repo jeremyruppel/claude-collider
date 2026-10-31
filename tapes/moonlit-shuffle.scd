@@ -1,6 +1,47 @@
-// Moonlit Shuffle - broken 2-step / UK garage shuffle at 124 BPM in D Dorian
-// A-section chords: Dm7 - Cmaj7 - G7 - Em7 (2-bar ABAB lengths)
-// B-section chords: Am7 - Bm7b5 - Cmaj7 - Bm7b5 (4 bars, roots A-B-C-B, matching bassB)
+/*
+# Moonlit Shuffle
+
+A shuffly, broken 2-step / UK-garage groove at 124 BPM in D Dorian — skippy syncopated kick, gliding stereo chord pad, and a syncopated FM sub bass with a call-and-response phrase.
+
+## Chord Progression
+
+Two harmonic "worlds" you can alternate between:
+
+- **A section** — Dm7 · Cmaj7 · G7 · Em7 (2-bar loop, uneven ABAB lengths 3-1-3-1)
+- **B section** — Am7 · Bm7♭5 · Cmaj7 · Bm7♭5 (4-bar loop; chord roots A-B-C-B track bassB's 4-5-6-5 walk)
+
+Both are diatonic to D Dorian; the B world lifts the tonal center upward.
+
+## Elements
+
+- **kick** (cc_sampler / `kick_1`) — broken, skippy 2-step kick; hits beat 1 then darts to offbeats, with two different bars. NOT four-on-the-floor.
+- **clap** (cc_sampler / `clap_1`) — backbeat on beats 2 & 4, slightly humanized in time; the anchor for the roaming kick.
+- **hats** (cc_sampler / `hihat_1`) — swung 16ths, mostly closed with open-hat "lifts" (lower rate) on the on-grid offbeats.
+- **bass** (cc_fmbass) — syncopated sub in octave 2 that rests on the downbeats and answers in the gaps. `~bassA` = D-rooted call + retrograde response (4 bars). `~bassB` = 4-5-6-5 walk, roots A→B→C→B (4 bars). Swap via `~mkBass`.
+- **lead** (cc_glidechord) — 4-voice paraphonic gliding pad; portamento between chords, stereo-spread voices, slow autopan + filter movement. `~chordsA` / `~chordsB` swap via `~mkChord`.
+- **fill_snare** (cc_sampler / `snare_1`) — 16th-note snare roll firing in the last 2 beats of every 8th bar.
+- **fill_tom** (cc_tom) — descending tom tumble following the snare roll, resolving on the downbeat.
+
+## Effects
+
+- **reverb** on the pad (`lead`) — restrained: mix 0.25, room 0.7, damp 0.4. Adds space without washing out the articulated chords.
+
+## Arrangement (40 bars, ~1:17)
+
+1. **Intro** (4 bars) - Kick + hats establish the broken beat
+2. **Groove** (4 bars) - Clap backbeat locks in
+3. **Section A** (8 bars) - Full A world: bass, chords, and fills
+4. **Section B** (8 bars) - Swap to the B world for the 4-5-6-5 lift
+5. **Break** (4 bars) - Strip to hats + chords; harmony slips home to A
+6. **Drop** (8 bars) - Full-energy return in A
+7. **Outro** (4 bars) - Strip back to kick + hats and out
+
+## Notes
+
+- **Custom SynthDef `cc_glidechord`** is defined in block 3 and must be added before the `lead` Pdef plays. It takes a 4-element `\freqs` array control and glides each voice.
+- **A/B swappable parts:** `~mkBass` / `~mkChord` factories guarantee bassA/bassB and chordsA/chordsB are structurally identical (same synth, register, timing), so they can be hot-swapped at phrase boundaries with no jump. bassB and chordsB share roots, so switching sections moves bass and harmony together. The arrangement swaps worlds via `~setA` / `~setB` section actions.
+- The drums are sample-based (`cc_sampler`), so they do not use `\freq, 48` (that rule is for the synth drums like `cc_kick`).
+*/
 
 // 1. Clear and set tempo
 ~cc.clear;
@@ -94,7 +135,7 @@ Pdef(\kick, Pbind(
     ], inf),
     \amp, Pseq([0.95, 0.82, 0.85, 0.8, 0.95, 0.8, 0.82, 0.85], inf) * Pwhite(0.92, 1.0),
     \rate, Pwhite(0.99, 1.01)
-)).play(quant: 4);
+));
 
 // Clap: backbeat on 2 & 4 (anchors the roaming kick)
 Pdef(\clap, Pbind(
@@ -103,7 +144,7 @@ Pdef(\clap, Pbind(
     \dur, Pseq([Rest(1), Pn(2, inf)]),
     \amp, Pwhite(0.55, 0.65),
     \timingOffset, Pwhite(-0.005, 0.01)
-)).play(quant: 4);
+));
 
 // Hats: swung 16ths, closed with open-hat lifts on the on-grid offbeats
 Pdef(\hats, Pbind(
@@ -112,13 +153,13 @@ Pdef(\hats, Pbind(
     \dur, Pseq([0.30, 0.20], inf),
     \amp,  Pseq([0.26, 0.20, 0.42, 0.24, 0.26, 0.20, 0.44, 0.24], inf) * Pwhite(0.85, 1.0),
     \rate, Pseq([1, 1, 0.76, 1, 1, 1, 0.76, 1], inf) * Pwhite(0.99, 1.01)
-)).play(quant: 4);
+));
 
 // 6. Bass - FM sub, syncopated (defaults to bassA; swap to ~bassB for the B section)
-Pdef(\bass, ~mkBass.(~bassA)).play(quant: 4);
+Pdef(\bass, ~mkBass.(~bassA));
 
 // 7. Chords - gliding stereo pad (defaults to chordsA; swap to chordsB for the B section)
-Pdef(\lead, ~mkChord.(~chordsA_freqs, ~chordsA_durs)).play(quant: 4);
+Pdef(\lead, ~mkChord.(~chordsA_freqs, ~chordsA_durs));
 
 // 8. Drum fill - fires in the last 2 beats of every 8th bar (32-beat loop)
 Pdef(\fill_snare, Pbind(
@@ -127,16 +168,36 @@ Pdef(\fill_snare, Pbind(
     \dur, Pseq([Rest(30), 0.25, 0.25, 0.25, 0.25, Rest(1)], inf),
     \amp, Pseq([0, 0.30, 0.40, 0.50, 0.62, 0], inf),
     \rate, Pseq([1, 1.0, 1.05, 1.1, 1.16, 1], inf)
-)).play(quant: 32);
+));
+Pdef(\fill_snare).quant = 32;
 Pdef(\fill_tom, Pbind(
     \instrument, \cc_tom,
     \dur, Pseq([Rest(31), 0.25, 0.25, 0.25, 0.25], inf),
     \freq, Pseq([0, 220, 175, 140, 110], inf),
     \amp, Pseq([0, 0.55, 0.58, 0.62, 0.78], inf),
     \decay, 0.25
-)).play(quant: 32);
+));
+Pdef(\fill_tom).quant = 32;
 
 // 9. Effects - restrained reverb on the pad
 ~cc.fx.load(\reverb);
 ~cc.fx.set(\fx_reverb, \mix, 0.25, \room, 0.7, \damp, 0.4);
 ~cc.fx.route(\lead, \fx_reverb);
+
+// A/B swap helpers - hot-swap the Pdef sources at section boundaries
+~setA = { Pdef(\bass, ~mkBass.(~bassA)); Pdef(\lead, ~mkChord.(~chordsA_freqs, ~chordsA_durs)); };
+~setB = { Pdef(\bass, ~mkBass.(~bassB)); Pdef(\lead, ~mkChord.(~chordsB_freqs, ~chordsB_durs)); };
+
+// Start from the A world
+~setA.value;
+
+// 10. Arrangement - play with ~arrangement.play
+~arrangement = CCArrangement([
+    [\intro,    4, [\kick, \hats]],                                                   // establish the broken beat
+    [\groove,   4, [\kick, \hats, \clap]],                                            // backbeat locks in
+    [\sectionA, 8, [\kick, \hats, \clap, \bass, \lead, \fill_snare, \fill_tom], ~setA], // full A world
+    [\sectionB, 8, [\kick, \hats, \clap, \bass, \lead, \fill_snare, \fill_tom], ~setB], // 4-5-6-5 lift
+    [\break,    4, [\hats, \lead], ~setA],                                            // strip down; harmony slips home to A
+    [\drop,     8, [\kick, \hats, \clap, \bass, \lead, \fill_snare, \fill_tom]],       // full-energy return in A
+    [\outro,    4, [\kick, \hats]],                                                   // strip back to the pulse and out
+]);

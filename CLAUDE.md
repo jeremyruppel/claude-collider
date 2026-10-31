@@ -9,7 +9,7 @@ Claude Collider is an MCP server that lets Claude generate and execute SuperColl
 | `/claude-collider` | Live code music with SuperCollider |
 | `/play-tape` | Play a tape file (loads patterns, effects, arrangement) |
 | `/arrange-tape` | Compose a CCArrangement for a tape |
-| `/record-tape` | Record a live session as a tape (md + scd pair) |
+| `/record-tape` | Record a live session as a tape (single .scd file) |
 | `/songwriting` | Music theory reference for composing patterns and melodies |
 
 ## Prefer MCP Tools Over Raw SC Code

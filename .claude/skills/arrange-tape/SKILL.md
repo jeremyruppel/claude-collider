@@ -17,7 +17,7 @@ Arrangements use `CCArrangement` — a declarative class where you list sections
 
 ### Step 1: Understand the tape
 
-Read the tape's `.md` and `.scd` files to understand:
+Read `tapes/<name>.scd` — the header comment and the code — to understand:
 - What elements exist (all Pdef/Ndef names)
 - The tempo (needed to calculate total duration)
 - The vibe/genre (informs pacing and conventions)
@@ -45,28 +45,23 @@ Present the plan as a table or outline and get user approval before writing code
 
 ### Step 3: Write the arrangement
 
-**IMPORTANT:** The arrangement does NOT go into the tape's `.scd` file. Tape `.scd` files define elements only — no arrangement logic. Instead, do one of:
-
-**Option A: Live performance** — Execute via `cc_execute` during a session.
-
-**Option B: Separate file** — Write to `tapes/<name>-arrangement.scd` if the user wants to save it.
-
-The arrangement code follows this pattern:
+The arrangement lives at the end of the tape's `.scd` as the last numbered block. Assign it to `~arrangement` — **don't call `.play`**. If the tape already has an `~arrangement` block, replace it.
 
 ```supercollider
-// First, execute the tape's .scd to define all elements
-// (but remove .play from each Pdef/Ndef — arrangement controls when they start)
-
-// Then execute the arrangement:
-CCArrangement([
+// N. Arrangement - play with ~arrangement.play
+~arrangement = CCArrangement([
     [\intro, 8, [\kick, \hat]],
     [\build, 8, [\kick, \hat, \bass, \rim]],
     [\drop, 16, [\kick, \hat, \bass, \rim, \lead, \pad]],
     [\break, 8, [\hat, \pad]],
     [\drop2, 16, [\kick, \hat, \bass, \rim, \lead, \pad]],
     [\outro, 8, [\kick, \hat]],
-]).play;
+]);
 ```
+
+Helper code the arrangement needs (e.g. functions that hot-swap Pdef sources in action functions) goes just before `~arrangement`, in the same block.
+
+To try it live before saving, execute the block via `cc_execute` and then `~arrangement.play`.
 
 Each section is `[name, bars, elements]`:
 - **name** — a symbol identifying the section (posted to console automatically)
@@ -89,12 +84,12 @@ The class automatically diffs element lists between sections — elements not in
 - Outros should remove elements gradually, with the most fundamental element (usually kick) last
 - The final section's elements are automatically stopped when the arrangement ends
 
-### Step 4: Update the tape's `.md`
+### Step 4: Update the tape's header comment
 
-Add or update the `## Arrangement` section in the tape's `.md` to document what was composed:
+Add or update the `## Arrangement` section in the tape's `/* ... */` header (before `## Notes`) to document what was composed:
 
 ```markdown
-## Arrangement (~<duration>)
+## Arrangement (<total bars> bars, ~<duration>)
 
 1. **<Section>** (<bars> bars) - <description of active elements>
 2. **<Section>** (<bars> bars) - <description of active elements>
@@ -106,12 +101,7 @@ Include approximate total duration calculated from tempo and total bars:
 
 ## Interaction with tape playback
 
-When playing a tape that has an arrangement:
-1. Execute the tape's `.scd` blocks to define all elements, but **don't play them** — either remove `.play` calls or stop everything after defining
-2. Execute the arrangement to perform the piece
-
-When playing a tape without an arrangement:
-- Execute blocks in order as normal (elements start immediately)
+Executing a tape never starts playback — it defines elements, effects, and `~arrangement`. `/play-tape` then either calls `~arrangement.play` or plays every element at once (jam). Stop with `~arrangement.stop`.
 
 ## MIDI clock sync
 

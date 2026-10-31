@@ -1,5 +1,47 @@
-// Floor Burner - dancy techno loop at 132 BPM in G Dorian
-// Gm - Bb - C - F (i - III - IV - bVII, 4 bars)
+/*
+# Floor Burner
+
+Dancy techno loop at 132 BPM in G Dorian with a four-on-the-floor groove, syncopated bass, and funky lead.
+
+## Chord Progression
+
+Gm - Bb - C - F (i - III - IV - bVII, 4-bar cycle)
+
+## Elements
+
+- **Kick** (cc_kick) - Four on the floor, steady quarter notes
+- **Hi-hat** (cc_hihat) - 16th notes with ghost note dynamics and open hat variation on the last 16th
+- **Clap** (cc_clap) - Backbeat on 2 and 4
+- **Open hat** (cc_openhat) - Offbeat accents peeking through
+- **Rim** (cc_rim) - Sparse ghost hits for syncopation
+- **Shaker** (cc_shaker) - Steady 16ths for rhythmic glue
+- **Bass** (cc_bass) - Syncopated root notes following the 4-bar chord progression, each bar with a different rhythm
+- **Lead** (cc_keys) - Stepwise motif with retrograde variation, sparse and rhythmic
+
+## Arrangement (68 bars, ~2:04)
+
+1. **Intro** (8 bars) - Kick and hat, raw groove
+2. **Build** (8 bars) - Full percussion layers in
+3. **Drop 1** (16 bars) - Bass locks in, driving energy
+4. **Break** (8 bars) - Strip to hat, rim, shaker — tension
+5. **Build 2** (4 bars) - Kick and clap return, rebuild
+6. **Drop 2** (16 bars) - Everything + lead, peak energy
+7. **Outro** (8 bars) - Kick, hat, bass ride out
+
+## Effects
+
+- **Chorus** on lead (mix 0.4, rate 0.3, depth 0.005)
+- **Ping-pong delay** on lead (mix 0.3, time 1.0, feedback 0.4)
+
+## Sidechain
+
+- **kick_duck** — threshold 0.08, ratio 6, attack 0.005, release 0.15 -> lead, trigger: kick
+
+## Notes
+
+- Lead uses CCMotif/CCPhrase: stepwise motif stated 3x then retrograde on 4th bar
+- Each bar of the bass has a unique syncopation pattern to keep the 4-bar cycle interesting
+*/
 
 // 1. Clear and set tempo
 ~cc.clear;
@@ -10,7 +52,7 @@ Pdef(\kick, Pbind(
     \instrument, \cc_kick, \freq, 48,
     \dur, 1,
     \amp, 0.6
-);
+));
 
 // 3. Hi-hat - 16ths with ghost notes and open hat variation
 Pdef(\hat, Pbind(
@@ -18,21 +60,21 @@ Pdef(\hat, Pbind(
     \dur, 0.25,
     \amp, Pseq([0.05, 0.28, 0.08, 0.22, 0.05, 0.3, 0.08, 0.18], inf),
     \decay, Pseq([0.02, 0.03, 0.02, 0.02, 0.02, 0.03, 0.02, 0.08], inf)
-);
+));
 
 // 4. Clap - on 2 and 4
 Pdef(\clap, Pbind(
     \instrument, \cc_clap, \freq, 48,
     \dur, Pseq([Rest(1), 1, Rest(1), 1], inf),
     \amp, 0.4
-);
+));
 
 // 5. Open hat - offbeat accents
 Pdef(\openhat, Pbind(
     \instrument, \cc_openhat, \freq, 48,
     \dur, Pseq([Rest(0.5), 0.5], inf),
     \amp, Pseq([0, 0.18, 0, 0.15], inf)
-);
+));
 
 // 6. Rim - sparse ghost hits
 Pdef(\rim, Pbind(
@@ -42,14 +84,14 @@ Pdef(\rim, Pbind(
         0, 0, 0.15, 0, 0, 0, 0, 0.12,
         0, 0, 0, 0.15, 0, 0, 0.1, 0
     ], inf)
-);
+));
 
 // 7. Shaker - steady 16ths glue
 Pdef(\shaker, Pbind(
     \instrument, \cc_shaker, \freq, 48,
     \dur, 0.25,
     \amp, Pseq([0.12, 0.06, 0.1, 0.06], inf)
-);
+));
 
 // 8. Bass - syncopated root notes following chord progression
 Pdef(\bass, Pbind(
@@ -69,7 +111,7 @@ Pdef(\bass, Pbind(
         0.5, 0, 0.35, 0, 0, 0, 0.4, 0
     ], inf),
     \sustain, 0.2
-);
+));
 
 // 9. Lead - stepwise motif with retrograde variation
 Pdef(\lead, Pbind(
@@ -79,7 +121,7 @@ Pdef(\lead, Pbind(
     \dur, 0.25,
     \amp, 0.25,
     \sustain, 0.1
-);
+));
 
 // 10. Effects - chorus and ping-pong delay on lead
 ~cc.fx.load(\chorus);
@@ -93,4 +135,15 @@ Pdef(\lead, Pbind(
 // 11. Sidechain - kick ducks the lead
 ~cc.fx.sidechain(\kick_duck, 0.08, 6, 0.005, 0.15);
 ~cc.fx.route(\lead, \kick_duck);
-~cc.fx.routeTrigger(\kick, \kick_duck, true)
+~cc.fx.routeTrigger(\kick, \kick_duck, true);
+
+// 12. Arrangement - play with ~arrangement.play
+~arrangement = CCArrangement([
+    [\intro, 8, [\kick, \hat]],
+    [\build, 8, [\kick, \hat, \clap, \openhat, \rim, \shaker]],
+    [\drop1, 16, [\kick, \hat, \clap, \openhat, \rim, \shaker, \bass]],
+    [\break, 8, [\hat, \rim, \shaker]],
+    [\build2, 4, [\kick, \hat, \clap, \rim, \shaker]],
+    [\drop2, 16, [\kick, \hat, \clap, \openhat, \rim, \shaker, \bass, \lead]],
+    [\outro, 8, [\kick, \hat, \bass]]
+]);

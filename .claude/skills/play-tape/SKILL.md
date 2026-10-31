@@ -5,52 +5,61 @@ description: Play a tape file by loading its patterns, effects, and arrangement 
 
 # Play Tape
 
-This skill plays a tape — loading its patterns, effects, and routing in the correct order.
+This skill plays a tape — loading its patterns, effects, and routing in the correct order, then playing it as a jam or an arrangement.
 
 ## When to use
 
 When the user says `play @tapes/<name>.scd` or asks you to play a tape.
 
+## What's in a tape
+
+A tape is a single file, `tapes/<name>.scd`:
+
+1. **Header comment** (`/* ... */`) — Markdown docs: title, tempo, key, elements, effects, arrangement overview, notes.
+2. **Setup** — `~cc.clear` and `~cc.tempo(...)`.
+3. **Definitions** — Pdefs, Ndefs, motifs, samples. Defined only; nothing calls `.play`.
+4. **Effects, routing, sidechains.**
+5. **Arrangement** — `~arrangement = CCArrangement([...]);` Assigned, not played.
+
 ## Process
 
-### Step 1: Read the tape files
+### Step 1: Read the tape
 
-1. Read the tape's `.scd` file to understand all the Pdef/Ndef definitions, effects, and sidechains.
-2. Check for an arrangement file at `tapes/<name>-arrangement.scd`.
+Read `tapes/<name>.scd`. The header comment tells you the musical intent; the code is the source of truth.
 
 ### Step 2: Ask the user how they want to play
 
 Always ask:
 
-- **Jam** — Play all parts at once (add `.play` to each Pdef/Ndef)
-- **Arrangement** — Play using the CCArrangement (only available if an arrangement file exists)
+- **Arrangement** — Play the tape's `~arrangement` (only if the file defines one)
+- **Jam** — Play all parts at once
 
-If no arrangement file exists, offer to create one with `/arrange-tape` as an alternative.
+If the tape has no `~arrangement`, offer to create one with `/arrange-tape` as an alternative.
 
-### Step 3: Clear and set tempo
+### Step 3: Load the tape
+
+Execute the tape's code via `cc_execute` **verbatim**, in chunks (setup, definitions, effects, arrangement). Don't send the header comment — it's documentation only. Executing the file never starts playback.
+
+### Step 4: Play
+
+**Arrangement:**
 
 ```supercollider
-~cc.clear;
-~cc.tempo(<bpm>);
+~arrangement.play;
 ```
 
-### Step 4: Load patterns WITHOUT playing them
+**Jam:** call `.play` on each Pdef and Ndef the tape defines. Pdefs pick up their own `quant` if the tape set one (e.g. `Pdef(\fill).quant = 32`); otherwise use `quant: 4`:
 
-**CRITICAL: Do NOT call `.play` on any Pdef or Ndef yet.** Load all pattern definitions first.
+```supercollider
+Pdef(\kick).play(quant: 4);
+Pdef(\fill).play;  // tape set its quant to 32
+Ndef(\drone).play;
+```
 
-Execute all `Pdef(\name, Pbind(...))` and `Ndef(\name, {...})` definitions exactly as written in the tape — they define the patterns but do not start them.
+### Stopping
 
-### Step 5: Load effects, routing, and sidechains
-
-Execute all `~cc.fx.load(...)`, `~cc.fx.set(...)`, `~cc.fx.route(...)`, `~cc.fx.connect(...)`, `~cc.fx.sidechain(...)`, and `~cc.fx.routeTrigger(...)` calls from the tape.
-
-### Step 6: Play
-
-**If the user chose Jam:**
-Play all Pdefs and Ndefs at once by calling `.play` on each one.
-
-**If the user chose Arrangement:**
-Execute the `CCArrangement([...]).play` code from the arrangement file.
+- Arrangement: `~arrangement.stop`
+- Jam: `~cc.stop`
 
 ### Optional: MIDI clock sync
 
@@ -66,6 +75,5 @@ CCArrangement automatically sends MIDI clock start/stop/ticks when enabled. No e
 ## Key rules
 
 - **Always ask jam vs arrangement before playing.**
-- **Never add `.play` to patterns when playing an arrangement** — the arrangement handles start/stop timing.
-- Execute the tape code in chunks: tempo, then patterns, then effects, then play.
+- **Never `.play` individual patterns when playing an arrangement** — the arrangement handles start/stop timing.
 - Keep the SC code faithful to the tape file — don't rewrite or modify patterns.
