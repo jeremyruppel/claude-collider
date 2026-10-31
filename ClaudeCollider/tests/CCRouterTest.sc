@@ -107,6 +107,16 @@ CCRouterTest : CCUnitTest {
     Ndef(\cc_test_router_ndef).clear;
   }
 
+  test_route_movesNdefOutputInsteadOfCopying {
+    mockFX.loaded[\fx_test] = (inBus: (index: 16));
+    Ndef(\cc_test_router_move).ar(2);
+    router.route(\cc_test_router_move, \fx_test);
+    this.assertEquals(Ndef(\cc_test_router_move).monitor.out, 16, "Routed Ndef should play only to the effect bus");
+    router.unroute(\cc_test_router_move);
+    this.assertEquals(Ndef(\cc_test_router_move).monitor.out, router.mainOut, "Unrouted Ndef should go back to main");
+    Ndef(\cc_test_router_move).clear;
+  }
+
   // ========== unroute tests ==========
 
   test_mainOut_fallsBackToZeroWithoutOutputs {

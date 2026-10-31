@@ -151,13 +151,23 @@ CCArrangement {
     );
   }
 
+  // Main mix bus, or hardware bus 0 when there is no CC instance (e.g. in tests)
+  mainOut {
+    ^CC.instance !? { |cc| cc.fx.router.mainOut } ?? 0;
+  }
+
   startElement { |name|
     if(Pdef.all[name].notNil) {
       Pdef(name).play(quant: beatsPerBar);
     } {
       var proxySpace = Ndef.all[Server.default.name];
       if(proxySpace.notNil and: { proxySpace[name].notNil }) {
-        Ndef(name).play(0);
+        // Keep an Ndef's existing output (e.g. an effect route); otherwise use main
+        if(Ndef(name).monitor.notNil) {
+          Ndef(name).play;
+        } {
+          Ndef(name).play(out: this.mainOut);
+        };
       } {
         "CCArrangement: element '%' not found".format(name).warn;
       };

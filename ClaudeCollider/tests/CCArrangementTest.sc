@@ -126,15 +126,27 @@ CCArrangementTest : CCUnitTest {
     Ndef(\testNdefStart).stop;
   }
 
-  // test_startElement_ndef_routesToMainOutput {
-  //   this.bootServer;
-  //   arr = CCArrangement([]);
-  //   Ndef(\testNdefBus, { SinOsc.ar(440, 0, 0.0) });
-  //   arr.startElement(\testNdefBus);
-  //   0.1.wait;
-  //   this.assertEquals(Ndef(\testNdefBus).monitor.out, 0, "Should route Ndef to bus 0");
-  //   Ndef(\testNdefBus).stop;
-  // }
+  test_startElement_ndef_playsToMainOut {
+    this.bootServer;
+    arr = CCArrangement([]);
+    // Silent.ar, not SinOsc * 0: a zero-mul SinOsc folds to a control-rate constant, which can't be monitored
+    Ndef(\testNdefBus, { Silent.ar(2) });
+    arr.startElement(\testNdefBus);
+    0.1.wait;
+    this.assertEquals(Ndef(\testNdefBus).monitor.out, arr.mainOut, "Unrouted Ndef should play to main");
+    Ndef(\testNdefBus).stop;
+  }
+
+  test_startElement_ndef_keepsRoutedOutput {
+    this.bootServer;
+    arr = CCArrangement([]);
+    Ndef(\testNdefRouted, { Silent.ar(2) });
+    Ndef(\testNdefRouted).initMonitor.out = 20;
+    arr.startElement(\testNdefRouted);
+    0.1.wait;
+    this.assertEquals(Ndef(\testNdefRouted).monitor.out, 20, "Routed Ndef should keep its output");
+    Ndef(\testNdefRouted).stop;
+  }
 
   // ========== stopElement tests ==========
 

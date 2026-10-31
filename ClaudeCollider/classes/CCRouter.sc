@@ -4,7 +4,7 @@ CCRouter {
   var <fx;           // Reference to parent CCFX
   var <connections;  // Dictionary: from -> (to)
   var <chains;       // Dictionary: name -> [slots]
-  var <routes;       // Dictionary: source -> (target, routeSynth)
+  var <routes;       // Dictionary: source -> (target)
 
   *new { |fx|
     ^super.new.init(fx);
@@ -106,8 +106,31 @@ CCRouter {
 
   // ========== Source-to-Effect Routing ==========
 
+  ndefExists { |name|
+    var space = Ndef.all[fx.cc.server.name];
+    ^space.notNil and: { space.at(name.asSymbol).notNil };
+  }
+
+  // Send a Pdef or Ndef to a bus. Ndefs move their monitor rather than getting
+  // a copy, so they don't also keep playing dry. A stopped Ndef keeps the bus
+  // for its next play.
+  setSourceOut { |source, index|
+    var ndef;
+    source = source.asSymbol;
+    if(Pdef.all[source].notNil) {
+      Pdef(source).set(\out, index);
+      ^true;
+    };
+    if(this.ndefExists(source)) {
+      ndef = Ndef(source);
+      if(ndef.isMonitoring) { ndef.play(out: index) } { ndef.initMonitor.out = index };
+      ^true;
+    };
+    ^false;
+  }
+
   route { |source, target|
-    var targetBus, srcNdef, routeSynth;
+    var targetBus;
 
     // Find target bus from loaded effects
     if(fx.loaded[target.asSymbol].notNil) {
@@ -129,27 +152,9 @@ CCRouter {
       this.unroute(source);
     };
 
-    // Route Pdef source
-    if(Pdef.all[source.asSymbol].notNil) {
-      Pdef(source.asSymbol).set(\out, targetBus.index);
+    if(this.setSourceOut(source, targetBus.index)) {
       routes[source.asSymbol] = (target: target.asSymbol);
       ^true;
-    };
-
-    // Route Ndef source
-    if(Ndef.all[fx.cc.server.name].notNil and: { Ndef.all[fx.cc.server.name].at(source.asSymbol).notNil }) {
-      srcNdef = Ndef(source.asSymbol);
-      if(srcNdef.bus.notNil) {
-        routeSynth = Synth(
-          if(srcNdef.numChannels == 1) { \cc_bus_copy_mono } { \cc_bus_copy },
-          [\in, srcNdef.bus.index, \out, targetBus.index]
-        );
-        routes[source.asSymbol] = (target: target.asSymbol, routeSynth: routeSynth);
-        ^true;
-      } {
-        "CCRouter: Ndef '%' has no bus".format(source).warn;
-        ^false;
-      };
     };
 
     "CCRouter: source '%' not found".format(source).warn;
@@ -157,12 +162,8 @@ CCRouter {
   }
 
   unroute { |source|
-    var routeInfo = routes[source.asSymbol];
-    if(routeInfo.notNil) {
-      if(routeInfo.routeSynth.notNil) { routeInfo.routeSynth.free };
-      if(Pdef.all[source.asSymbol].notNil) {
-        Pdef(source.asSymbol).set(\out, this.mainOut);
-      };
+    if(routes[source.asSymbol].notNil) {
+      this.setSourceOut(source, this.mainOut);
       routes.removeAt(source.asSymbol);
       ^true;
     };
@@ -187,8 +188,7 @@ CCRouter {
     routes.keys.do { |source|
       var info = routes[source];
       if(info.target == slot.asSymbol) {
-        if(info.routeSynth.notNil) { info.routeSynth.free };
-        if(Pdef.all[source].notNil) { Pdef(source).set(\out, this.mainOut) };
+        this.setSourceOut(source, this.mainOut);
         routes.removeAt(source);
       };
     };
@@ -197,10 +197,7 @@ CCRouter {
   clear {
     connections.clear;
 
-    routes.keysValuesDo { |source, info|
-      if(info.routeSynth.notNil) { info.routeSynth.free };
-      if(Pdef.all[source].notNil) { Pdef(source).set(\out, this.mainOut) };
-    };
+    routes.keysDo { |source| this.setSourceOut(source, this.mainOut) };
     routes.clear;
 
     chains.clear;
