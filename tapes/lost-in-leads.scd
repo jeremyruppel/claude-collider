@@ -1,7 +1,7 @@
 /*
 # Lost in Leads
 
-Driving D Dorian groove at 124 BPM with a syncopated bass, lush pad progression, and a rippling arp that ties it all together.
+Driving D Dorian groove at 124 BPM with a syncopated bass, lush pad progression, and a high, loose bell hook that ties it all together.
 
 ## Chord Progression
 
@@ -16,16 +16,20 @@ Dm9 → Cmaj7 → Fmaj9 → Dm11 (4-bar cycle)
 - **Rim** (cc_rim) - Syncopated ghost hits for texture
 - **Bass** (cc_bass) - Syncopated 16th pattern with root-5th-4th-3rd movement and filter motion
 - **Pad** (cc_pad) - Slow 4-bar chord progression with smooth voice leading
-- **Arp** (cc_pluck) - 16th note arpeggiation across octaves 4-5, running up and down chord tones
+- **Arp** (cc_bell) - A leap-up motif in octave 6, reshaped to fit each chord, with a 3+3+2 rhythm and humanized timing, velocity and skipped notes
+
+## Effects
+
+- **Duck** sidechain - The kick pumps the bell (ratio 6, 0.2s release)
 
 ## Arrangement (66 bars, ~2:08)
 
-1. **Intro** (8 bars) - Kick + hat establish the groove
+1. **Intro** (8 bars) - Kick + hat establish the groove, fading in from silence
 2. **Build** (8 bars) - Bass + rim layer in
 3. **Drop 1** (16 bars) - Full drums + pad, everything cooking
 4. **Break** (8 bars) - Drums strip down, arp enters over pad + bass
 5. **Drop 2** (16 bars) - Everything back in full force
-6. **Outro** (10 bars) - Peel away: arp/pad/snare/ohat first, then bass/rim, then hat, kick last
+6. **Outro** (10 bars) - Peel away: arp/pad/snare/ohat first, then bass/rim, then hat, kick last, fading out to silence
 
 ## Notes
 
@@ -42,7 +46,7 @@ Pdef(\kick, Pbind(
     \instrument, \cc_kick,
     \amp, 0.8,
     \dur, 1,
-    \drive, 1.3
+    \drive, 0.4
 ));
 
 // 3. Hihat - 16th note pattern with accents
@@ -104,22 +108,39 @@ Pdef(\pad, Pbind(
     \sustain, 3.8
 ));
 
-// 9. Arp - 16th note D Dorian arp across octaves
+// 9. Arp - bell hook: A leaps up to D, falls back through C to A
+~arpMotif = CCMotif([4, 7, 6, Rest(), 4, Rest()]);
 Pdef(\arp, Pbind(
-    \instrument, \cc_pluck,
+    \instrument, \cc_bell,
     \scale, Scale.dorian,
     \root, 2,
-    \octave, Pseq([4, 4, 5, 5], inf),
-    \degree, Pseq([0, 2, 4, 6, 4, 2, 0, 4, 2, 4, 6, 8, 6, 4, 2, 6], inf),
-    \amp, Pseq([0.5, 0.3, 0.4, 0.3, 0.35, 0.25, 0.45, 0.3, 0.5, 0.3, 0.4, 0.3, 0.35, 0.25, 0.45, 0.3], inf),
-    \dur, 0.25,
-    \sustain, 0.15
+    \octave, 6,
+    // One bar per chord, the motif reshaped to fit each
+    \degree, CCPhrase(~arpMotif, [
+        \state,          // Dm9:   A D C . A
+        \transpose, -1,  // Cmaj7: G C B . G
+        \invert,         // Fmaj9: A E F . A
+        \retrograde      // Dm11:  . A . C D A
+    ]),
+    // A 3+3+2 bar, then a lazier answer
+    \dur, Pseq([0.75, 0.75, 0.5, 0.5, 1, 0.5,   0.5, 1, 0.5, 0.75, 0.75, 0.5], inf),
+    // Accent shape, a little random wobble, and the odd note left out
+    \amp, Pseq([0.5, 0.4, 0.35, 0.3, 0.45, 0.3], inf) * Pwhite(0.8, 1.1) * Pwrand([1, Rest()], [0.92, 0.08], inf),
+    \vel, Pwhite(0.45, 0.85),
+    // Slightly late, never early, like a player sitting back on the beat
+    \lag, Pwhite(0, 0.02),
+    \decay, Pwhite(1.4, 2.4)
 ));
 
-// 10. Arrangement - play with ~arrangement.play
+// 10. Effects - the kick ducks the bell
+~cc.fx.sidechain(\duck, 0.1, 6, 0.005, 0.2);
+~cc.fx.route(\arp, \duck);
+~cc.fx.routeTrigger(\kick, \duck, true);
+
+// 11. Arrangement - play with ~arrangement.play
 ~arrangement = CCArrangement([
-    // INTRO - kick + hat
-    [\intro, 8, [\kick, \hat]],
+    // INTRO - kick + hat, fading in over the 8 bars
+    [\intro, 8, [\kick, \hat], CCFade.in],
 
     // BUILD - +bass +rim
     [\build, 8, [\kick, \hat, \bass, \rim]],
@@ -133,8 +154,8 @@ Pdef(\arp, Pbind(
     // DROP 2 - everything
     [\drop2, 16, [\kick, \hat, \bass, \rim, \snare, \ohat, \pad, \arp]],
 
-    // OUTRO - peel away
-    [\outro1, 4, [\kick, \hat, \bass, \rim]],
-    [\outro2, 4, [\kick, \hat]],
-    [\outro3, 2, [\kick]],
+    // OUTRO - peel away, fading out to silence over the 10 bars
+    [\outro1, 4, [\kick, \hat, \bass, \rim], CCFade(1, 0.6, \lin)],
+    [\outro2, 4, [\kick, \hat], CCFade(0.6, 0.2, \lin)],
+    [\outro3, 2, [\kick], CCFade(0.2, 0, \lin)],
 ]);
