@@ -33,7 +33,7 @@
 |---|---|---|---|
 | `cc_lead` | gate | Analog lead: 3 detuned saws + PWM pulse + sub into Moog ladder, filter env, delayed vibrato, glide | cutoff(4000), res(0.2, lower = more resonant), vel(0.7), fenv(1.5), fdecay(250ms), detune(0.1 semi), pulse(0.3), sub(0.25), vib(0.12), glide(0, use with Pmono), att(10ms), rel(300ms) |
 | `cc_keys` | gate | Rhodes-style electric piano: FM body + tine ping, natural decay, pickup growl, stereo tremolo | vel(0.7), brightness(0.5), drive(0.4), decay(4s), release(0.5), tremRate(4.5), tremDepth(0.3) |
-| `cc_pluck` | one-shot | Karplus-Strong plucked string | decay(2s), color(0.5) |
+| `cc_pluck` | one-shot | Karplus-Strong guitar-like pluck: two detuned strings, pick position, body resonances, optional palm mute | decay(2s), color(0.5), vel(0.7), pickPos(0.15), detune(4 cents), body(0.4), mute(0, 1 = damp on release), release(0.1) |
 | `cc_bell` | one-shot | FM bell, inharmonic ratios for metallic timbre | decay(4s), brightness(3) |
 | `cc_sine` | gate | Pure sine tone | freq(440) |
 

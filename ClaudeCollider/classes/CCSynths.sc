@@ -320,22 +320,37 @@ CCSynths {
 
       // ========== MELODIC ==========
       cc_pluck: (
-        description: "Karplus-Strong plucked string. Physical modeling using Pluck UGen. Color (0-1, default 0.5) controls brightness/damping. Decay (default 2s) sets ring time. One-shot.",
+        description: "Plucked string (Karplus-Strong). Two slightly detuned strings per note (detune, cents) spread in stereo (spread). Noise excitation gets brighter with vel and is shaped by pick position (pickPos 0-0.5). Color (0-1) sets string damping. Decay (default 2s) sets ring time, shorter for higher notes. Guitar body resonances (body), pick click. Mute (0-1) damps the string when the note is released, like palm muting (release sets damp time). Rings as a one-shot when mute is 0.",
         def: {
-          SynthDef(\cc_pluck, { |out=0, freq=440, amp=0.4, decay=2, color=0.5|
-            var sig, env;
-            env = EnvGen.kr(Env.linen(0.001, decay, 0.01), doneAction: 2);
-            // Pluck UGen for Karplus-Strong synthesis
-            sig = Pluck.ar(
-              WhiteNoise.ar,
-              Impulse.kr(0),
-              freq.reciprocal,
-              freq.reciprocal,
-              decay,
-              color
-            );
-            sig = sig * env * amp;
-            Out.ar(out, sig ! 2);
+          SynthDef(\cc_pluck, { |out=0, freq=440, amp=0.4, decay=2, color=0.5, vel=0.7, pickPos=0.15,
+                               detune=4, spread=0.5, body=0.4, mute=0, release=0.1, gate=1, pan=0|
+            var sig, env, v, ringTime, exc, strings, click, resonances, damp;
+            v = vel.clip(0, 1);
+            // Higher notes ring a bit shorter
+            ringTime = decay * ((freq / 440) ** -0.25).clip(0.4, 2.5);
+            env = EnvGen.kr(Env.linen(0.001, ringTime, 0.05), doneAction: 2);
+            // Excitation: brighter when picked harder, comb-shaped by pick position
+            exc = LPF.ar(WhiteNoise.ar, (1500 + (v * 12000)).min(18000));
+            exc = exc - DelayN.ar(exc, 0.05, freq.reciprocal * pickPos.clip(0.02, 0.5));
+            // Two slightly detuned strings
+            strings = [-1, 1].collect { |side|
+              var f = freq * (side * detune * 0.5 / 100).midiratio;
+              Pluck.ar(exc, Impulse.ar(0), 0.05, f.reciprocal, ringTime, color)
+            };
+            sig = Splay.ar(strings, spread, center: pan);
+            // Guitar body resonances
+            resonances = sig.collect { |ch|
+              BPF.ar(ch, [105, 210, 420, 2500], [0.3, 0.3, 0.4, 0.6], [1, 0.8, 0.5, 0.3]).sum
+            };
+            sig = (sig * (1 - (body * 0.4))) + (resonances * body);
+            // Pick click
+            click = HPF.ar(WhiteNoise.ar, 3000) * EnvGen.ar(Env.perc(0.0003, 0.004)) * v * 0.3;
+            sig = sig + click;
+            // Palm mute: damp and darken the string when the note is released
+            damp = 1 - (mute.clip(0, 1) * (1 - EnvGen.kr(Env.asr(0, 1, release), gate)));
+            sig = LPF.ar(sig, (freq * 2 + (damp * 15000)).min(18000)) * damp;
+            sig = sig * env * amp * (v * 0.5 + 0.65);
+            Out.ar(out, sig);
           })
         }
       ),
