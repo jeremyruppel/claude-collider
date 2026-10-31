@@ -208,8 +208,8 @@ CCSynths {
             sig = osc + (SinOsc.ar(f) * sub);
             sig = (sig * (1 + (drive * 2))).tanh / (1 + (drive * 0.5));
             sig = LeakDC.ar(sig);
-            // Gain roughly matched to the old cc_bass (slightly hotter attack, similar body)
-            sig = sig * env * amp * (v * 0.5 + 0.65) * 1.3;
+            // Sits about 3 dB under the drums at matching amp
+            sig = sig * env * amp * (v * 0.5 + 0.65) * 0.9;
             Out.ar(out, sig ! 2);
           })
         }
@@ -284,8 +284,8 @@ CCSynths {
             sig = sig + thump;
             sig = (sig * (1 + (drive * 2))).tanh / (1 + (drive * 0.5));
             sig = LPF.ar(sig, (f * 24).clip(800, 12000));
-            // Gain matched to the old cc_fmbass
-            sig = LeakDC.ar(sig) * env * amp * (v * 0.5 + 0.65) * 1.5;
+            // About 3 dB under the old cc_fmbass, to sit under the drums
+            sig = LeakDC.ar(sig) * env * amp * (v * 0.5 + 0.65) * 1.05;
             Out.ar(out, sig ! 2);
           })
         }
@@ -339,7 +339,8 @@ CCSynths {
             sig = LeakDC.ar(sig);
             // Makeup gain: the ladder loses level as resonance rises. Matched to the old cc_lead.
             sig = sig * (1 + (k * 0.9)) * 1.75;
-            sig = sig * env * amp * (v * 0.5 + 0.65);
+            // About 3 dB under the old cc_lead, to sit under the drums
+            sig = sig * env * amp * (v * 0.5 + 0.65) * 0.7;
             Out.ar(out, Balance2.ar(sig[0], sig[1], pan));
           })
         }
@@ -376,7 +377,8 @@ CCSynths {
             // Palm mute: damp and darken the string when the note is released
             damp = 1 - (mute.clip(0, 1) * (1 - EnvGen.kr(Env.asr(0, 1, release), gate)));
             sig = LPF.ar(sig, (freq * 2 + (damp * 15000)).min(18000)) * damp;
-            sig = sig * env * amp * (v * 0.5 + 0.65);
+            // About 3 dB under the old cc_pluck, to sit under the drums
+            sig = sig * env * amp * (v * 0.5 + 0.65) * 0.7;
             Out.ar(out, sig);
           })
         }
@@ -417,8 +419,8 @@ CCSynths {
             hit = LPF.ar(WhiteNoise.ar, (freq * 2).clip(300, 4000)) * EnvGen.ar(Env.perc(0.002, 0.015)) * v * (0.03 + (h * 0.12));
             hit = hit + (HPF.ar(WhiteNoise.ar, 4000) * EnvGen.ar(Env.perc(0.0002, 0.005)) * v * h.squared * 0.15);
             sig = sig + hit;
-            // Peaks matched to the old cc_bell; the tail is softer
-            sig = Balance2.ar(sig[0], sig[1], pan) * amp * 2;
+            // About 3 dB under the old cc_bell's peaks, to sit under the drums
+            sig = Balance2.ar(sig[0], sig[1], pan) * amp * 1.4;
             Line.kr(0, 1, ringTime + 0.05, doneAction: 2);
             Out.ar(out, sig);
           })
@@ -458,8 +460,8 @@ CCSynths {
             sig = (sig + hammer) * env * (v * 0.6 + 0.4);
             // Damper thump when the key comes up
             thump = LPF.ar(PinkNoise.ar, 300 + freq) * EnvGen.kr(Env.perc(0.002, 0.06), 1 - gate) * 0.08;
-            // Gain matched so vel=0.7 is as loud as the old cc_keys
-            sig = (sig + thump) * amp * 1.6;
+            // About 3 dB under the old cc_keys at vel=0.7, to sit under the drums
+            sig = (sig + thump) * amp * 1.1;
             // Suitcase-style stereo tremolo
             Out.ar(out, Pan2.ar(sig, (pan + (SinOsc.kr(tremRate) * tremDepth)).clip(-1, 1)));
           })
@@ -495,8 +497,8 @@ CCSynths {
             // Bow noise, strongest on the attack
             noise = BPF.ar(PinkNoise.ar ! 2, (freq * 2).clip(200, 8000), 0.4)
               * (0.4 + (EnvGen.kr(Env.perc(0.01, 0.3)) * 1.5)) * bow * v;
-            // Gain matched to the old cc_strings
-            sig = (sig + noise) * env * amp * 0.5;
+            // About 3 dB under the old cc_strings, to sit under the drums
+            sig = (sig + noise) * env * amp * 0.35;
             // String-machine ensemble: three slow+fast modulated delay taps per side
             chorus = sig.collect { |ch, side|
               Array.fill(3, { |j|
@@ -537,7 +539,8 @@ CCSynths {
               * EnvGen.kr(Env([0, 0, 1], [attack * 0.5, attack * 1.5 + 1], \sin)) * shimmer * 0.3;
             // Breathy air
             noise = BPF.ar(PinkNoise.ar ! 2, (freq * 4).clip(500, 9000), 0.3) * air * breath;
-            sig = (sig + shim + noise) * env * amp;
+            // Chords of bright saws read loud, so sit well under the old pad's level (about -14 dB)
+            sig = (sig + shim + noise) * env * amp * 0.2;
             Out.ar(out, sig);
           })
         }
