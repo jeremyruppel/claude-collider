@@ -67,6 +67,25 @@ CCSamplesTest : CCUnitTest {
     );
   }
 
+  test_describe_formatsLoadingSample {
+    var result, pathsDict, buffersDict, key;
+    key = "loading";
+    pathsDict = Dictionary.new;
+    pathsDict.put(key, "/path/to/loading.wav");
+    buffersDict = Dictionary.new;
+    buffersDict.put(key, (numFrames: nil));
+    samples.instVarPut(\paths, pathsDict);
+    samples.instVarPut(\buffers, buffersDict);
+
+    result = samples.describe;
+
+    this.assertEquals(
+      result,
+      "loading (loading)",
+      "describe should show loading for buffers still reading from disk"
+    );
+  }
+
   test_describe_emptyReturnsNone {
     var result;
     samples.instVarPut(\paths, Dictionary.new);

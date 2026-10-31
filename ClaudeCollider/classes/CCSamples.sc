@@ -56,10 +56,14 @@ CCSamples {
 
   // Format buffer info string
   formatInfo { |name, buf|
+    if(buf.numFrames.isNil) { ^"% (loading)".format(name) };
     ^"% (%s, %ch, %Hz)".format(name, buf.duration.round(0.01), buf.numChannels, buf.sampleRate.asInteger);
   }
 
-  // Explicitly load a sample buffer into memory
+  // Explicitly load a sample buffer into memory.
+  // The Buffer is registered immediately (its bufnum is allocated up front),
+  // so `at` works on the very next line; the server fills in the audio data
+  // asynchronously, before any later-scheduled pattern events reach it.
   load { |name|
     var key = name.asString;
     var path = paths.at(key);
@@ -72,10 +76,9 @@ CCSamples {
 
     if(buf.notNil) { ^buf };
 
-    Buffer.read(cc.server, path, action: { |loadedBuf|
-      buffers.put(key, loadedBuf);
-    });
-    ^nil;
+    buf = Buffer.read(cc.server, path);
+    buffers.put(key, buf);
+    ^buf;
   }
 
   // Play a sample once (lazy loads if needed)
