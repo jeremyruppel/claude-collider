@@ -9,7 +9,7 @@ CCOutputsTest : CCUnitTest {
   }
 
   tearDown {
-    // Clean up test outputs
+    outputs.clear;
   }
 
   createMockCC {
@@ -38,6 +38,35 @@ CCOutputsTest : CCUnitTest {
 
   test_main_nil {
     this.assertEquals(outputs.main, nil, "Main should be nil before creation");
+  }
+
+  // ========== createMain tests ==========
+
+  // Something at the head of the default group (like a sidechain passthrough)
+  // resets the main bus every cycle. Sources added later, like effect
+  // monitors, must still reach the main output.
+  test_createMain_hearsSourcesAfterAnEarlyWriter {
+    var server = Server.default;
+    var meterBus, early, late, meter, level, cond = Condition.new;
+
+    this.bootServer;
+    outputs.createMain;
+
+    early = { Out.ar(outputs.mainBus, DC.ar(0).dup) }.play(server.defaultGroup, addAction: \addToHead);
+    late = { Out.ar(outputs.mainBus, DC.ar(0.5).dup) }.play(server.defaultGroup, addAction: \addToTail);
+    meterBus = Bus.control(server, 1);
+    meter = {
+      Out.kr(meterBus, Amplitude.kr(InFeedback.ar(outputs.main.ndef.bus.index, 2).sum))
+    }.play(outputs.group, addAction: \addToTail);
+
+    0.5.wait;
+    meterBus.get { |value| level = value; cond.unhang };
+    cond.hang;
+
+    [early, late, meter].do(_.free);
+    meterBus.free;
+
+    this.assert(level > 0.1, "Main output should hear sources that write after an early writer (level: %)".format(level));
   }
 
   // ========== isMainPlaying tests ==========

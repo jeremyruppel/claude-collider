@@ -7,6 +7,7 @@ CCOutputs {
   var <outputs;  // Dictionary: key -> CCOutput
   var <routes;   // Dictionary: source -> CCOutput
   var <mainBus;  // Dedicated bus for main mix (not hardware bus 0)
+  var group;     // Runs after the default group, so outputs hear every source
 
   *new { |cc|
     ^super.new.init(cc);
@@ -17,6 +18,17 @@ CCOutputs {
     outputs = Dictionary[];
     routes = Dictionary[];
     mainBus = nil;  // Created lazily when main output starts
+  }
+
+  // Outputs must run after everything that writes to their input buses. If an
+  // output ran first, a writer earlier in the same cycle would reset the bus
+  // and wipe out whatever later writers added in the previous cycle.
+  group {
+    if(group.isNil or: { group.isPlaying.not }) {
+      group = Group.after(cc.server.defaultGroup);
+      NodeWatcher.register(group, true);
+    };
+    ^group;
   }
 
   // ========== Output Creation ==========
@@ -38,14 +50,16 @@ CCOutputs {
 
     inBus = Bus.audio(cc.server, numChannels);
 
-    ndef = Ndef(key, {
+    ndef = Ndef(key);
+    ndef.parentGroup = this.group;
+    ndef.source = {
       var sig = InFeedback.ar(\in.kr(0), numChannels);
       Limiter.ar(sig, 0.95);
-    });
+    };
     ndef.set(\in, inBus.index);
-    ndef.play(out: hwOut);
+    ndef.play(out: hwOut, group: this.group);
 
-    output = CCOutput(cc, key, ndef, inBus, channels, hwOut);
+    output = CCOutput(cc, key, ndef, inBus, channels, hwOut, this.group);
     outputs[key] = output;
 
     ^output;
@@ -59,14 +73,16 @@ CCOutputs {
     // Create dedicated main bus (separate from hardware bus 0)
     mainBus = Bus.audio(cc.server, 2);
 
-    ndef = Ndef(\out_main, {
+    ndef = Ndef(\out_main);
+    ndef.parentGroup = this.group;
+    ndef.source = {
       var sig = InFeedback.ar(\in.kr(0), 2);
       Limiter.ar(sig, 0.95);
-    });
+    };
     ndef.set(\in, mainBus.index);
-    ndef.play(out: 0);
+    ndef.play(out: 0, group: this.group);
 
-    output = CCOutput(cc, \out_main, ndef, mainBus, [1, 2], 0);
+    output = CCOutput(cc, \out_main, ndef, mainBus, [1, 2], 0, this.group);
     outputs[\out_main] = output;
 
     ^output;

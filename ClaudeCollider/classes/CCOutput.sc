@@ -8,18 +8,20 @@ CCOutput {
   var <channels;     // Integer or Array: 3 or [3, 4] (1-indexed)
   var <hwOut;        // Integer: hardware output index (0-indexed)
   var <routeSynths;  // Dictionary: source -> Synth
+  var <group;        // Group the monitor plays in (nil = default group)
 
-  *new { |cc, key, ndef, inBus, channels, hwOut|
-    ^super.new.init(cc, key, ndef, inBus, channels, hwOut);
+  *new { |cc, key, ndef, inBus, channels, hwOut, group|
+    ^super.new.init(cc, key, ndef, inBus, channels, hwOut, group);
   }
 
-  init { |argCC, argKey, argNdef, argInBus, argChannels, argHwOut|
+  init { |argCC, argKey, argNdef, argInBus, argChannels, argHwOut, argGroup|
     cc = argCC;
     key = argKey;
     ndef = argNdef;
     inBus = argInBus;
     channels = argChannels;
     hwOut = argHwOut;
+    group = argGroup;
     routeSynths = Dictionary[];
   }
 
@@ -102,8 +104,10 @@ CCOutput {
 
   // ========== Control ==========
 
+  // Pass the group every time: NodeProxy.play otherwise moves the monitor back
+  // into the default group
   play {
-    ndef.play;
+    ndef.play(group: group);
   }
 
   stop {
@@ -112,7 +116,7 @@ CCOutput {
 
   setHwOut { |out|
     hwOut = out;
-    ndef.play(out: out);
+    ndef.play(out: out, group: group);
   }
 
   // ========== Cleanup ==========
