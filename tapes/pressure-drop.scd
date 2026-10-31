@@ -66,7 +66,7 @@ SynthDef(\cc_kick_scoop, {
 
 // 3. Kick - four on the floor with scoop EQ
 Pdef(\kick, Pbind(
-    \instrument, \cc_kick_scoop, \freq, 48,
+    \instrument, \cc_kick_scoop,
     \dur, 1,
     \amp, 0.8,
     \attack, 0.001,
@@ -76,7 +76,7 @@ Pdef(\kick, Pbind(
 
 // 4. Hi-hats - intricate 16ths with ghost notes and open/closed variation
 Pdef(\hat, Pbind(
-    \instrument, \cc_hihat, \freq, 48,
+    \instrument, \cc_hihat,
     \dur, 0.25,
     \amp, Pseq([0.35, 0.1, 0.22, 0.08, 0.3, 0.12, 0.25, 0.08,
                 0.33, 0.1, 0.2, 0.08, 0.3, 0.1, 0.38, 0.12], inf),
@@ -86,14 +86,14 @@ Pdef(\hat, Pbind(
 
 // 5. Clap - on 4
 Pdef(\clap, Pbind(
-    \instrument, \cc_clap, \freq, 48,
+    \instrument, \cc_clap,
     \dur, Pseq([Rest(3), 1], inf),
     \amp, 0.4
 ));
 
 // 6. Shaker - subtle 16th texture
 Pdef(\shaker, Pbind(
-    \instrument, \cc_shaker, \freq, 48,
+    \instrument, \cc_shaker,
     \dur, 0.25,
     \amp, Pseq([0.12, 0.06, 0.1, 0.05, 0.12, 0.05, 0.08, 0.06,
                 0.1, 0.06, 0.12, 0.05, 0.1, 0.06, 0.08, 0.05], inf)
@@ -101,7 +101,7 @@ Pdef(\shaker, Pbind(
 
 // 7. Rim - syncopated pattern
 Pdef(\rim, Pbind(
-    \instrument, \cc_rim, \freq, 48,
+    \instrument, \cc_rim,
     \dur, Pseq([0.75, 0.5, 0.75, 0.5, 0.5, 1], inf),
     \amp, Pseq([0.2, 0.12, 0.18, 0.15, 0.12, 0.2], inf)
 ));

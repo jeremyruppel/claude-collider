@@ -19,19 +19,19 @@ CCSynths {
     ^(
       // ========== DRUMS ==========
       cc_kick: (
-        description: "Punchy kick drum. Sine body with a fast pitch drop for punch plus a slower drop for boom (punch 0-1), starting at the waveform peak for snap. Short hold then decay. Click transient (click), saturation (drive). Default 48Hz (~G1), 300ms decay. One-shot.",
+        description: "Punchy kick drum. Sine body with a fast pitch drop for punch plus a slower drop for boom (punch 0-1), starting at the waveform peak for snap. Short hold then decay. Click transient (click), saturation (drive). Tune sets pitch (default 48Hz, ~G1); freq is ignored so Pbind's default pitch can't detune it. 300ms default decay. One-shot.",
         def: {
-          SynthDef(\cc_kick, { |out=0, freq=48, amp=0.5, decay=0.3, punch=0.7, click=0.7, drive=0.5|
+          SynthDef(\cc_kick, { |out=0, tune=48, amp=0.5, decay=0.3, punch=0.7, click=0.7, drive=0.5|
             var sig, env, pitch, transient;
             env = EnvGen.ar(Env([0, 1, 1, 0], [0.0005, 0.03, decay], [0, 0, -4]), doneAction: 2);
             // Sharp, big drop for punch, slower drop for boom
-            pitch = freq * (1
+            pitch = tune * (1
               + (punch * 14 * EnvGen.ar(Env.perc(0.0005, 0.03, 1, -8)))
               + (punch * 0.8 * EnvGen.ar(Env.perc(0.0005, 0.15, 1, -4))));
             // Start at the peak of the wave for a sharp front edge
             sig = SinOsc.ar(pitch, 0.5pi) * env;
             transient = BPF.ar(WhiteNoise.ar, 4000, 1.5) * EnvGen.ar(Env.perc(0.0003, 0.008)) * 0.8;
-            transient = transient + (SinOsc.ar(freq * 30) * EnvGen.ar(Env.perc(0.0002, 0.004)) * 0.5);
+            transient = transient + (SinOsc.ar(tune * 30) * EnvGen.ar(Env.perc(0.0002, 0.004)) * 0.5);
             sig = sig + (transient * click);
             sig = (sig * (1 + (drive * 4))).tanh / (1 + (drive * 0.3));
             Out.ar(out, sig * amp * 0.75 ! 2);
@@ -40,7 +40,7 @@ CCSynths {
       ),
 
       cc_snare: (
-        description: "909-style snare. Two triangle oscillators (tune, default 180Hz, and 1.83x; ignores freq so Pbind's default pitch can't detune it) with a quick pitch drop, plus band-limited noise as a short snap and a longer tail. Snappy (default 1) sets noise level, color (0-1, default 0.5) its brightness. Decay (default 200ms) sets the tail. One-shot.",
+        description: "909-style snare. Two triangle oscillators (tune, default 180Hz, and 1.83x; freq is ignored so Pbind's default pitch can't detune it) with a quick pitch drop, plus band-limited noise as a short snap and a longer tail. Snappy (default 1) sets noise level, color (0-1, default 0.5) its brightness. Decay (default 200ms) sets the tail. One-shot.",
         def: {
           SynthDef(\cc_snare, { |out=0, tune=180, amp=0.5, decay=0.2, snappy=1, color=0.5|
             var body, noise, snap, tail, drop;
@@ -107,13 +107,13 @@ CCSynths {
       ),
 
       cc_tom: (
-        description: "Tom drum. Sine with exponential pitch drop from 2x to target freq over 40ms. LPF noise transient for attack. Default 120Hz, 300ms decay. One-shot.",
+        description: "Tom drum. Sine with exponential pitch drop from 2x to tune over 40ms. LPF noise transient for attack. Tune sets pitch (default 120Hz); freq is ignored so Pbind's default pitch can't detune it. 300ms default decay. One-shot.",
         def: {
-          SynthDef(\cc_tom, { |out=0, freq=120, amp=0.5, decay=0.3|
+          SynthDef(\cc_tom, { |out=0, tune=120, amp=0.5, decay=0.3|
             var sig, env, penv, noise;
             env = EnvGen.kr(Env.perc(0.001, decay), doneAction: 2);
-            // Pitch starts high and drops to target freq
-            penv = EnvGen.kr(Env([freq * 2, freq], [0.04], \exp));
+            // Pitch starts high and drops to tune
+            penv = EnvGen.kr(Env([tune * 2, tune], [0.04], \exp));
             sig = SinOsc.ar(penv);
             // Add noise for attack transient
             noise = LPF.ar(WhiteNoise.ar, 1000) * EnvGen.kr(Env.perc(0.001, 0.02));
@@ -125,14 +125,14 @@ CCSynths {
       ),
 
       cc_fmtom: (
-        description: "FM tom. Sine carrier with ratio sweep from ratioStart to ratioEnd over sweep time for harmonic attack. Index controls FM depth. Default 120Hz, 300ms decay. One-shot.",
+        description: "FM tom. Sine carrier with ratio sweep from ratioStart to ratioEnd over sweep time for harmonic attack. Index controls FM depth. Tune sets pitch (default 120Hz); freq is ignored so Pbind's default pitch can't detune it. 300ms default decay. One-shot.",
         def: {
-          SynthDef(\cc_fmtom, { |out=0, freq=120, amp=0.5, decay=0.3, index=1.5, ratioStart=2, ratioEnd=1, sweep=0.3|
+          SynthDef(\cc_fmtom, { |out=0, tune=120, amp=0.5, decay=0.3, index=1.5, ratioStart=2, ratioEnd=1, sweep=0.3|
             var sig, mod, env, ratio;
             env = EnvGen.kr(Env.perc(0.01, decay), doneAction: 2);
             ratio = EnvGen.kr(Env([ratioStart, ratioEnd], [sweep], \exp));
-            mod = SinOsc.ar(freq * ratio) * index * freq;
-            sig = SinOsc.ar(freq + mod);
+            mod = SinOsc.ar(tune * ratio) * index * tune;
+            sig = SinOsc.ar(tune + mod);
             sig = sig * env * amp;
             Out.ar(out, sig ! 2);
           })
@@ -140,14 +140,14 @@ CCSynths {
       ),
 
       cc_rim: (
-        description: "Rimshot/sidestick. Tight BPF noise (Q=0.02) at 1700Hz default + 1200Hz sine click on attack. Fixed 30ms decay, very percussive. One-shot.",
+        description: "Rimshot/sidestick. Tight BPF noise (Q=0.02) at tune (default 1700Hz; freq is ignored so Pbind's default pitch can't detune it) + 1200Hz sine click on attack. Fixed 30ms decay, very percussive. One-shot.",
         def: {
-          SynthDef(\cc_rim, { |out=0, amp=0.4, freq=1700|
+          SynthDef(\cc_rim, { |out=0, amp=0.4, tune=1700|
             var sig, env;
             env = EnvGen.kr(Env.perc(0.001, 0.03), doneAction: 2);
             // Short noise burst through resonant bandpass
             sig = WhiteNoise.ar;
-            sig = BPF.ar(sig, freq, 0.02);
+            sig = BPF.ar(sig, tune, 0.02);
             // Add click for attack
             sig = sig + (SinOsc.ar(1200) * EnvGen.kr(Env.perc(0.0001, 0.002)) * 0.5);
             sig = sig * env * amp * 2;
@@ -626,13 +626,13 @@ CCSynths {
 
       // ========== UTILITY ==========
       cc_click: (
-        description: "Metronome click. Sine (default 1500Hz) + HPF noise at 4kHz for transient. Very short 20ms fixed decay. Use freq to change pitch for downbeat/offbeat distinction. One-shot.",
+        description: "Metronome click. Sine (default 1500Hz) + HPF noise at 4kHz for transient. Very short 20ms fixed decay. Use tune to change pitch for downbeat/offbeat distinction (freq is ignored so Pbind's default pitch can't detune it). One-shot.",
         def: {
-          SynthDef(\cc_click, { |out=0, amp=0.3, freq=1500|
+          SynthDef(\cc_click, { |out=0, amp=0.3, tune=1500|
             var sig, env;
             env = EnvGen.kr(Env.perc(0.001, 0.02), doneAction: 2);
             // Short filtered click
-            sig = SinOsc.ar(freq);
+            sig = SinOsc.ar(tune);
             sig = sig + (HPF.ar(WhiteNoise.ar, 4000) * 0.3);
             sig = sig * env * amp;
             Out.ar(out, sig ! 2);

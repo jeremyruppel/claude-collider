@@ -49,7 +49,7 @@ Dm7 | C/E (alternating, 4 bars each)
 
 // 2. Kick - syncopated four-on-the-floor with velocity variation
 Pdef(\kick, Pbind(
-    \instrument, \cc_kick, \freq, 48,
+    \instrument, \cc_kick,
     \dur, Pseq([1, 1, 0.75, 0.25, 1, 1, 0.5, 0.5], inf),
     \amp, Pseq([0.85, 0.7, 0.75, 0.5, 0.85, 0.7, 0.6, 0.55], inf),
     \decay, 0.4
@@ -57,7 +57,7 @@ Pdef(\kick, Pbind(
 
 // 3. Hats - swung 16ths with ghost notes and open hat on "and" of 4
 Pdef(\hats, Pbind(
-    \instrument, \cc_hihat, \freq, 48,
+    \instrument, \cc_hihat,
     \dur, Pseq([0.3, 0.2], inf),
     \amp, Pseq([0.35, 0.12, 0.25, 0.1, 0.3, 0.12, 0.2, 0.1, 0.35, 0.12, 0.25, 0.1, 0.3, 0.12, 0.38, 0.1], inf),
     \decay, Pseq([0.03, 0.02, 0.03, 0.02, 0.03, 0.02, 0.03, 0.02, 0.03, 0.02, 0.03, 0.02, 0.03, 0.02, 0.08, 0.02], inf)
@@ -65,7 +65,7 @@ Pdef(\hats, Pbind(
 
 // 4. Clap - on 2 and 4 with ghost hits
 Pdef(\clap, Pbind(
-    \instrument, \cc_clap, \freq, 48,
+    \instrument, \cc_clap,
     \dur, 0.25,
     \amp, Pseq([Rest(), Rest(), Rest(), Rest(), 0.55, 0.07, Rest(), 0.05, Rest(), Rest(), 0.06, Rest(), 0.55, 0.07, 0.05, Rest()], inf),
     \decay, 0.12
@@ -73,7 +73,7 @@ Pdef(\clap, Pbind(
 
 // 5. Open hat - and of 2 and 4
 Pdef(\ohat, Pbind(
-    \instrument, \cc_openhat, \freq, 48,
+    \instrument, \cc_openhat,
     \dur, Pseq([Rest(0.5), 0.5, Rest(1), Rest(0.5), 0.5, Rest(1)], inf),
     \amp, Pseq([0, 0.3, 0, 0, 0.25, 0], inf),
     \decay, 0.15

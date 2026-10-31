@@ -39,9 +39,7 @@ Both are diatonic to D Dorian; the B world lifts the tonal center upward.
 ## Notes
 
 - **Custom SynthDef `cc_glidechord`** is defined in block 3 and must be added before the `lead` Pdef plays. It takes a 4-element `\freqs` array control and glides each voice.
-- **A/B swappable parts:** `~mkBass` / `~mkChord` factories guarantee bassA/bassB and chordsA/chordsB are structurally identical (same synth, register, timing), so they can be hot-swapped at phrase boundaries with no jump. bassB and chordsB share roots, so switching sections moves bass and harmony together. The arrangement swaps worlds via `~setA` / `~setB` section actions.
-- The drums are sample-based (`cc_sampler`), so they do not use `\freq, 48` (that rule is for the synth drums like `cc_kick`).
-*/
+- **A/B swappable parts:** `~mkBass` / `~mkChord` factories guarantee bassA/bassB and chordsA/chordsB are structurally identical (same synth, register, timing), so they can be hot-swapped at phrase boundaries with no jump. bassB and chordsB share roots, so switching sections moves bass and harmony together. The arrangement swaps worlds via `~setA` / `~setB` section actions.*/
 
 // 1. Clear and set tempo
 ~cc.clear;
@@ -173,7 +171,7 @@ Pdef(\fill_snare).quant = 32;
 Pdef(\fill_tom, Pbind(
     \instrument, \cc_tom,
     \dur, Pseq([Rest(31), 0.25, 0.25, 0.25, 0.25], inf),
-    \freq, Pseq([0, 220, 175, 140, 110], inf),
+    \tune, Pseq([0, 220, 175, 140, 110], inf),
     \amp, Pseq([0, 0.55, 0.58, 0.62, 0.78], inf),
     \decay, 0.25
 ));

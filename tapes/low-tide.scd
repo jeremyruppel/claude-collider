@@ -55,21 +55,21 @@ Signal flow: pad → lpf(auto) → chorus → reverb; rim → delay → reverb; 
 
 // 2. Kick - syncopated boom-bap: beat 1, the "and of 2", and beat 4 (dry, also the sidechain trigger)
 Pdef(\kick, Pbind(
-    \instrument, \cc_kick, \freq, 48,
+    \instrument, \cc_kick,
     \dur, Pseq([1.5, 1.5, 1], inf),
     \amp, Pseq([0.6, 0.5, 0.55], inf)
 ));
 
 // 3. Snare - backbeat on 2 & 4 (Rest(1) offset, then Pn(2) holds the 2-beat gap)
 Pdef(\snare, Pbind(
-    \instrument, \cc_snare, \freq, 48,
+    \instrument, \cc_snare,
     \dur, Pseq([Rest(1), Pn(2)]),
     \amp, 0.45
 ));
 
 // 4. Hats - active swung 16ths, accent pattern with an open hat on the "and of 4"
 Pdef(\hat, Pbind(
-    \instrument, \cc_hihat, \freq, 48,
+    \instrument, \cc_hihat,
     \dur, Pseq([0.15, 0.1], inf),
     \amp, Pseq([0.3, 0.1, 0.18, 0.1, 0.28, 0.1, 0.18, 0.12,
                 0.3, 0.1, 0.18, 0.1, 0.28, 0.1, 0.35, 0.14], inf),
@@ -79,7 +79,7 @@ Pdef(\hat, Pbind(
 
 // 5. Rim - single offbeat click on the "and of 3", washed through the delay
 Pdef(\rim, Pbind(
-    \instrument, \cc_rim, \freq, 48,
+    \instrument, \cc_rim,
     \dur, Pseq([Rest(2.5), 0.5, Rest(1)], inf),
     \amp, 0.14
 ));

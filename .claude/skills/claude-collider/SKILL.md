@@ -16,7 +16,7 @@ This skill enables live music synthesis using SuperCollider via the ClaudeCollid
 
 ## Quick Reference
 
-1. **Drums need `\freq, 48`** — without it, drums sound wrong
+1. **Pitch drums with `\tune`** — drums ignore `\freq`, `\degree` and `\midinote`, so they sound right with no pitch keys at all
 2. **Use Pdef for rhythms** — patterns that repeat
 3. **Use Ndef for continuous** — pads, drones, textures
 4. **Symbols not strings** — `\kick` not `"kick"`

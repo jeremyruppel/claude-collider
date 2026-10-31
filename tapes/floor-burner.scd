@@ -49,14 +49,14 @@ Gm - Bb - C - F (i - III - IV - bVII, 4-bar cycle)
 
 // 2. Kick - four on the floor
 Pdef(\kick, Pbind(
-    \instrument, \cc_kick, \freq, 48,
+    \instrument, \cc_kick,
     \dur, 1,
     \amp, 0.6
 ));
 
 // 3. Hi-hat - 16ths with ghost notes and open hat variation
 Pdef(\hat, Pbind(
-    \instrument, \cc_hihat, \freq, 48,
+    \instrument, \cc_hihat,
     \dur, 0.25,
     \amp, Pseq([0.05, 0.28, 0.08, 0.22, 0.05, 0.3, 0.08, 0.18], inf),
     \decay, Pseq([0.02, 0.03, 0.02, 0.02, 0.02, 0.03, 0.02, 0.08], inf)
@@ -64,21 +64,21 @@ Pdef(\hat, Pbind(
 
 // 4. Clap - on 2 and 4
 Pdef(\clap, Pbind(
-    \instrument, \cc_clap, \freq, 48,
+    \instrument, \cc_clap,
     \dur, Pseq([Rest(1), 1, Rest(1), 1], inf),
     \amp, 0.4
 ));
 
 // 5. Open hat - offbeat accents
 Pdef(\openhat, Pbind(
-    \instrument, \cc_openhat, \freq, 48,
+    \instrument, \cc_openhat,
     \dur, Pseq([Rest(0.5), 0.5], inf),
     \amp, Pseq([0, 0.18, 0, 0.15], inf)
 ));
 
 // 6. Rim - sparse ghost hits
 Pdef(\rim, Pbind(
-    \instrument, \cc_rim, \freq, 48,
+    \instrument, \cc_rim,
     \dur, 0.25,
     \amp, Pseq([
         0, 0, 0.15, 0, 0, 0, 0, 0.12,
@@ -88,7 +88,7 @@ Pdef(\rim, Pbind(
 
 // 7. Shaker - steady 16ths glue
 Pdef(\shaker, Pbind(
-    \instrument, \cc_shaker, \freq, 48,
+    \instrument, \cc_shaker,
     \dur, 0.25,
     \amp, Pseq([0.12, 0.06, 0.1, 0.06], inf)
 ));

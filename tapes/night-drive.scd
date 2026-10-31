@@ -55,14 +55,14 @@ Hi-hat pattern uses offbeat accents with open hat on beat 3.5. Bass is straight 
 
 // 2. Kick - four on the floor
 Pdef(\kick, Pbind(
-    \instrument, \cc_kick, \freq, 48,
+    \instrument, \cc_kick,
     \dur, 1,
     \amp, 0.65
 ));
 
 // 3. Hi-hats - offbeat 16ths with dynamics and open hat accents
 Pdef(\hat, Pbind(
-    \instrument, \cc_hihat, \freq, 48,
+    \instrument, \cc_hihat,
     \dur, 0.25,
     \amp, Pseq([0, 0.3, 0, 0.2, 0, 0.35, 0, 0.15], inf),
     \decay, Pseq([0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.08, 0.02], inf)
@@ -70,36 +70,36 @@ Pdef(\hat, Pbind(
 
 // 4. Clap - on 2 and 4
 Pdef(\clap, Pbind(
-    \instrument, \cc_clap, \freq, 48,
+    \instrument, \cc_clap,
     \dur, 2,
     \amp, 0.4
 ));
 
 // 5. Rim - syncopated pattern
 Pdef(\rim, Pbind(
-    \instrument, \cc_rim, \freq, 48,
+    \instrument, \cc_rim,
     \dur, Pseq([0.75, 0.25, 0.5, 0.5, 0.75, 0.25, 0.5, 0.5], inf),
     \amp, Pseq([0.2, 0.1, 0.15, 0.12, 0.18, 0.08, 0.15, 0.1], inf)
 ));
 
 // 6. Shaker - subtle 16th texture
 Pdef(\shaker, Pbind(
-    \instrument, \cc_shaker, \freq, 48,
+    \instrument, \cc_shaker,
     \dur, 0.25,
     \amp, Pseq([0.12, 0.06, 0.1, 0.05, 0.12, 0.05, 0.08, 0.06], inf)
 ));
 
 // 7. Tom - fills every couple bars
 Pdef(\tom, Pbind(
-    \instrument, \cc_tom, \freq, 48,
+    \instrument, \cc_tom,
     \dur, Pseq([Rest(3), 0.25, 0.25, 0.5, Rest(4), Rest(3), 0.5, 0.25, 0.25, Rest(4)], inf),
     \amp, Pseq([0, 0.25, 0.2, 0.3, 0, 0, 0.3, 0.2, 0.25, 0], inf),
-    \note, Pseq([0, 7, 5, 0, 0, 0, 0, 5, 7, 0], inf)
+    \tune, Pseq([0, 7, 5, 0, 0, 0, 0, 5, 7, 0], inf).collect { |n| 120 * n.midiratio }
 ));
 
 // 8. Cowbell - sparse accents
 Pdef(\cowbell, Pbind(
-    \instrument, \cc_cowbell, \freq, 48,
+    \instrument, \cc_cowbell,
     \dur, Pseq([Rest(1.5), 0.5, Rest(2), Rest(1.5), 0.25, 0.25, Rest(2)], inf),
     \amp, Pseq([0, 0.12, 0, 0, 0.1, 0.08, 0], inf)
 ));

@@ -49,14 +49,14 @@ Known issue: `~cc.fx.route` can't currently find Ndefs (CCRouter looks up `Ndef.
 
 // 2. Drums - funky kick, backbeat snare, 16th hats
 Pdef(\drums, Ppar([
-    Pbind(\instrument, \cc_kick, \freq, 48, \dur, Pseq([1, 0.75, 0.25, 1, 1], inf), \amp, 0.7),
-    Pbind(\instrument, \cc_snare, \freq, 48, \dur, Pseq([Rest(1), 1, Rest(1), 1], inf), \amp, 0.45),
-    Pbind(\instrument, \cc_hihat, \freq, 48, \dur, 0.25, \amp, Pseq([0.15, 0.06, 0.25, 0.06], inf))
+    Pbind(\instrument, \cc_kick, \dur, Pseq([1, 0.75, 0.25, 1, 1], inf), \amp, 0.7),
+    Pbind(\instrument, \cc_snare, \dur, Pseq([Rest(1), 1, Rest(1), 1], inf), \amp, 0.45),
+    Pbind(\instrument, \cc_hihat, \dur, 0.25, \amp, Pseq([0.15, 0.06, 0.25, 0.06], inf))
 ]));
 
 // 3. Hats - hats alone, for the build
 Pdef(\hats, Pbind(
-    \instrument, \cc_hihat, \freq, 48,
+    \instrument, \cc_hihat,
     \dur, 0.25,
     \amp, Pseq([0.15, 0.06, 0.25, 0.06], inf)
 ));
@@ -116,7 +116,7 @@ Pdef(\stinger, Ppar([
         \dur, Pseq([2, 8]), \legato, 0.8, \attack, 0.05, \release, 3, \amp, 0.13),
     Pbind(\instrument, \cc_bell, \scale, ~sc, \octave, 6, \degree, Pseq([Rest(), 7, 11, 14]),
         \dur, Pseq([2, 0.08, 0.08, 6]), \decay, 6, \amp, 0.18),
-    Pbind(\instrument, Pseq([\cc_kick, \cc_kick, \cc_openhat]), \freq, 48, \dur, Pseq([Rest(2), 0, 6]), \amp, 0.7),
+    Pbind(\instrument, Pseq([\cc_kick, \cc_kick, \cc_openhat]), \dur, Pseq([Rest(2), 0, 6]), \amp, 0.7),
     Pbind(\instrument, \cc_fmbass, \octave, 2, \degree, Pseq([Rest(), 0]), \dur, Pseq([2, 6]), \legato, 0.9, \amp, 0.4)
 ]));
 

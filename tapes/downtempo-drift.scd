@@ -46,14 +46,14 @@ Brooding downtempo techno jam in E Phrygian at 108 BPM with a hypnotic 2-bar aci
 
 // 2. Kick - four on the floor with ghost 16th at phrase end
 Pdef(\kick, Pbind(
-    \instrument, \cc_kick, \freq, 48,
+    \instrument, \cc_kick,
     \dur, Pseq([1, 1, 1, 0.75, 0.25], inf),
     \amp, Pseq([0.7, 0.65, 0.7, 0.6, 0.5], inf)
 ));
 
 // 3. Hats - mechanical 16ths with ghost dynamics and open/closed variation
 Pdef(\hat, Pbind(
-    \instrument, \cc_hihat, \freq, 48,
+    \instrument, \cc_hihat,
     \dur, 0.25,
     \amp, Pseq([0.3, 0.07, 0.18, 0.06, 0.25, 0.06, 0.15, 0.07], inf),
     \decay, Pseq([0.04, 0.02, 0.02, 0.02, 0.03, 0.02, 0.08, 0.02], inf)
@@ -61,7 +61,7 @@ Pdef(\hat, Pbind(
 
 // 4. Open hat - sparse offbeat accents
 Pdef(\ohat, Pbind(
-    \instrument, \cc_hihat, \freq, 48,
+    \instrument, \cc_hihat,
     \dur, 0.5,
     \amp, Pseq([Rest(), 0.18, Rest(), 0.14, Rest(), 0.16, Rest(), Rest()], inf),
     \decay, 0.12
@@ -69,7 +69,7 @@ Pdef(\ohat, Pbind(
 
 // 5. Clap - on 2 and 4
 Pdef(\clap, Pbind(
-    \instrument, \cc_clap, \freq, 48,
+    \instrument, \cc_clap,
     \dur, 2,
     \amp, 0.35
 ));

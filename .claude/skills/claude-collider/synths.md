@@ -6,16 +6,17 @@
 
 | Synth | Type | Description | Key Params |
 |---|---|---|---|
-| `cc_kick` | one-shot | Hard-hitting kick: big two-stage pitch drop, hold, click, saturation | freq(48), decay(300ms), punch(0.7), click(0.7), drive(0.5) |
-| `cc_snare` | one-shot | 909-style: two triangle oscillators + noise snap and tail. Tuned by `tune`, not freq | tune(180), decay(200ms), snappy(1), color(0.5) |
+| `cc_kick` | one-shot | Hard-hitting kick: big two-stage pitch drop, hold, click, saturation | tune(48), decay(300ms), punch(0.7), click(0.7), drive(0.5) |
+| `cc_snare` | one-shot | 909-style: two triangle oscillators + noise snap and tail | tune(180), decay(200ms), snappy(1), color(0.5) |
 | `cc_hihat` | one-shot | 808-style: six detuned squares band-passed, blended with noise | decay(50ms), tone(1), noise(0.3) |
 | `cc_openhat` | one-shot | Open hi-hat with metallic shimmer | decay(500ms) |
 | `cc_clap` | one-shot | Hand clap, two BPF noise layers | decay(150ms) |
-| `cc_rim` | one-shot | Rimshot/sidestick, tight BPF noise | freq(1700) |
-| `cc_tom` | one-shot | Tom with exponential pitch drop | freq(120), decay(300ms) |
+| `cc_rim` | one-shot | Rimshot/sidestick, tight BPF noise | tune(1700) |
+| `cc_tom` | one-shot | Tom with exponential pitch drop | tune(120), decay(300ms) |
+| `cc_fmtom` | one-shot | FM tom with ratio sweep | tune(120), decay(300ms), index(1.5) |
 | `cc_cowbell` | one-shot | 808-style, two detuned squares | decay(400ms) |
 | `cc_shaker` | one-shot | Shaker/maraca, HPF noise grain | decay(80ms), color(5000) |
-| `cc_click` | one-shot | Metronome click, sine + noise | freq(1500) |
+| `cc_click` | one-shot | Metronome click, sine + noise | tune(1500) |
 
 ## Bass
 
@@ -59,5 +60,5 @@
 
 - **one-shot**: plays and self-frees (drums, bells, plucks, risers)
 - **gate**: sustains while held, use `\legato` in Pbind to control duration
-- All drums should use `\freq, 48` in patterns
+- Drums and the click are pitched with `\tune` (Hz) and ignore `\freq`, `\degree` and `\midinote`, so no pitch keys are needed in drum patterns
 - All synths have `out` and `amp` params

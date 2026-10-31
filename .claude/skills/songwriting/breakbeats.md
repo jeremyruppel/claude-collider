@@ -124,7 +124,7 @@ Breakbeats work well layered under or over programmed drums:
 ```supercollider
 // Programmed kick reinforces the break
 Pdef(\kick, Pbind(
-    \instrument, \cc_kick, \freq, 48,
+    \instrument, \cc_kick,
     \dur, Pseq([1, 1, 0.75, 0.25, 1], inf),
     \amp, 0.5
 ));

@@ -77,7 +77,7 @@ Use `Ppar` to combine multiple patterns into one that plays them simultaneously.
 ```supercollider
 // Combine patterns to start together
 Pdef(\song, Ppar([
-  Pbind(\instrument, \cc_kick, \dur, 1, \freq, 48),
+  Pbind(\instrument, \cc_kick, \dur, 1),
   Pbind(\instrument, \cc_hihat, \dur, 0.5, \amp, 0.3),
   Pbind(\instrument, \cc_bass, \dur, 0.5, \midinote, Pseq([36, 36, 38, 36], inf))
 ])).play;
@@ -422,30 +422,19 @@ Pdef.all.keys;  // all defined pattern names
 Ndef.all.keys;  // all defined node names
 ```
 
-## Drum Patterns and Frequency
+## Drum Patterns and Pitch
 
-When using `Pbind` with drum synths like `\cc_kick` and `\cc_snare`, be aware that SuperCollider's Event system automatically sets `\freq` based on `\degree` (default 0), which converts to ~261 Hz (middle C). This overrides the synth's default frequency.
+SuperCollider's Event system always sends `\freq` (from `\degree`, default ~261 Hz) to every synth. So the drum synths and `cc_click` don't use a `freq` control: their pitch is a `tune` control in Hz, with the right default. A drum pattern needs no pitch keys at all.
 
-**Problem:**
 ```supercollider
-// BAD: freq gets set to ~261 Hz by default Event behavior
+// Sounds right as-is
 Pdef(\kick, Pbind(\instrument, \cc_kick, \dur, 1)).play;
+
+// Retune or sweep a drum with \tune
+Pdef(\fill, Pbind(\instrument, \cc_tom, \dur, 0.25, \tune, Pseq([220, 175, 140, 110]))).play;
 ```
 
-**Solutions:**
-
-```supercollider
-// GOOD: Explicitly set freq to use synth's intended pitch
-Pdef(\kick, Pbind(\instrument, \cc_kick, \dur, 1, \freq, 48)).play;
-
-// GOOD: Use \degree, \rest to bypass freq conversion entirely
-Pdef(\kick, Pbind(\instrument, \cc_kick, \dur, 1, \degree, \rest)).play;
-
-// GOOD: Set \midinote directly (48 = G1, nice low kick)
-Pdef(\kick, Pbind(\instrument, \cc_kick, \dur, 1, \midinote, 36)).play;
-```
-
-This applies to any drum synth that uses a `freq` parameter. Melodic synths (bass, lead, pad) typically *want* the Event's pitch conversion, so this is only an issue for drums.
+`\freq`, `\degree` and `\midinote` have no effect on drums. Melodic synths (bass, lead, pad) use the Event's pitch as usual.
 
 ## Anti-Patterns
 

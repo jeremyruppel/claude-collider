@@ -108,7 +108,6 @@ Pdef(\<name>, Pbind(
 - **NO hardware output routing** (`routeToOutput`) — system-specific
 - **NO server boot/reboot commands** — handled by playback
 - **NO absolute file paths**
-- Drums always need `\freq, 48`
 - Use `\instrument, \cc_<synthname>` — never dynamically construct the prefix
 - Prefer `\degree` + `\scale` + `\root` + `\octave` for tonal parts (more readable than raw midinote)
 - Group: drums first, then bass, then melodic/harmonic, then effects, then sidechain

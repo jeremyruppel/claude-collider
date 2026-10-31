@@ -40,7 +40,6 @@ Dm9 → Cmaj7 → Fmaj9 → Dm11 (4-bar cycle)
 // 2. Kick - four on the floor
 Pdef(\kick, Pbind(
     \instrument, \cc_kick,
-    \freq, 48,
     \amp, 0.8,
     \dur, 1,
     \drive, 1.3
@@ -49,7 +48,6 @@ Pdef(\kick, Pbind(
 // 3. Hihat - 16th note pattern with accents
 Pdef(\hat, Pbind(
     \instrument, \cc_hihat,
-    \freq, 48,
     \amp, Pseq([0.3, 0.15, 0.25, 0.15], inf),
     \dur, 0.25,
     \decay, 0.08
@@ -58,7 +56,6 @@ Pdef(\hat, Pbind(
 // 4. Snare - backbeat
 Pdef(\snare, Pbind(
     \instrument, \cc_snare,
-    \freq, 48,
     \amp, 0.6,
     \dur, Pseq([Rest(1), 1], inf),
     \color, 0.5
@@ -67,7 +64,6 @@ Pdef(\snare, Pbind(
 // 5. Open hat - offbeat accents
 Pdef(\ohat, Pbind(
     \instrument, \cc_openhat,
-    \freq, 48,
     \amp, Pseq([0, 0, 0.25, 0, 0, 0, 0.2, 0], inf),
     \dur, 0.25,
     \decay, 0.15
@@ -76,7 +72,6 @@ Pdef(\ohat, Pbind(
 // 6. Rim - syncopated ghost hits
 Pdef(\rim, Pbind(
     \instrument, \cc_rim,
-    \freq, 48,
     \amp, Pseq([0, 0, 0, 0.35, 0, 0.25, 0, 0], inf),
     \dur, 0.25,
     \decay, 0.04

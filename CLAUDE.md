@@ -20,7 +20,7 @@ Use `cc_execute` only for things the tools don't cover: Pdef/Ndef definitions, c
 
 ## Quick Reference
 
-1. **Drums need `\freq, 48`** — without it, drums sound wrong
+1. **Pitch drums with `\tune`** — drums ignore `\freq`, `\degree` and `\midinote`, so they sound right with no pitch keys at all
 2. **Use Pdef for rhythms** — patterns that repeat
 3. **Use Ndef for continuous** — pads, drones, textures
 4. **Symbols not strings** — `\kick` not `"kick"`
@@ -60,7 +60,7 @@ Main entry point stored in `~cc`. Access subsystems via `~cc.synths`, `~cc.fx`, 
 | `play(name, ...args)` | One-shot synth playback |
 
 ```supercollider
-~cc.synths.play(\cc_kick, \freq, 48, \amp, 0.8);
+~cc.synths.play(\cc_kick, \amp, 0.8);
 ```
 
 ## ~cc.fx - Effects System

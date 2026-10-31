@@ -58,19 +58,19 @@ Pre-built SynthDefs with `cc_` prefix. All synths are auto-loaded on boot.
 ~cc.synths.describe         // Print all synths with descriptions and params
 ```
 
-**Note**: When using drum synths with Pbind, explicitly set `\freq` to avoid SuperCollider's default pitch conversion overriding the synth's default frequency.
+**Note**: Drum synths are pitched with `tune` (Hz) and ignore `freq`, so Pbind's default pitch can't detune them. Drum patterns need no pitch keys.
 
 #### Drums
 
 | Name | Description | Params |
 |------|-------------|--------|
-| kick | Punchy kick drum with sub bass | out, freq, amp, decay |
-| snare | Snare drum with noise burst | out, freq, amp, decay |
-| hihat | Closed hi-hat | out, amp, decay |
+| kick | Hard-hitting kick with two-stage pitch drop | out, tune, amp, decay, punch, click, drive |
+| snare | 909-style snare | out, tune, amp, decay, snappy, color |
+| hihat | 808-style closed hi-hat | out, amp, decay, tone, noise |
 | openhat | Open hi-hat with longer decay | out, amp, decay |
 | clap | Hand clap with layered noise | out, amp, decay |
-| tom | Tunable tom drum for fills | out, freq, amp, decay |
-| rim | Rimshot / sidestick | out, amp, freq |
+| tom | Tunable tom drum for fills | out, tune, amp, decay |
+| rim | Rimshot / sidestick | out, amp, tune |
 | shaker | Shaker / maraca | out, amp, decay, color |
 | cowbell | 808-style cowbell | out, amp, decay |
 
