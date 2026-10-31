@@ -21,6 +21,7 @@ Debug mode: `DEBUG=claude-collider node dist/index.js` (logs to `/tmp/claude-col
 - **tokenizer.ts** — Transforms multi-line SC code to single-line format (required by sclang stdin)
 - **config.ts** — Configuration with environment variable overrides and auto-detection of sclang path
 - **types.ts** — TypeScript types and enums (ServerState, PendingOperation)
+- **test.ts** — `npm test` entry point; runs the SuperCollider test suite with the sclang from SclangConfig
 - **debug.ts** — Debug logging utility, writes to `/tmp/claude-collider.log` when DEBUG=claude-collider
 - **effects.ts** — Effects class that loads effect descriptions dynamically from SuperCollider
 - **synthdefs.ts** — SynthDefs class that loads synth descriptions dynamically from SuperCollider
