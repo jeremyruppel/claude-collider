@@ -41,5 +41,7 @@ Debug mode: `DEBUG=claude-collider node dist/index.js` (logs to `/tmp/claude-col
 | `SCLANG_PATH` | Auto-detected | Path to sclang executable |
 | `SC_BOOT_TIMEOUT` | 10000 | Boot timeout in ms |
 | `SC_EXEC_TIMEOUT` | 2000 | Execution timeout in ms |
-| `CC_SAMPLES_PATH` | `~/.claudecollider/samples` | Directory for audio samples |
-| `CC_RECORDINGS_PATH` | `~/.claudecollider/recordings` | Directory for recorded audio |
+| `CC_SAMPLES_PATH` | `user/samples:samples:~/.claudecollider/samples` | Colon-separated sample directories (first wins on name conflicts) |
+| `CC_RECORDINGS_PATH` | `user/recordings` | Directory for recorded audio |
+
+Default paths are resolved relative to the repo root, not the working directory.

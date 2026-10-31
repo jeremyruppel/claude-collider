@@ -298,7 +298,7 @@ CCMIDIClock.disable;
 
 ### CCSamples
 
-Sample management with lazy loading from `~/.claudecollider/samples`.
+Sample management with lazy loading from `user/samples/` and the bundled `samples/` (user samples win on name conflicts).
 
 Place WAV or AIFF files in the samples directory. On boot, file paths are scanned but buffers are only loaded on first use.
 
@@ -324,7 +324,7 @@ Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1).play
 
 ### CCRecorder
 
-Audio recording to WAV files in `~/.claudecollider/recordings/`.
+Audio recording to WAV files in `user/recordings/`.
 
 ```supercollider
 ~cc.recorder.start                    // Start recording with auto-generated filename

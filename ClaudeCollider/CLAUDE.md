@@ -25,8 +25,8 @@ SuperCollider backend providing the live coding toolkit classes.
 - **CCSynths** — SynthDef management with 30 pre-built instruments organized by category: drums (kick, snare, hihat, clap, openhat, tom, fmtom, rim, shaker, cowbell), bass (bass, acid, sub, fmsub, reese, fmbass), leads (lead), melodic (pluck, bell, keys, strings), pads (pad), textural (noise, drone, riser), utility (click, sine, sampler, breakbeat, grains). All synths use `cc_` prefix
 - **CCFX** — Ndef-based effects system with 18 effects: filters (lpf, hpf, bpf), time-based (reverb, delay, pingpong), modulation (chorus, flanger, phaser, tremolo), distortion (distortion, bitcrush, wavefold), dynamics (compressor, limiter, gate), stereo (widener, autopan). Supports routing, chaining, and sidechaining
 - **CCMIDI** — MIDI device management. Multiple simultaneous synths, polyphonic/monophonic mapping, CC-to-bus mapping with configurable ranges and curves, per-synth stop
-- **CCSamples** — Sample management with lazy loading from `~/.claudecollider/samples`. WAV/AIFF, rate control, directory rescanning
-- **CCRecorder** — Audio recording to WAV in `~/.claudecollider/recordings` with timestamped filenames
+- **CCSamples** — Sample management with lazy loading from `user/samples` and the bundled `samples`. WAV/AIFF, rate control, directory rescanning
+- **CCRecorder** — Audio recording to WAV in `user/recordings` with timestamped filenames
 - **CCState** — Bus and session state management, creates and tracks control/audio buses in current environment
 - **CCFormatter** — Status formatting for console output
 - **CCOutputs** — Hardware output routing with per-output limiters

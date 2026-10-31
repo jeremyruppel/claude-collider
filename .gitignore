@@ -1,2 +1,8 @@
 dist/
 node_modules/
+
+# User samples and recordings stay local; only the READMEs are tracked
+/user/samples/*
+!/user/samples/README.md
+/user/recordings/*
+!/user/recordings/README.md

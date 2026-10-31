@@ -100,7 +100,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-The `env` block is optional in all configurations — paths default to `~/.claudecollider/samples` and `~/.claudecollider/recordings`.
+The `env` block is optional in all configurations. By default, put your own samples in `user/samples/` and recordings are saved to `user/recordings/` (both inside this repo and ignored by git). Your samples take priority over the bundled ones in `samples/`. The old `~/.claudecollider/samples` folder is still searched last.
 
 Restart your MCP client after updating the config.
 
@@ -208,8 +208,8 @@ Logs are written to `/tmp/claude-collider.log`.
 | `SCLANG_PATH`        | Auto-detected                  | Path to sclang executable               |
 | `SC_BOOT_TIMEOUT`    | 10000                          | Boot timeout in ms                      |
 | `SC_EXEC_TIMEOUT`    | 2000                           | Execution timeout in ms                 |
-| `CC_SAMPLES_PATH`    | `~/.claudecollider/samples`    | Directory for audio samples             |
-| `CC_RECORDINGS_PATH` | `~/.claudecollider/recordings` | Directory for recorded audio            |
+| `CC_SAMPLES_PATH`    | `user/samples:samples`         | Directory for audio samples             |
+| `CC_RECORDINGS_PATH` | `user/recordings`              | Directory for recorded audio            |
 | `DEBUG`              | -                              | Set to `claude-collider` for debug logs |
 
 ## License

@@ -129,7 +129,7 @@ CCMIDIClock.enable(~cc.midi.output);
 
 ## ~cc.samples - Sample Management
 
-Samples from `~/.claudecollider/samples`.
+Samples from `user/samples/` (your own, gitignored) and `samples/` (bundled). User samples win on name conflicts.
 
 | Method | Description |
 | --- | --- |
@@ -149,7 +149,7 @@ Pdef(\samp, Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1
 
 ## ~cc.recorder - Audio Recording
 
-Records to `~/.claudecollider/recordings`.
+Records to `user/recordings/` (gitignored).
 
 | Method | Description |
 | --- | --- |
