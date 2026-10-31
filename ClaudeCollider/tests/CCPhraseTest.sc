@@ -1,6 +1,6 @@
 // CCPhraseTest - Unit tests for CCPhrase
 
-CCPhraseTest : UnitTest {
+CCPhraseTest : CCUnitTest {
 
 	// ========== constructor tests ==========
 

@@ -1,6 +1,6 @@
 // CCSidechainTest - Unit tests for CCSidechain
 
-CCSidechainTest : UnitTest {
+CCSidechainTest : CCUnitTest {
   var sidechain, mockCC;
 
   setUp {

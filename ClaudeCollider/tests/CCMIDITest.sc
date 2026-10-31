@@ -1,6 +1,6 @@
 // CCMIDITest - Unit tests for CCMIDI facade
 
-CCMIDITest : UnitTest {
+CCMIDITest : CCUnitTest {
   var midi, mockCC;
 
   setUp {

@@ -11,7 +11,7 @@ CCMIDIClockMockMidiOut {
   midiClock { messages.add(\tick) }
 }
 
-CCMIDIClockTest : UnitTest {
+CCMIDIClockTest : CCUnitTest {
   var mockMidiOut, messages;
 
   setUp {

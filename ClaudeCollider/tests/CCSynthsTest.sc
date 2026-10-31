@@ -1,6 +1,6 @@
 // CCSynthsTest - Unit tests for CCSynths
 
-CCSynthsTest : UnitTest {
+CCSynthsTest : CCUnitTest {
   var synths, mockCC;
 
   setUp {

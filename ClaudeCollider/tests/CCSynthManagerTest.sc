@@ -1,6 +1,6 @@
 // CCSynthManagerTest - Unit tests for CCSynthManager
 
-CCSynthManagerTest : UnitTest {
+CCSynthManagerTest : CCUnitTest {
   var manager;
 
   setUp {

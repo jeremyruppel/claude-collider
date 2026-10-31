@@ -1,6 +1,6 @@
 // CCOutputsTest - Unit tests for CCOutputs
 
-CCOutputsTest : UnitTest {
+CCOutputsTest : CCUnitTest {
   var outputs, mockCC;
 
   setUp {

@@ -1,6 +1,6 @@
 // CCSamplesTest - Unit tests for CCSamples
 
-CCSamplesTest : UnitTest {
+CCSamplesTest : CCUnitTest {
   var samples, mockCC;
 
   setUp {

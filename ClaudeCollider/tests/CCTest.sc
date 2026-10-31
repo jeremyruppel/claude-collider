@@ -1,4 +1,4 @@
-CCTest : UnitTest {
+CCTest : CCUnitTest {
   var cc;
 
   setUp {

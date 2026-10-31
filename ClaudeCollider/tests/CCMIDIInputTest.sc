@@ -1,6 +1,6 @@
 // CCMIDIInputTest - Unit tests for CCMIDIInput
 
-CCMIDIInputTest : UnitTest {
+CCMIDIInputTest : CCUnitTest {
   var input;
 
   setUp {

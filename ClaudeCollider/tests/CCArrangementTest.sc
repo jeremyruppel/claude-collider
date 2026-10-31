@@ -1,6 +1,6 @@
 // CCArrangementTest - Unit tests for CCArrangement
 
-CCArrangementTest : UnitTest {
+CCArrangementTest : CCUnitTest {
   var arr;
 
   setUp {

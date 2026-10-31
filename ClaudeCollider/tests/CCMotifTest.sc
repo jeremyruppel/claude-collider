@@ -1,6 +1,6 @@
 // CCMotifTest - Unit tests for CCMotif
 
-CCMotifTest : UnitTest {
+CCMotifTest : CCUnitTest {
 
 	// ========== constructor tests ==========
 

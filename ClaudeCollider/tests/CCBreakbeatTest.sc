@@ -1,6 +1,6 @@
 // CCBreakbeatTest - Unit tests for CCBreakbeat
 
-CCBreakbeatTest : UnitTest {
+CCBreakbeatTest : CCUnitTest {
 
   // ========== constructor tests ==========
 

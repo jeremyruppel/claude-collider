@@ -1,6 +1,6 @@
 // CCFormatterTest - Unit tests for CCFormatter
 
-CCFormatterTest : UnitTest {
+CCFormatterTest : CCUnitTest {
   var formatter, mockCC;
 
   setUp {

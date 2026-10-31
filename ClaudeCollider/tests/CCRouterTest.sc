@@ -1,6 +1,6 @@
 // CCRouterTest - Unit tests for CCRouter
 
-CCRouterTest : UnitTest {
+CCRouterTest : CCUnitTest {
   var router, mockFX;
 
   setUp {

@@ -1,6 +1,6 @@
 // CCFXTest - Unit tests for CCFX
 
-CCFXTest : UnitTest {
+CCFXTest : CCUnitTest {
   var fx, mockCC;
 
   setUp {

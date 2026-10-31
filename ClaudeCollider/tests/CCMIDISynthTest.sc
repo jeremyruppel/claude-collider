@@ -1,6 +1,6 @@
 // CCMIDISynthTest - Unit tests for CCMIDISynth
 
-CCMIDISynthTest : UnitTest {
+CCMIDISynthTest : CCUnitTest {
   var midiSynth;
 
   setUp {

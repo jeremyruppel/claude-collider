@@ -1,6 +1,6 @@
 // CCMelodyTest - Unit tests for CCMelody
 
-CCMelodyTest : UnitTest {
+CCMelodyTest : CCUnitTest {
 
 	// ========== callAndResponse ==========
 
