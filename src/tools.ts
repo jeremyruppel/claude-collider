@@ -321,8 +321,14 @@ export class Tools {
 
         switch (type) {
           case "source": {
-            await this.sc.execute(`~cc.fx.route(\\${source}, \\${target})`)
-            return { content: [{ type: "text", text: `Routed ${source} → ${target}` }] }
+            const result = await this.sc.execute(`~cc.fx.route(\\${source}, \\${target})`)
+            if (result.trim() === "nil") {
+              return {
+                content: [{ type: "text", text: `Failed to route ${source} → ${target}` }],
+                isError: true,
+              }
+            }
+            return { content: [{ type: "text", text: `Routed ${source} → ${target}\n\n${result}` }] }
           }
 
           case "effect": {

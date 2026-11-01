@@ -132,15 +132,9 @@ CCRouter {
   route { |source, target|
     var targetBus;
 
-    // Find target bus from loaded effects
-    if(fx.loaded[target.asSymbol].notNil) {
-      targetBus = fx.loaded[target.asSymbol].inBus;
-    } {
-      // Check sidechains
-      if(fx.sidechains.at(target.asSymbol).notNil) {
-        targetBus = fx.sidechains.at(target.asSymbol).inBus;
-      };
-    };
+    // A chain name means the chain's first effect
+    target = this.chainSlots(target) !? { |slots| slots.first } ?? { target };
+    targetBus = this.inputBus(target);
 
     if(targetBus.isNil) {
       "CCRouter: target '%' not found".format(target).warn;

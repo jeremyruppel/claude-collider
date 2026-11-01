@@ -9,6 +9,7 @@ export class SuperCollider extends EventEmitter {
   private readonly config: SclangConfig
   private _process: SclangProcess | null = null
   private state: ServerState = ServerState.Stopped
+  private queue: Promise<string> = Promise.resolve("")
 
   constructor() {
     super()
@@ -81,7 +82,16 @@ export class SuperCollider extends EventEmitter {
     })
   }
 
-  async execute(code: string): Promise<string> {
+  // sclang has one shared output buffer, so run executions one at a time.
+  // Otherwise parallel calls clear each other's output and receive each other's results.
+  // Each call waits for the previous one to settle, whether it succeeded or failed.
+  execute(code: string): Promise<string> {
+    const run = () => this.executeNow(code)
+    this.queue = this.queue.then(run, run)
+    return this.queue
+  }
+
+  private async executeNow(code: string): Promise<string> {
     // Auto-boot if stopped
     if (this.state === ServerState.Stopped) {
       await this.boot()

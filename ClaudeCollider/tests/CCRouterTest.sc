@@ -107,6 +107,19 @@ CCRouterTest : CCUnitTest {
     Ndef(\cc_test_router_ndef).clear;
   }
 
+  test_route_chainNameRoutesToFirstSlot {
+    var result;
+    mockFX.loaded[\chain_0_lpf] = (inBus: (index: 18));
+    mockFX.loaded[\chain_1_reverb] = (inBus: (index: 22));
+    router.registerChain(\chain, [\chain_0_lpf, \chain_1_reverb]);
+    Pdef(\cc_test_router_chain, Pbind());
+    result = router.route(\cc_test_router_chain, \chain);
+    this.assert(result, "Should route to a chain by name");
+    this.assertEquals(Pdef(\cc_test_router_chain).get(\out), 18, "Should send to the chain's first effect");
+    this.assertEquals((router.routes[\cc_test_router_chain] !? { |r| r[\target] }), \chain_0_lpf, "Should record the first slot as the target");
+    Pdef(\cc_test_router_chain).clear;
+  }
+
   test_route_movesNdefOutputInsteadOfCopying {
     mockFX.loaded[\fx_test] = (inBus: (index: 16));
     Ndef(\cc_test_router_move).ar(2);

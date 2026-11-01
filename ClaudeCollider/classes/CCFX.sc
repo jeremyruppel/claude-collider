@@ -303,8 +303,9 @@ CCFX {
     router.registerChain(name, slots);
   }
 
+  // Returns the effects status (with the routing table) on success, nil on failure
   route { |source, target|
-    ^router.route(source, target);
+    ^if(router.route(source, target)) { this.status } { nil };
   }
 
   // ========== DELEGATION TO SIDECHAIN ==========
@@ -417,6 +418,15 @@ CCFX {
       lines = lines.add("Chains:");
       router.chains.keysValuesDo { |name, slots|
         lines = lines.add("  %: % -> main".format(name, slots.join(" -> ")));
+      };
+    };
+
+    // Routes section
+    if(router.routes.size > 0) {
+      if(lines.size > 0) { lines = lines.add("") };
+      lines = lines.add("Routes:");
+      router.routes.keysValuesDo { |source, info|
+        lines = lines.add("  % -> %".format(source, info.target));
       };
     };
 
