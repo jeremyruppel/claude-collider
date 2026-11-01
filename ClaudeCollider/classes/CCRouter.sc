@@ -100,15 +100,24 @@ CCRouter {
   // the bus and wipe out what the upstream effects added.
   reorder {
     var group = fx.tryPerform(\group);
+    var server, effects, inSignalOrder;
     if(group.isNil) { ^this };
 
-    (fx.loaded.keys.asArray ++ fx.sidechains.keys)
-      .sort { |a, b| this.depth(a) < this.depth(b) }
-      .do { |name|
+    server = group.server;
+    effects = fx.loaded.keys.asArray ++ fx.sidechains.keys;
+    inSignalOrder = effects.sort { |a, b| this.depth(a) < this.depth(b) };
+
+    // NodeProxy schedules its groups with server latency, so move them on the
+    // same schedule or the moves land before the groups exist
+    server.makeBundle(server.latency, {
+      inSignalOrder.do { |name|
         var ndef = this.effectNdef(name);
-        ndef.group !? (_.moveToTail(group));
-        ndef.monitor !? (_.group) !? (_.moveToTail(group));
+        var effectGroup = ndef.group;
+        var outputGroup = ndef.monitor !? (_.group);
+        effectGroup !? (_.moveToTail(group));
+        outputGroup !? (_.moveToTail(group));
       };
+    });
   }
 
   // Length of the longest run of effects feeding into this one
