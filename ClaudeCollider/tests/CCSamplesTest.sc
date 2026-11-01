@@ -48,6 +48,26 @@ CCSamplesTest : CCUnitTest {
     this.assertEquals(s.samplesDirs.size, 2, "should reject empty segments");
   }
 
+  // ========== readChannels tests ==========
+
+  test_readChannels_monoCopiesToBothSides {
+    this.assertEquals(samples.readChannels(1), [0, 0], "mono file should read channel 0 twice");
+  }
+
+  test_readChannels_stereoReadsAsIs {
+    this.assertEquals(samples.readChannels(2), nil, "stereo file should read as is");
+  }
+
+  test_readChannels_unknownReadsAsIs {
+    this.assertEquals(samples.readChannels(nil), nil, "unreadable file should fall back to a plain read");
+  }
+
+  // ========== fileChannels tests ==========
+
+  test_fileChannels_missingFileReturnsNil {
+    this.assertEquals(samples.fileChannels("/no/such/file.wav"), nil, "missing file should return nil");
+  }
+
   // ========== describe tests ==========
 
   test_describe_formatsUnloadedSample {

@@ -76,9 +76,36 @@ CCSamples {
 
     if(buf.notNil) { ^buf };
 
-    buf = Buffer.read(cc.server, path);
+    buf = this.readBuffer(path);
     buffers.put(key, buf);
     ^buf;
+  }
+
+  // Read a file into a buffer. cc_sampler and cc_breakbeat play 2-channel
+  // buffers, so a mono file is read twice into a stereo buffer, one copy
+  // per side. Otherwise it would play out of the left channel only.
+  readBuffer { |path, action|
+    var channels = this.readChannels(this.fileChannels(path));
+    if(channels.notNil) {
+      ^Buffer.readChannel(cc.server, path, channels: channels, action: action);
+    };
+    ^Buffer.read(cc.server, path, action: action);
+  }
+
+  // Channels to read for a file with numChannels channels: [0, 0] copies a
+  // mono file to both sides; nil reads the file as is.
+  readChannels { |numChannels|
+    ^if(numChannels == 1) { [0, 0] } { nil };
+  }
+
+  // Number of channels in a sound file, or nil if it can't be opened
+  fileChannels { |path|
+    var file = SoundFile.openRead(path);
+    var numChannels;
+    if(file.isNil) { ^nil };
+    numChannels = file.numChannels;
+    file.close;
+    ^numChannels;
   }
 
   // Play a sample once (lazy loads if needed)
@@ -96,7 +123,7 @@ CCSamples {
       ^Synth(\cc_sampler, [\buf, buf, \rate, rate, \amp, amp]);
     };
 
-    Buffer.read(cc.server, path, action: { |loadedBuf|
+    this.readBuffer(path, { |loadedBuf|
       buffers.put(key, loadedBuf);
       Synth(\cc_sampler, [\buf, loadedBuf, \rate, rate, \amp, amp]);
     });

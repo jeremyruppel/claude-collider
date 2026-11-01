@@ -322,6 +322,8 @@ Pbind(\instrument, \cc_sampler, \buf, ~cc.samples.at(\kick), \dur, 1).play
 
 **Note**: Call `~cc.samples.load(\name)` to pre-load a buffer before using `at(\name)` in Pbind.
 
+Mono files are loaded as 2-channel buffers with the channel copied to both sides, so they play centered through `cc_sampler` and `cc_breakbeat`.
+
 ### CCRecorder
 
 Audio recording to WAV files in `user/recordings/`.
