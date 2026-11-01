@@ -45,8 +45,9 @@ CCRouter {
       ^nil;
     };
 
-    fromInfo.ndef.play(out: toBus.index);
+    fromInfo.ndef.play(out: toBus.index, group: fx.tryPerform(\group));
     connections[from.asSymbol] = (to: to.asSymbol);
+    this.reorder;
 
     ^true;
   }
@@ -71,6 +72,7 @@ CCRouter {
     if(connInfo.notNil) {
       connections.removeAt(from.asSymbol);
       this.playToMain(from);
+      this.reorder;
       ^true;
     };
     ^false;
@@ -87,7 +89,38 @@ CCRouter {
 
   // Point an effect's output back at main
   playToMain { |slot|
-    fx.loaded[slot.asSymbol] !? { |info| info.ndef.play(out: fx.outputs.mainBus.index) };
+    fx.loaded[slot.asSymbol] !? { |info| info.ndef.play(out: fx.outputs.mainBus.index, group: fx.group) };
+  }
+
+  // ========== Signal Order ==========
+
+  // Run effects in signal order: each effect, then its output, after every effect
+  // that feeds it. An effect that ran first would read its input before upstream
+  // effects wrote to it, and a source writing earlier in the cycle would reset
+  // the bus and wipe out what the upstream effects added.
+  reorder {
+    var group = fx.tryPerform(\group);
+    if(group.isNil) { ^this };
+
+    (fx.loaded.keys.asArray ++ fx.sidechains.keys)
+      .sort { |a, b| this.depth(a) < this.depth(b) }
+      .do { |name|
+        var ndef = this.effectNdef(name);
+        ndef.group !? (_.moveToTail(group));
+        ndef.monitor !? (_.group) !? (_.moveToTail(group));
+      };
+  }
+
+  // Length of the longest run of effects feeding into this one
+  depth { |name|
+    var feeders = connections.keys.select { |from| connections[from].to == name.asSymbol };
+    ^feeders.inject(0) { |deepest, from| max(deepest, this.depth(from) + 1) };
+  }
+
+  // Ndef of a loaded effect or a sidechain
+  effectNdef { |name|
+    var info = fx.loaded[name.asSymbol] ?? { fx.sidechains.at(name.asSymbol) };
+    ^info !? { info.ndef };
   }
 
   // ========== Chains ==========
@@ -177,6 +210,7 @@ CCRouter {
         this.playToMain(from);
       };
     };
+    this.reorder;
 
     // Remove routes to this effect (snapshot keys to avoid mutation during iteration)
     routes.keys.do { |source|

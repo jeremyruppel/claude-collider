@@ -40,6 +40,14 @@ CCRouterTest : CCUnitTest {
     this.assert(router.wouldCreateCycle(\a, \b).not, "No cycle without connections");
   }
 
+  // ========== depth tests ==========
+
+  test_depth_countsEffectsFeedingIn {
+    router.connections[\fx_a] = (to: \fx_b);
+    router.connections[\fx_b] = (to: \fx_c);
+    this.assertEquals([\fx_a, \fx_b, \fx_c].collect { |n| router.depth(n) }, [0, 1, 2], "Depth should follow the chain");
+  }
+
   // ========== registerChain tests ==========
 
   test_registerChain_addsChain {

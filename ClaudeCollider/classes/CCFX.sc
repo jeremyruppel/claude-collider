@@ -9,6 +9,7 @@ CCFX {
   var <outputs;      // CCOutputs instance
   var <sidechains;   // CCSidechain instance
   var <router;       // CCRouter instance
+  var group;         // Runs after the default group and before the outputs
 
   *new { |cc|
     ^super.new.init(cc);
@@ -22,6 +23,17 @@ CCFX {
     router = CCRouter(this);
     defs = this.defineEffects;
     this.addRoutingSynthDefs;
+  }
+
+  // Effects must run after every source that writes to their input buses, for
+  // the same reason as the outputs (see CCOutputs.group). The router orders the
+  // effects inside this group so each one runs after the effects that feed it.
+  group {
+    if(group.isNil or: { group.isPlaying.not }) {
+      group = Group.before(outputs.group);
+      NodeWatcher.register(group, true);
+    };
+    ^group;
   }
 
   addRoutingSynthDefs {
@@ -248,16 +260,18 @@ CCFX {
     // Ensure main output is ready so we can route to mainBus
     outputs.playMain;
 
-    ndef = Ndef(slotName.asSymbol, { |in, bypass=0|
+    ndef = Ndef(slotName.asSymbol);
+    ndef.parentGroup = this.group;
+    ndef.source = { |in, bypass=0|
       var params = paramPairs.collect { |pair|
         NamedControl.kr(pair[0], pair[1]);
       };
       var wet = func.valueArray([in] ++ params);
       // Bypassed effects pass their input straight through
       XFade2.ar(wet, InFeedback.ar(in, 2), Lag.kr(bypass, 0.05) * 2 - 1);
-    });
+    };
     ndef.set(\in, inBus.index);
-    ndef.play(out: outputs.mainBus.index);
+    ndef.play(out: outputs.mainBus.index, group: this.group);
 
     loaded[slotName.asSymbol] = (
       name: name,
@@ -265,6 +279,7 @@ CCFX {
       inBus: inBus,
       params: def[\params]
     );
+    router.reorder;
 
     "Loaded % on bus %".format(slotName, inBus.index).postln;
   }
@@ -311,7 +326,9 @@ CCFX {
   // ========== DELEGATION TO SIDECHAIN ==========
 
   sidechain { |name, threshold=0.1, ratio=4, attack=0.01, release=0.1|
-    ^sidechains.create(name, threshold, ratio, attack, release);
+    var result = sidechains.create(name, threshold, ratio, attack, release);
+    router.reorder;
+    ^result;
   }
 
   routeTrigger { |source, sidechainName, passthrough=true|

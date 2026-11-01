@@ -4,7 +4,7 @@ CCSidechain {
   classvar <prefix = "sidechain_";
 
   var <cc;
-  var <sidechains;  // Dictionary: name -> (inBus, triggerBus, slot, triggerRoutes)
+  var <sidechains;  // Dictionary: name -> (inBus, triggerBus, slot, ndef, triggerRoutes)
 
   *new { |cc|
     ^super.new.init(cc);
@@ -19,6 +19,7 @@ CCSidechain {
 
   create { |name, threshold=0.1, ratio=4, attack=0.01, release=0.1|
     var inBus, triggerBus, slotName;
+    var group = cc.tryPerform(\fx) !? { |fx| fx.group };
 
     // Clean up existing sidechain with same name before recreating
     if(sidechains[name.asSymbol].notNil) {
@@ -29,6 +30,8 @@ CCSidechain {
     triggerBus = Bus.audio(cc.server, 2);
     slotName = (prefix ++ name).asSymbol;
 
+    // Runs with the effects, after every source that writes to its buses
+    if(group.notNil) { Ndef(slotName).parentGroup = group };
     Ndef(slotName, { |in, trigger, threshold=0.1, ratio=4, attack=0.01, release=0.1|
       var sig = In.ar(in, 2);
       var trig = In.ar(trigger, 2);
@@ -36,12 +39,13 @@ CCSidechain {
     });
     Ndef(slotName).set(\in, inBus.index, \trigger, triggerBus.index);
     Ndef(slotName).set(\threshold, threshold, \ratio, ratio, \attack, attack, \release, release);
-    Ndef(slotName).play(out: this.mainOut);
+    Ndef(slotName).play(out: this.mainOut, group: group);
 
     sidechains[name.asSymbol] = (
       inBus: inBus,
       triggerBus: triggerBus,
       slot: slotName,
+      ndef: Ndef(slotName),
       triggerRoutes: Dictionary[]
     );
 
